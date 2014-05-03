@@ -129,7 +129,7 @@ function latexml_filter_local_process($text, $filter, $format, $langcode, $cache
 
   $filter_context['status']['latexml'] = $response['status'];
 
-  if ($response['status']['conversion'] != 0) { // && $response['status']['conversion'] != 1
+  if ($response['status']['conversion'] != 0 && $response['status']['conversion'] != 1) {
     $filter_context['failed'] = true;
   }
 

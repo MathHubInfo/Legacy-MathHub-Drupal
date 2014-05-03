@@ -38,7 +38,7 @@ var planetaryNavigation = {
 			res['Go To Declaration'] = function() {planetary.navigate(uri);};
 			res['Show Definition'] = function() {
 				$.ajax({ 
-				  'url': mmtUrl + "/:immt/query",
+				  'url': mmtUrl + "/:planetary/getRelated",
    	  			  'type' : 'POST',
 			      'data' : '{ "subject" : "' + uri + '",' + 
 			      	'"relation" : "isDefinedBy",' + 
