@@ -165,7 +165,6 @@ function oaff_contextual_basic($form, &$form_state) {
 
 function oaff_contextual_info($form, &$form_state, $key) {
   $form = array();
-  print_r($key);
   
   $result = "test";
   
@@ -222,9 +221,7 @@ function oaff_node_view($node, $view_mode, $langcode) {
   global $filter_context;
   $oaff_config = variable_get('oaff_config');
   $oaff_node_types = $oaff_config['handled_node_types'];
-  print(drupal_get_path_alias("node/" . $node->nid));
   if (drupal_get_path_alias("node/" . $node->nid) == 'mh/glossary') {
-    print("got here");
     $markup = file_get_contents("/var/data/localmh/MathHub/glossary.html");
     $inst_id = oaff_initialize();
     $node->content['body'][0]['#markup'] = '<div id="' . $inst_id . '" class="bootstrap" >' . $markup . '</div>';
@@ -725,7 +722,6 @@ function oaff_crawl_dimension_folder($group, $archive_path, $archive_id, $dimens
                                                                               // also lmh/stex specific ones  
       $item_path = oaff_join_path(array($folder_path, $item));
       if (planetary_repo_is_dir($item_path)) {
-        print_r($item_path);
         $cids[] = oaff_crawl_dimension_folder($group, $archive_path, $archive_id, $dimension, oaff_join_path(array($rel_path, $item)));
       } else {
         $pathinfo = oaff_get_path_info($item_path);
