@@ -91,7 +91,6 @@ function mmt_present($dpath, $body, $style = 'http://cds.omdoc.org/styles/omdoc/
   );
   $context  = stream_context_create($options);
   $response = file_get_contents($url, false, $context);
-  $result = json_decode($response, true);
   return $response;
 }
 
@@ -121,7 +120,6 @@ function mmt_compile($body, $dpath, $format) {
   );
   $context  = stream_context_create($options);
   $response = file_get_contents($url, false, $context);
-  $result = json_decode($response, true); 
   return $response;
 }
 
@@ -304,6 +302,9 @@ function mmt_filter_presentation_process($text, $filter, $format, $langcode, $ca
     $filter_context['status']['mmt_pres'] = $result['status'];
     if ($result['status']['conversion'] != 0) { // compilation failed
       $filter_context['failed'] = true;
+      oaff_log("MMT", "presentation filter failed");
+    } else {
+      oaff_log("MMT", "presentation filter succeeded");
     }
     return $result['content'];
   } 
@@ -344,7 +345,10 @@ function mmt_filter_compilation_process($text, $filter, $format, $langcode, $cac
   $result = json_decode($response, true);
   $filter_context['status']['mmt_comp'] = $result['status'];
   if ($result['status']['conversion'] != 0) {
+    oaff_log("MMT", "compilation filter failed");
     $filter_context['failed'] = true;
+  } else {
+    oaff_log("MMT", "compilation filter succeeded");
   }
   return $result['content'];
 }
@@ -471,15 +475,27 @@ function mmt_field_formatter_view($entity_type, $entity, $field, $instance, $lan
         $last_ran_time = oaff_get_mtime($entity->nid);
 
         if ($last_ran_time == $mtime && planetary_repo_stat_file($html_location) != null) {
+          oaff_log("OAFF(MMT)", "Getting html presentation from filesystem cache");
           $markup = planetary_repo_load_file($html_location);
         } else {
+          $reason = '';
+          if ($last_ran_time != $mtime) {
+            $reasons .= "source file changed ";
+          }
+          if (planetary_repo_stat_file($html_location) == null) {
+            $reasons .= "html cache file missing ";
+          }
+          oaff_log("OAFF(MMT)", "regenerating because: $reasons");
           $markup = check_markup($content, $item['filter'], $lang);
           if (!isset($filter_context['failed']) || !$filter_context['failed']) {
             oaff_set_mtime($entity->nid, $mtime); 
             $html_parent = pathinfo($html_location)['dirname'];
             if (planetary_repo_stat_file($html_parent) != null) {
               planetary_repo_save_file($html_location, $markup);
-            } // TODO else create parents
+            } else {
+              oaff_log("OAFF(MMT)", "Cannot write html cache file, parent doesn't exist: $html_parent");
+            // TODO else create parents
+            }
           }
         }
         $element[$delta] = array(
