@@ -103,7 +103,8 @@ function oaff_install() {
   $formats_s = variable_get("oaff_archive_formats", '');
   $node_types_s = variable_get("oaff_format_node_types", '');
   $extensions_s = variable_get("oaff_format_extensions", '');
-  oaff_config_set($formats_s, $node_types_s, $extensions_s);
+  $logging = variable_get("oaff_logging_enabled", false);
+  oaff_config_set($formats_s, $node_types_s, $extensions_s, $logging);
   
   drupal_set_message("Installed OAFF");
 }
