@@ -29,7 +29,23 @@ function oaff_log($component, $msg) {
 }
 
 function oaff_log_produce_html($log) {
-	$html =  '<div style="position:fixed;bottom:0;background:white;" id="oaff_log">';
+	//
+    $html = '<div style="z-index:1000;position:fixed;bottom:0;width:50%;left:25%;" class="panel-group" id="mh_dev_log_accordion">
+  <div class="panel panel-default">
+    <div class="panel-heading">
+      <h4 class="panel-title">
+        <button class="btn btn-info" 
+        onclick="jQuery(\'#mh_dev_log_collapse\').toggle();jQuery(\'#mh_log_toggle_btn\').toggleClass(\'glyphicon-plus-sign glyphicon-minus-sign\')" 
+        href="#mh_dev_log_collapse">
+              <span id="mh_log_toggle_btn" class="glyphicon glyphicon-plus-sign"></span>
+        </button>
+        <span> MathHub.info developer log </span>
+      </h4>
+    </div>
+    <div id="mh_dev_log_collapse" style="display: none;">
+      <div class="panel-body" style="background:lightgoldenrodyellow" >';
+
+	$html .=  '<div id="oaff_log">';
 	foreach($log as $entry) {
 		$component = $entry['component'];
 		$msg = $entry['msg'];
@@ -37,7 +53,7 @@ function oaff_log_produce_html($log) {
 		$html .= "<div> <h5><span class=\"text-info\"> $component: </span> <span class=\"bg-info\"> $msg </span></h5> $trace </div>";
 
 	}
-	$html .= '</div>';
+	$html .= '</div></div></div></div></div>';
 	return $html;
 }
 
