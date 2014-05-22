@@ -299,6 +299,8 @@ JOBAD.util.isHidden = function(element){
 		return false;
 	} else if(JOBAD.util.isMarkedHidden(element)){
 		return true;
+	} else if(element.is("map") || element.is("area")){//in response to issue #14 
+		return false; 
 	} else {
 		return element.is(":hidden");
 	}
@@ -843,16 +845,16 @@ JOBAD.util.trigger = function(query, event, params){
 /*
 	Creates a new Event Handler
 */
-JOBAD.util.EventHandler = function(){
+JOBAD.util.EventHandler = function(me){
 	var handler = {}; 
 	var EventHandler = JOBAD.refs.$("<div>"); 
 
 	handler.on = function(event, handler){
-		return JOBAD.util.on(EventHandler, event, handler);
+		return JOBAD.util.on(EventHandler, event, handler.bind(me));
 	};
 
 	handler.once = function(event, handler){
-		return JOBAD.util.once(EventHandler, event, handler);
+		return JOBAD.util.once(EventHandler, event, handler.bind(me));
 	};
 
 	handler.off = function(handler){

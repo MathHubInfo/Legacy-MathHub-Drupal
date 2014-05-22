@@ -1,0 +1,20 @@
+.term-search-result {
+  color: rgb(11, 75, 211);
+  width: 100%;
+  text-align: left;
+}
+
+.result-page {
+  overflow-y: auto;
+}
+
+.term-search-insert-cmd {
+  width: 1em;
+  height: 1em;
+  background-image:url('icons/cmd/sc_insertannotation.png');
+  float: right;
+}
+
+.ui-dialog .ui-dialog-content.no-margins {
+  padding: 0px;
+}

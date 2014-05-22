@@ -26,7 +26,7 @@ JOBAD.ifaces.push(function(me, args){
 	this.modules = {};
 
 	//Event namespace
-	this.Event = JOBAD.util.EventHandler(); 
+	this.Event = JOBAD.util.EventHandler(this); 
 
 	/*
 		Triggers a handable event. 

@@ -63,7 +63,7 @@ JOBAD.repo.config({
 			"test.tb1": "core/test/TB1.js",
 			"test.tb2": "core/test/TB2.js"
 	},
-	"versions": ["3.2.0"], //compatible JOBAD versions
+	"versions": ["3.2.1"], //compatible JOBAD versions
 	"name": "Core JOBAD Modules Repository", //name
 	"description": "JOBAD Modules repository from the Core" //description
 });

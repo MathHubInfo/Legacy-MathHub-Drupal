@@ -42,5 +42,17 @@
 	"graph" : {
 		"repo" : "cjucovschi",
 		"version" : "0.0.1"
+	},
+	"search-concept" : {
+		"repo" : "cjucovschi",
+		"version" : "0.0.1"
+	},
+	"add-assertion" : {
+		"repo" : "cjucovschi",
+		"version" : "0.0.1"
+	},
+	"add-link" : {
+		"repo" : "cjucovschi",
+		"version" : "0.0.1"
 	}
 }

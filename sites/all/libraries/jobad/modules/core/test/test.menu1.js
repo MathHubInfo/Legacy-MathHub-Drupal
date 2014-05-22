@@ -23,9 +23,9 @@
 	JOBAD.modules.register({
 		info:{
 			'identifier':	'test.menu1',
-			'title':	'Paragraphs Module',
+			'title':	'<Area> Testing Module',
 			'author':	'Tom Wiesing',
-			'description':	'Provides a context menu entry which checks if the clicked element is a <p>. '
+			'description':	'Provides a context menu entry which checks if the clicked element is an <area>. '
 		},
 		globalinit: function(){
 			//source: http://openiconlibrary.sourceforge.net/gallery2/?./Icons/status/dialog-declare.png (license: GPLv2)
@@ -36,9 +36,9 @@
 				return false;
 			}
 			return [
-				["Am I a <p> ?", function(element){
-					if(element.is("p")){
-						alert("I am a <p> element. ");
+				["Am I an <area> ?", function(element){
+					if(element.is("area")){
+						alert("I am a <area> element. ");
 					} else {
 						alert("No I'm not. ");
 					}

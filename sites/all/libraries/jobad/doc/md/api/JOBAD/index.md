@@ -8,7 +8,7 @@ This object is the main JOBAD Namespace.
 		* **Boolean** `config.auto_show_toolbar` Should toolbars be shows automatically? 
 	* **returns** a new [`JOBAD`](JOBADInstance/index.md) instance
 
-* **String** `JOBAD.version` - The current JOBAD Version ('3.2.0')
+* **String** `JOBAD.version` - The current JOBAD Version ('3.2.1')
 * **Function** `JOBAD.error(msg)` - Produces an error message
     * **String** `msg` The message to produce
 * **Function** `JOBAD.isEventDisabled(name)` - Checks if an event is globally disabled

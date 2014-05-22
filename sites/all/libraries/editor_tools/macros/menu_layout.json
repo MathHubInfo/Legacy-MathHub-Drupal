@@ -53,6 +53,21 @@
 				"href" : "icons/cmd/sc_connectorarrows.png",
 				"help" : "Graph"		
 			}
+		},
+		"MathHub services" : {
+			"search-concept" : {
+				"href" : "icons/cmd/lc_searchdialog.png",
+				"help" : "Compile"		
+			}, 
+			"add-assertion" : {
+				"href" : "icons/cmd/sc_drawtext.png",
+				"help" : "Add assertion"		
+			},
+			"add-link" : {
+				"href" : "icons/cmd/lc_addwatch.png",
+				"help" : "Link"		
+			}
+
 		}
 
 	}

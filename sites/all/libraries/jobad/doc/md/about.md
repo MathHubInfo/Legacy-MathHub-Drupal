@@ -15,7 +15,13 @@ It is known not to be compatible with:
 The official JOBAD repository is located at [https://github.com/KWARC/jobad](https://github.com/KWARC/jobad). 
 
 ## Changelog
-### Version 3.2.0 (Stable)
+
+### Version 3.2.1 (Stable)
+* fix for issue 14
+	* changed example page and modules
+* another bug fix
+
+### Version 3.2.0
 * added auto focus for JOBADInstances
 * added the keypress event (finally)
 * bug Fix: EventHandler .off was not working
