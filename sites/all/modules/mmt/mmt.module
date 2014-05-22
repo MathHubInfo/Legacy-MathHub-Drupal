@@ -478,7 +478,7 @@ function mmt_field_formatter_view($entity_type, $entity, $field, $instance, $lan
           oaff_log("OAFF(MMT)", "Getting html presentation from filesystem cache");
           $markup = planetary_repo_load_file($html_location);
         } else {
-          $reason = '';
+          $reasons = '';
           if ($last_ran_time != $mtime) {
             $reasons .= "source file changed ";
           }

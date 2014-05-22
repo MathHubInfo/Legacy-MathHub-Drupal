@@ -15,7 +15,7 @@ function latexml_compile($location) {
   }
   $arg_location = oaff_join_path(array($repo_path, $location));
   $lmh_status = shell_exec('lmh gen --omdoc ' . $arg_location);
-  oaff_log("LATEXML", 'gen --omdoc returned: ' . $lmh_status);
+  oaff_log("LATEXML", "`lmh gen --omdoc $arg_location` returned: " . "<pre>$lmh_status</pre>");
 
   $log_location = $base_relpath . '.ltxlog';
   $out_location = $base_relpath . '.omdoc';

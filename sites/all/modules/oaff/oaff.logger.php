@@ -29,7 +29,7 @@ function oaff_log($component, $msg) {
 }
 
 function oaff_log_produce_html($log) {
-	$html =  '<div style="position:fixed;bottom:0;width:100%;background:white;" id="oaff_log">';
+	$html =  '<div style="position:fixed;bottom:0;background:white;" id="oaff_log">';
 	foreach($log as $entry) {
 		$component = $entry['component'];
 		$msg = $entry['msg'];
@@ -41,12 +41,11 @@ function oaff_log_produce_html($log) {
 	return $html;
 }
 
-
 function build_trace_msg($trace) {
 	$func = $trace[1]['function'];
 	$file = $trace[0]['file'];
 	$line = $trace[0]['line'];
-	$trace_msg = "<h4><small> from $func($file:$line)</small></h4>";
+	$trace_msg = "<h4><small> from $func ($file:$line)</small></h4>";
 	return $trace_msg;
 }
 
