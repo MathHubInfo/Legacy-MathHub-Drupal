@@ -15,6 +15,8 @@ function generateDocName(id, params) {
     return "doc"+id+Math.random();
 }
 
+var envID = "planetary"+Math.random();
+
 /**
  * Attach this editor to a target element.
  */
@@ -28,6 +30,7 @@ Drupal.wysiwyg.editor.attach.ace = function(context, params, settings) {
   	"ShareJS" : false,
   };
   
+
   if (typeof settings["enabled"]!="undefined") {
   	for (var i=0; i<settings["enabled"].length; ++i) {
   	  t = settings["enabled"][i].split("_");
@@ -51,7 +54,7 @@ Drupal.wysiwyg.editor.attach.ace = function(context, params, settings) {
     require(["editor_tools/main"], function(main) {
 
       var filePath = jQuery((jQuery(editorID).parents(".fieldset-wrapper").find("input")[0])).attr("value");
-      handlers = main.enrich_editor(editor, "#ace_"+params.field, {root_path: Drupal.settings.editor_tools.editor_tools_path+"/", file:filePath});
+	handlers = main.enrich_editor(editor, "#ace_"+params.field, {root_path: Drupal.settings.editor_tools.editor_tools_path+"/", file:filePath, "sid": settings.sid, "envid": settings.sid});
 
       var toolbar = handlers.toolbar;
       var interpretter = handlers.interpretter;
