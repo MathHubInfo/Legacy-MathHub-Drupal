@@ -29,8 +29,7 @@ function oaff_log($component, $msg) {
 }
 
 function oaff_log_produce_html($log) {
-	//
-    $html = '<div style="z-index:1000;position:fixed;bottom:0;width:50%;left:25%;" class="panel-group" id="mh_dev_log_accordion">
+    $html = '<div style="z-index:1000;position:fixed;bottom:0;width:50%;left:25%;max-height:75%;overflow:auto;" class="panel-group" id="mh_dev_log_accordion">
   <div class="panel panel-default">
     <div class="panel-heading">
       <h4 class="panel-title">
@@ -51,7 +50,6 @@ function oaff_log_produce_html($log) {
 		$msg = $entry['msg'];
 		$trace = $entry['trace'];
 		$html .= "<div> <h5><span class=\"text-info\"> $component: </span> <span class=\"bg-info\"> $msg </span></h5> $trace </div>";
-
 	}
 	$html .= '</div></div></div></div></div>';
 	return $html;
@@ -64,5 +62,3 @@ function build_trace_msg($trace) {
 	$trace_msg = "<h4><small> from $func ($file:$line)</small></h4>";
 	return $trace_msg;
 }
-
-
