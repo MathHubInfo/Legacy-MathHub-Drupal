@@ -1,60 +1,49 @@
 <?php
-/**
- * Implements hook_views_api
- * declared API version used for views 
- */
-function oaff_views_views_api() {
-  return array(
-    'api' => "3.0",
-  );
-}
 
-
-function oaff_views_menu() {
-  $items = array();
+function oaff_features_menu(& $items) {
   $items['mh/broken-docs'] = array(
     'title' => "Broken Documents",
-    'page callback' => 'oaff_views_broken_nodes',
+    'page callback' => 'oaff_features_broken_nodes',
     'access callback' => true,
     'type' => MENU_CALLBACK,
   );
   $items['mh/common-errors'] = array(
     'title' => "Common Errors",
-    'page callback' => 'oaff_views_common_errors',
+    'page callback' => 'oaff_features_common_errors',
     'access callback' => true,
     'type' => MENU_CALLBACK,
   );
 
   $items['mh/add-document'] = array(
     'title' => "Add Document",
-    'page callback' => 'oaff_views_add_doc',
+    'page callback' => 'oaff_features_add_doc',
     'access callback' => true,
     'type' => MENU_CALLBACK,
   );
   $items['mh/latest-updates'] = array(
     'title' => "Latest Updates",
-    'page callback' => 'oaff_views_todo',
+    'page callback' => 'oaff_features_todo',
     'access callback' => true,
     'type' => MENU_CALLBACK,
   );
   $items['mh/show-questions'] = array(
     'title' => "User Questions",
-    'page callback' => 'oaff_views_todo',
+    'page callback' => 'oaff_features_todo',
     'access callback' => true,
     'type' => MENU_CALLBACK,
   );
   return $items;
 }
 
-function oaff_views_add_doc() {
-  return drupal_get_form('oaff_views_add_doc_form');
+function oaff_features_add_doc() {
+  return drupal_get_form('oaff_features_add_doc_form');
 }
 
-function oaff_views_todo() {
+function oaff_features_todo() {
   return "<p> Coming soon...</p>";
 }
 
-function oaff_views_add_doc_form() {
+function oaff_features_add_doc_form() {
   $form = array();
 
   $form['archive'] = array(
@@ -77,11 +66,11 @@ function oaff_views_add_doc_form() {
     '#type' => 'submit', 
     '#value' => t('Create Document')
   );
-  $form['#submit'] = array('oaff_views_add_doc_callback');
+  $form['#submit'] = array('oaff_features_add_doc_callback');
   return $form;
 }
 
-function oaff_views_add_doc_callback($form, &$form_state) {
+function oaff_features_add_doc_callback($form, &$form_state) {
   $archive = $form_state['values']['archive'];
   $title = $form_state['values']['title'];
   $body = $form_state['values']['body'];
@@ -96,7 +85,7 @@ function oaff_views_add_doc_callback($form, &$form_state) {
   $form_state['redirect'] = 'node/'. $nid;
 }
 
-function oaff_views_common_errors() {
+function oaff_features_common_errors() {
   $results = db_select('oaff_errors', 'e')
              ->fields('e', array('nid', 'type', 'compiler', 'short_msg'))
              ->execute()
@@ -186,7 +175,7 @@ function oaff_views_common_errors() {
 }
 
 
-function oaff_views_broken_nodes() {
+function oaff_features_broken_nodes() {
   $results = db_select('oaff_errors', 'e')
           ->fields('e', array('nid', 'type'))
           ->execute()
@@ -258,85 +247,4 @@ function oaff_views_broken_nodes() {
   }
   $msg .= "</div>";
   return $msg;
-}
-
-/**
- * implements hook_views_default_views
- * declares views, using view API
- * Currently: 
- *    oaff_broken_docs_view => view of all oaff nodes that have compilation errors
- */
-function oaff_views_views_default_views() {
-  $views = array();
-
-  $view = new view();
-  $view->name = 'oaff_latest_updates';
-  $view->description = '';
-  $view->tag = 'default';
-  $view->base_table = 'node';
-  $view->human_name = 'oaff-latest-updates';
-  $view->core = 7;
-  $view->api_version = '3.0';
-  $view->disabled = false; /* Edit this to true to make a default view disabled initially */
-
-  /* Display: Master */
-  $handler = $view->new_display('default', 'Master', 'default');
-  $handler->display->display_options['title'] = 'Latest Updates';
-  $handler->display->display_options['use_more_always'] = false;
-  $handler->display->display_options['access']['type'] = 'perm';
-  $handler->display->display_options['cache']['type'] = 'none';
-  $handler->display->display_options['query']['type'] = 'views_query';
-  $handler->display->display_options['exposed_form']['type'] = 'basic';
-  $handler->display->display_options['pager']['type'] = 'full';
-  $handler->display->display_options['pager']['options']['items_per_page'] = '10';
-  $handler->display->display_options['style_plugin'] = 'list';
-  $handler->display->display_options['row_plugin'] = 'node';
-  /* Field: Content: Title */
-  $handler->display->display_options['fields']['title']['id'] = 'title';
-  $handler->display->display_options['fields']['title']['table'] = 'node';
-  $handler->display->display_options['fields']['title']['field'] = 'title';
-  $handler->display->display_options['fields']['title']['label'] = '';
-  $handler->display->display_options['fields']['title']['alter']['word_boundary'] = false;
-  $handler->display->display_options['fields']['title']['alter']['ellipsis'] = false;
-  /* Field: Content: Nid */
-  $handler->display->display_options['fields']['nid']['id'] = 'nid';
-  $handler->display->display_options['fields']['nid']['table'] = 'node';
-  $handler->display->display_options['fields']['nid']['field'] = 'nid';
-  $handler->display->display_options['fields']['nid']['exclude'] = true;
-  $handler->display->display_options['fields']['nid']['alter']['alter_text'] = true;
-  $handler->display->display_options['fields']['nid']['alter']['text'] = 'node/[nid]';
-  /* Sort criterion: Content revision: Updated date */
-  $handler->display->display_options['sorts']['timestamp']['id'] = 'timestamp';
-  $handler->display->display_options['sorts']['timestamp']['table'] = 'node_revision';
-  $handler->display->display_options['sorts']['timestamp']['field'] = 'timestamp';
-  $handler->display->display_options['sorts']['timestamp']['order'] = 'DESC';
-  $handler->display->display_options['sorts']['timestamp']['expose']['label'] = 'Updated date';
-  /* Sort criterion: Content: Last comment time */
-  $handler->display->display_options['sorts']['last_comment_timestamp']['id'] = 'last_comment_timestamp';
-  $handler->display->display_options['sorts']['last_comment_timestamp']['table'] = 'node_comment_statistics';
-  $handler->display->display_options['sorts']['last_comment_timestamp']['field'] = 'last_comment_timestamp';
-  $handler->display->display_options['sorts']['last_comment_timestamp']['order'] = 'DESC';
-  $handler->display->display_options['sorts']['last_comment_timestamp']['expose']['label'] = 'Last comment time';
-  /* Filter criterion: Content: Published */
-  $handler->display->display_options['filters']['status']['id'] = 'status';
-  $handler->display->display_options['filters']['status']['table'] = 'node';
-  $handler->display->display_options['filters']['status']['field'] = 'status';
-  $handler->display->display_options['filters']['status']['value'] = 1;
-  $handler->display->display_options['filters']['status']['group'] = 1;
-  $handler->display->display_options['filters']['status']['expose']['operator'] = false;
-  /* Filter criterion: Content: Type */
-  $handler->display->display_options['filters']['type']['id'] = 'type';
-  $handler->display->display_options['filters']['type']['table'] = 'node';
-  $handler->display->display_options['filters']['type']['field'] = 'type';
-  $handler->display->display_options['filters']['type']['value'] = array(
-    'glossary' => 'glossary',
-    'oaff_doc' => 'oaff_doc',
-  );
-
-  /* Display: Page */
-  $handler = $view->new_display('page', 'Page', 'page');
-  $handler->display->display_options['path'] = 'oaff-latest-updates';
-
-  $views[$view->name] = $view;
-  return $views;
 }

@@ -1,6 +1,9 @@
 <?php
 
 require_once 'oaff.logger.php';
+require_once 'oaff.features.php';
+require_once 'oaff.admin.php';
+
 
 /**
  * Implements hook_menu
@@ -22,18 +25,16 @@ function oaff_menu() {
     'access callback' => 'oaff_setup_access',
     'menu_name' => 'navigation'
   );
-  $items['mh/crawl-nodes'] = array(
-    'title' => "Crawl Loaded Nodes",
-    'page callback' => 'oaff_crawl_nodes',
-    'access callback' => 'oaff_setup_access',
-    'menu_name' => 'navigation'
-  );
   $items['mh/help'] = array(
     'title' => "Help",
     'page callback' => 'oaff_help_page',
     'access callback' => true,
     'menu_name' => 'navigation'
   );
+  oaff_features_menu($items);
+  oaff_admin_menu($items);
+  
+
   return $items;
 }
 
@@ -220,18 +221,8 @@ function oaff_initialize() {
 function oaff_node_view($node, $view_mode, $langcode) {
   if ($view_mode != "full")
 		return;
-
+  
   $oaff_config = variable_get('oaff_config');
-  $log = $oaff_config['log'];
-  $oaff_config['log'] = array();
-  variable_set('oaff_config', $oaff_config);
-  $node->content['MathHub.info Log'] = array(
-    '#markup' => oaff_log_produce_html($log),
-    '#weight' => 1000,
-  );
-  $oaff_config['log'] = array();
-  variable_set('oaff_config', $oaff_config);
-
   //handling node rendering
   global $filter_context;
   $oaff_node_types = $oaff_config['handled_node_types'];
@@ -497,48 +488,6 @@ function oaff_mark_source_errors($source, $status, $nid) {
   */
   return "<pre>\n" . $source . "\n</pre>" . $log;
 }
-
-// ------------------------------- OAFF Node Crawler -------------------------------- \\
-
-/**
- * crawl the nodes already loaded in drupal to check for validity, and errors, and so on
- */
-function oaff_crawl_nodes() {
-  $oaff_config = variable_get("oaff_config");
-  if (isset($_GET['restart']) && $_GET['restart'] == 'true') {
-    $oaff_config['crawl_nodes_offset'] = 0;
-  }
-  $offset = $oaff_config['crawl_nodes_offset'];
-  $results = db_select('node', 'n')
-              ->fields('n', array('nid'))
-              ->condition('n.type', 'oaff_doc', '=')
-              ->range($offset, 30)
-              ->execute()
-              ->fetchAll();
-
-  foreach ($results as $result) {
-    node_view(node_load($result->nid));
-  }
-  $crawled = count($results);
-  $oaff_config['crawl_nodes_offset'] += $crawled;
-  variable_set('oaff_config', $oaff_config);
-  if ($crawled == 0) {
-    if ($offset == 0) {
-      drupal_set_message("Nothing to crawl (no nodes) (perhaps initialize nodes)");
-    } else {
-      drupal_set_message("Finished crawling nodes, no new nodes (perhaps restart)");
-    }
-  } else {
-    drupal_set_message("Crawled $crawled nodes (with offset $offset)");
-  }
-  drupal_set_breadcrumb(array());
-  $out = '<div> <button onclick="window.location = \'/mh/crawl-nodes?restart=true\'" class="btn btn-danger"> Restart </button>';
-  $out .= ' <button class="btn btn-primary " onclick="window.location = \'/mh/crawl-nodes\'"> Continue </button> </div> ';
-  return $out;
-}
-
-// ############################# End OAFF Node Crawler ########################### \\
-
 
 
 // ------------------------------- OAFF Autoload Crawler -------------------------------- \\
