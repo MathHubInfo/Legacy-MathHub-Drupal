@@ -42,7 +42,7 @@ function oaff_log_produce_html($log) {
       </h4>
     </div>
     <div id="mh_dev_log_collapse" style="display: none;">
-      <div class="panel-body" style="background:lightgoldenrodyellow" >';
+      <div class="panel-body" style="background:lightgoldenrodyellow;" >';
 
 	$html .=  '<div id="oaff_log">';
 	foreach($log as $entry) {
@@ -53,6 +53,26 @@ function oaff_log_produce_html($log) {
 	}
 	$html .= '</div></div></div></div></div>';
 	return $html;
+}
+
+function oaff_page_build(& $page) {
+    $oaff_config = variable_get('oaff_config');
+    $log = $oaff_config['log'];
+    if (count($log) > 0) {
+        $oaff_config['log'] = array();
+        variable_set('oaff_config', $oaff_config);
+	    if (!isset($page['content'])) {
+	    	$page['content'] = array();
+	    }
+	    if (!isset($page['content']['system_main'])) {
+	    	 $page['content']['system_main'] = array();
+	    }
+	    if (!isset($page['content']['system_main']['main'])) {
+			$page['content']['system_main']['main'] = array();
+		 	$page['content']['system_main']['main']['#markup'] = '';
+		}
+		$page['content']['system_main']['main']['#markup'] .= oaff_log_produce_html($log);
+    }
 }
 
 function build_trace_msg($trace) {
