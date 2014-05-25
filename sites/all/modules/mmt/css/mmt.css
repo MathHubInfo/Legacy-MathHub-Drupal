@@ -11,6 +11,10 @@ span.omdoc-definiens {
 span.omdoc-type {
 }
 
+span.definiendum {
+  font-weight: bold;
+}
+
 math {
     color: blue;
     font-weight: bold;
