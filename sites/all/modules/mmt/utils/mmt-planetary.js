@@ -17,7 +17,7 @@ var planetary = {
   },
 
   navigate: function(uri) {
-  	window.location = planetary.encode(uri);        
+	window.location = planetary.encode(uri);
   },
   
   encode : function(uri) {

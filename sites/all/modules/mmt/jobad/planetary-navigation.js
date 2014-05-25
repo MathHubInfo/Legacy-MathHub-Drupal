@@ -13,7 +13,7 @@ var planetaryNavigation = {
   
 
     leftClick: function(target, JOBADInstance) {
-		if(target.hasAttribute('jobad:href')) {
+		if(target.hasAttribute('jobad:href') && target.hasAttribute('data-relative')) {
 			var uri = target.attr("jobad:href");
 			var uriEnc = planetary.relNavigate(uri);
 		}
