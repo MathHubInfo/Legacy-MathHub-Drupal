@@ -22,7 +22,7 @@ function oaff_menu() {
   $items['mh/initialize-nodes'] = array(
     'title' => "Initialize Nodes",
     'page callback' => 'oaff_create_nodes',
-    'access callback' => 'oaff_setup_access',
+    'access callback' => 'oaff_admin_access',
     'menu_name' => 'navigation'
   );
   $items['mh/help'] = array(
@@ -33,9 +33,16 @@ function oaff_menu() {
   );
   oaff_features_menu($items);
   oaff_admin_menu($items);
-  
-
   return $items;
+}
+
+function oaff_permission() {
+  return array(
+    'administer mathhub' => array(
+      'title' => t("Administer MathHub"),
+      'description' => t("Perform administration and devel tasks in MathHub"),
+    ),
+  );
 }
 
 function oaff_help_page() {
@@ -182,20 +189,6 @@ function oaff_contextual_info($form, &$form_state, $key) {
           );
 
   return $form;
-}
-
-
-/**
- * Implements access callback for OAFF auto-load feature
- * Only admin has access to reload mmt nodes
- */
-function oaff_setup_access() {
-  global $user;
-  if ($user-> uid == 1) {// only admin has rights 
-    return true;
-  } else {
-  return false;
-  }
 }
 
 /**
