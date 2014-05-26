@@ -49,6 +49,11 @@ function mmt_node_view($node, $view_mode, $langcode) {
   if (in_array($node->type, $oaff_node_types)) {
      mmt_initialize();
   }
+  if ($node->type == 'mmtdoc') {
+    $mmt_path = drupal_get_path('module', 'mmt');
+    drupal_add_js($mmt_path . '/mmtdocjs/html.js', 'file', array('cache' => false));
+    drupal_add_css($mmt_path . '/mmtdocjs/html.css', array('weight' => PHP_INT_MAX, 'every_page' => false));
+  }
 }
 
 /**
@@ -457,8 +462,8 @@ function mmt_field_formatter_view($entity_type, $entity, $field, $instance, $lan
         $filter_context['mmt']['location'] = $location;
         $pathinfo = oaff_get_path_info($location);
         $exporter = "planetary";
-        if ($entity->type == 'mmtdoc') { //there (might be) no source
-          $content = "";
+        if ($entity->type == 'mmtdoc') {
+          $content = planetary_repo_load_file($location);
           $html_filename = $pathinfo['module'] . '.html';
           $html_location = oaff_join_path(array($pathinfo['group'], $pathinfo['archive'], 'export/html/narration', $pathinfo['rel_parent'], $html_filename));           
         } else if ($entity->type == "oaff_virtdoc") { // there is no source
