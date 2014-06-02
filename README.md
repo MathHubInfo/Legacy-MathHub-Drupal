@@ -1,4 +1,4 @@
-## Mathhub.info
+# Mathhub.info
 This project is the Drupal implementation of the MathHub system 
 available at [MathHub.info](http://mathhub.info). 
 It is based on the [planetary system](https://github.com/KWARC/planetary).
@@ -34,7 +34,7 @@ assumes a standard layout which is documented below. _If your layout is differen
 * Define Apache virtual host:
 ```
 <VirtualHost *:80>
- ServerName planetary
+ ServerName MathHub
  DocumentRoot /var/www/planetary/
 </VirtualHost>
 ```
@@ -86,4 +86,11 @@ e.g. An sTeX text format should have following filters enabled (in this processi
     shows what happened internally to produce the page and includes logs of external programs (git, LaTeXML, lmh), filters run, etc.
 
 ## Administration
-//TODO
+Administering MathHub (after installation and configuration) mostly involves keeping this up to date and getting an overview of its state.
+Currently MathHub Admins have access to the following functionalities (via links in the Navigation menu) : 
+* Initialize nodes -- crawls the filesystem and creates corresponding nodes for each relevant file (right extension) in enabled archives (see OAFF Configuration above to read about enabling and configuring archives). Checks if nodes already exists so can be re-run safely, will create new nodes only if new files were added to the filesystem (e.g. after an Lmh Update or git pull). Creates a maximum of 1000 nodes at a time, should be re-run until finished if needed.
+* Crawl loaded nodes -- crawls loaded nodes and tries to render them (runs all filters). Nothing is displayed but errors and warnings are gathered and appear in `mh/contribute` entries (e.g. `mh/broken-docs` or `mh/common-errors`). Useful to get an overview for the state of the served archives. Crawls a maximum of 30 nodes at a time, should be re-run until finished if needed (or restarted from the beginning e.g. if the filter implementation changed).
+* Lmh Update -- runs `lmh update`, basically pulls the latest version of all installed archives
+* Lmh Generate -- (re)generates compiled files (that can be loaded by MMT) from source files. e.g. for sTeX, generates `.omdoc` files from `.tex` files by running LaTeXML. 
+* Update Libraries -- Updates Lmh internal libraries (i.e. MMT and sTeX).
+* Rebuild MMT Archives -- Rebuilds MMT index, should be typically ran after Lmh Generate. 
