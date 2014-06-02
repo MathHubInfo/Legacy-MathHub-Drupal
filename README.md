@@ -51,7 +51,7 @@ publicly accessible. (There are other ways to do this).
 ### Lmh configuration
 * To set the default lmh path for a user create a `.lmhpath` file in that users home containing the path (e.g. `/var/data/localmh`)
 * the `.lmhpath` file must be set (also) for the www-data user 
-* The `www-data` user must have read/write permissions on the lmh repositories folder ('/var/data/localmh/MathHub'). This can be achieved by changing owner or group and adjusting permissions accordingly.
+* The `www-data` user must have read/write permissions on the lmh repositories folder (`/var/data/localmh/MathHub`). This can be achieved by changing owner or group and adjusting permissions accordingly.
 
 ### MathHub Configuration
 * Enable the modules OAFF Base, MMT Integration, LaTeXML Integration, JOBAD and (optionally) MathHub Mailer
@@ -63,27 +63,27 @@ e.g. An sTeX text format should have following filters enabled (in this processi
     2. MMT Compilation filter -- Input Format should be `stex`
     3. MMT Presentation filter -- Presentation style should be `planetary`
 * In the OAFF Configuration (admin/config) set up the archives to be served
-    1. Set the text format associated with each archive as key-value pairs of an `archive id` and a `text format` (defined at the previous step).
+    * Set the text format associated with each archive as key-value pairs of an `archive id` and a `text format` (defined at the previous step).
     Key and value are separated by one space, each pair by a newline. e.g.
     ```
     smglom/mv stex
     MMT/urtheories mmt
     MMT/examples mmt
     ```
-    2. Set the content type associated with each text format as key-value pair of `text format` and `content type`. MathHub modules defined their own content types, 
-    e.g. OAFF Base defines 'oaff_doc' for generic OAFF documents, MMT defines `mmtdoc` for more specific MMT documents. External modules may define more specialized
+    * Set the content type associated with each text format as key-value pair of `text format` and `content type`. MathHub modules defined their own content types, 
+    e.g. OAFF Base defines `oaff_doc` for generic OAFF documents, MMT defines `mmtdoc` for more specific MMT documents. External modules may define more specialized
     content types. The syntax is as above (spaces/newlines as separators). e.g.
     ```
     stex oaff_doc
     mmt mmtdoc
     ```
-    3. Set the file extension associated with each format as a key-value pair of `text format` and `extension`. This is used for crawling the archives on the filesystem to automatically creates corresponding nodes in MathHub. The syntax is as above (spaces/newlines as separators). e.g.
+    * Set the file extension associated with each format as a key-value pair of `text format` and `extension`. This is used for crawling the archives on the filesystem to automatically creates corresponding nodes in MathHub. The syntax is as above (spaces/newlines as separators). e.g.
     ```
     stex tex
     mmt mmt
     ```
-    4. Choose whether to enable logging. If logging is enabled admin users will see a foldable (by default folded) developer log at the bottom of every page. It 
+    * Choose whether to enable logging. If logging is enabled admin users will see a foldable (by default folded) developer log at the bottom of every page. It 
     shows what happened internally to produce the page and includes logs of external programs (git, LaTeXML, lmh), filters run, etc.
 
-### MathHub Administration
+## Administration
 //TODO
