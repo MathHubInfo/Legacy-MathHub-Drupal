@@ -56,23 +56,25 @@ function oaff_log_produce_html($log) {
 }
 
 function oaff_page_build(& $page) {
-    $oaff_config = variable_get('oaff_config');
-    $log = $oaff_config['log'];
-    if (count($log) > 0) {
-        $oaff_config['log'] = array();
-        variable_set('oaff_config', $oaff_config);
-	    if (!isset($page['content'])) {
-	    	$page['content'] = array();
+	if (user_access("administer mathhub")) {
+	    $oaff_config = variable_get('oaff_config');
+	    $log = $oaff_config['log'];
+	    if (count($log) > 0) {
+	        $oaff_config['log'] = array();
+	        variable_set('oaff_config', $oaff_config);
+		    if (!isset($page['content'])) {
+		    	$page['content'] = array();
+		    }
+		    if (!isset($page['content']['system_main'])) {
+		    	 $page['content']['system_main'] = array();
+		    }
+		    if (!isset($page['content']['system_main']['main'])) {
+				$page['content']['system_main']['main'] = array();
+			 	$page['content']['system_main']['main']['#markup'] = '';
+			}
+			$page['content']['system_main']['main']['#markup'] .= oaff_log_produce_html($log);
 	    }
-	    if (!isset($page['content']['system_main'])) {
-	    	 $page['content']['system_main'] = array();
-	    }
-	    if (!isset($page['content']['system_main']['main'])) {
-			$page['content']['system_main']['main'] = array();
-		 	$page['content']['system_main']['main']['#markup'] = '';
-		}
-		$page['content']['system_main']['main']['#markup'] .= oaff_log_produce_html($log);
-    }
+	}
 }
 
 function build_trace_msg($trace) {
