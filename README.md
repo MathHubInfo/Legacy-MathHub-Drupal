@@ -1,13 +1,13 @@
-# Mathhub.info
+# MathHub.info [![Build Status](https://secure.travis-ci.org/KWARC/MathHub.png?branch=master)](http://travis-ci.org/KWARC/MathHub)
 This project is the Drupal implementation of the MathHub system 
 available at [MathHub.info](http://mathhub.info). 
 It is based on the [planetary system](https://github.com/KWARC/planetary).
 
 ## Dependencies
 Other than the usual Drupal/Planetary dependencies a MathHub installation requires: 
-* A running MMT instance
-* CleanURL configured and enabled (for MMT-like URIs)
-* the lmh tool (see [here](http://mathhub.info/help/lmh))
+* A running [MMT](https://svn.kwarc.info/repos/MMT/doc/html/index.html) instance
+* [CleanURL](https://drupal.org/getting-started/clean-urls) configured and enabled (for MMT-like URIs)
+* the [lmh](http://mathhub.info/help/lmh) tool
 * Archives to be served configured in the interface (see configuration below)
 * (Optionally) a [MathWebSearch](http://search.mathweb.org) instance running
 
@@ -16,7 +16,7 @@ Other than the usual Drupal/Planetary dependencies a MathHub installation requir
 MathHub and its dependencies can be installed anywhere on the filesystem. However, this documentation
 assumes a standard layout which is documented below. _If your layout is different, adjust the setup accordingly_
 * MathHub Installation `/var/www/planetary/`
-* LMH Installation `/var/data/localmh/` (see below how to set this)
+* lmh Installation `/var/data/localmh/` (see below how to set this)
 * Apache Installation `/etc/apache2/`
 * (Optionally) MathHub Mailing Script at `/var/data/mailer`
 
@@ -48,7 +48,7 @@ publicly accessible. (There are other ways to do this).
 </Directory>
 ```
 
-### Lmh configuration
+### lmh configuration
 * To set the default lmh path for a user create a `.lmhpath` file in that users home containing the path (e.g. `/var/data/localmh`)
 * the `.lmhpath` file must be set (also) for the www-data user 
 * The `www-data` user must have read/write permissions on the lmh repositories folder (`/var/data/localmh/MathHub`). This can be achieved by changing owner or group and adjusting permissions accordingly.
@@ -57,7 +57,7 @@ publicly accessible. (There are other ways to do this).
 * Enable the modules OAFF Base, MMT Integration, LaTeXML Integration, JOBAD and (optionally) MathHub Mailer
 * In MMT Configuration (admin/config) set the URL of the local MMT instance
 * In the Repositories Configuration (admin/config) set the location of the lmh repositories (`/var/data/localmh`). The kind of repository should be git for automatic pull/push from repositories (slower), and local otherwise (recommended).
-* In the Text Formats configuration (admin/config) add corresponding formats for the archive you want to serve, and enable the relevant filters for them. 
+* In the Text Formats configuration (admin/config) add corresponding formats for the archives you want to serve, and enable the relevant filters for them. 
 e.g. An sTeX text format should have following filters enabled (in this processing order)
     1. Local LateXML Compilation filter -- LaTeXML profile should be `stex-module`
     2. MMT Compilation filter -- Input Format should be `stex`
@@ -92,5 +92,5 @@ Currently MathHub Admins have access to the following functionalities (via links
 * Crawl loaded nodes -- crawls loaded nodes and tries to render them (runs all filters). Nothing is displayed but errors and warnings are gathered and appear in `mh/contribute` entries (e.g. `mh/broken-docs` or `mh/common-errors`). Useful to get an overview for the state of the served archives. Crawls a maximum of 30 nodes at a time, should be re-run until finished if needed (or restarted from the beginning e.g. if the filter implementation changed).
 * Lmh Update -- runs `lmh update`, basically pulls the latest version of all installed archives
 * Lmh Generate -- (re)generates compiled files (that can be loaded by MMT) from source files. e.g. for sTeX, generates `.omdoc` files from `.tex` files by running LaTeXML. 
-* Update Libraries -- Updates Lmh internal libraries (i.e. MMT and sTeX).
-* Rebuild MMT Archives -- Rebuilds MMT index, should be typically ran after Lmh Generate. 
+* Update Libraries -- Updates lmh internal libraries (i.e. MMT and sTeX).
+* Rebuild MMT Archives -- Rebuilds MMT index, should be typically ran after Lmh Generate.
