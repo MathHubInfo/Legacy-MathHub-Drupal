@@ -1,5 +1,4 @@
-[![Stories in Ready](https://badge.waffle.io/kwarc/mathhub.png?label=ready&title=Ready)](https://waffle.io/kwarc/mathhub)
-# MathHub.info [![Build Status](https://secure.travis-ci.org/KWARC/MathHub.png?branch=master)](http://travis-ci.org/KWARC/MathHub)
+# MathHub.info [![Build Status](https://secure.travis-ci.org/KWARC/MathHub.png?branch=master)](http://travis-ci.org/KWARC/MathHub) [![Stories in Ready](https://badge.waffle.io/kwarc/mathhub.png?label=ready&title=Ready)](https://waffle.io/kwarc/mathhub)
 This project is the Drupal implementation of the MathHub system 
 available at [MathHub.info](http://mathhub.info). 
 It is based on the [planetary system](https://github.com/KWARC/planetary).
