@@ -10,12 +10,12 @@ do
   for file in `find $module_folder | grep ".module$\|.install$\|.php$"`
   do
     echo "Checking File: '$file'";
-    php5 $file &> /dev/null;
+    php $file &> /dev/null;
     ret_code=$?;
     if [ $ret_code -ne 0 ] 
       then 
       echo "File '$file' failed with exit code $ret_code and message: ";
-      echo $(php5 $file)
+      echo $(php $file)
       echo "Build Failed"
       exit 1
     fi
