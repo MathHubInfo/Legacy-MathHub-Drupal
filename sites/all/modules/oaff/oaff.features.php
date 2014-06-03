@@ -13,7 +13,12 @@ function oaff_features_menu(& $items) {
     'access callback' => true,
     'type' => MENU_CALLBACK,
   );
-
+  $items['mh/rerun-error'] = array(
+    'title' => "Rerun Error",
+    'page callback' => 'oaff_features_rerun_error',
+    'access callback' => 'oaff_admin_access',
+    'type' => MENU_CALLBACK,
+  );
   $items['mh/add-document'] = array(
     'title' => "Add Document",
     'page callback' => 'oaff_features_add_doc',
@@ -85,6 +90,21 @@ function oaff_features_add_doc_callback($form, &$form_state) {
   $form_state['redirect'] = 'node/'. $nid;
 }
 
+function oaff_features_rerun_error() {
+  if (isset($_GET['nids'])) {
+    $rerun_nidsS = $_GET['nids'];
+    $rerun_nids = explode(",", $rerun_nidsS);
+    foreach ($rerun_nids as $nid) {
+          node_view(node_load($nid));
+    }
+    $count = count($rerun_nids);
+    drupal_set_message("Reran $count nodes, see developer log below (page bottom)");    
+    drupal_goto('mh/common-errors');
+  } else {
+    drupal_set_message("No error given (to rerun)", "warning");
+  }
+}
+
 function oaff_features_common_errors() {
   $results = db_select('oaff_errors', 'e')
              ->fields('e', array('nid', 'type', 'compiler', 'short_msg'))
@@ -145,7 +165,14 @@ function oaff_features_common_errors() {
     $out .= '<div class="links"><ul class="list-inline">';
     $out .= '<li><span > ' . $error['compiler'] . ' compiler,</span></li>';
     $out .= '<li><span > ' . $error['occurs'] . ' occurrences, </span></li>';
-    $out .= '<li><a style="cursor:pointer;" onclick="if (jQuery(this).html() == \'Show All\') {jQuery(this).html(\'Hide All\')} else {jQuery(this).html(\'Show All\')}; jQuery(\'#oaff_error_log' . $i . '\' ).toggle( \'fold\' );" > See All </a> </li>';
+    $out .= '<li><a style="cursor:pointer;" onclick="if (jQuery(this).html() == \'Show All\') {jQuery(this).html(\'Hide All\')} else {jQuery(this).html(\'Show All\')}; jQuery(\'#oaff_error_log' . $i . '\' ).toggle( \'fold\' );" >Show All</a> </li>';
+    if (user_access("administer mathhub")) {
+      $unique_nids = array_unique($error['nids']);
+      $rerun_nids = array_slice($unique_nids, 0, 30);
+      $rerun_nidsS = implode(",", $rerun_nids);
+      $out .= '<a href="/mh/rerun-error?nids=' . $rerun_nidsS . '" class="btn btn-danger btn-xs"> <span class="glyphicon glyphicon-refresh"> </span></a>';
+    }
+
     $out .= '<div id="oaff_error_log' . $i . '" style="display: none;"><ul>';
     $nids = array_count_values($error['nids']);
     foreach ($nids as $nid => $count) {
