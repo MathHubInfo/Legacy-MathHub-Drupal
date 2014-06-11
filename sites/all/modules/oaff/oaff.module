@@ -1,9 +1,7 @@
 <?php
-
 require_once 'oaff.logger.php';
 require_once 'oaff.features.php';
 require_once 'oaff.admin.php';
-
 
 /**
  * Implements hook_menu
@@ -249,52 +247,8 @@ function oaff_node_view($node, $view_mode, $langcode) {
   			  ->condition('nid', $node->nid)
   		    ->execute();
       }
-
 	    $inst_id = oaff_initialize();
-
-      /* should be moved to local commments
-	    $result = db_query('SELECT e.field_lc_elid_value, t.field_lc_type_value, n.entity_id, node.title
-	      FROM {field_data_field_lc_nid} n
-	      INNER JOIN {field_data_field_lc_elid} e
-	       ON n.entity_id = e.entity_id
-	      INNER JOIN {field_data_field_lc_type} t
-	        ON n.entity_id = t.entity_id
-	      INNER JOIN {node}
-	        ON n.entity_id = node.nid
-	      WHERE n.field_lc_nid_value = :nid',
-	      array(':nid' => $node->nid));
-
-	    foreach ($result as $record) {
-	        $nid = $record->entity_id;
-	        $nid = str_replace("\r", '', $nid);
-	        $nid = str_replace("\n", '', $nid);
-	        $elid = $record->field_lc_elid_value; 
-	        $elid = str_replace("\r", '', $elid);
-	        $elid = str_replace("\n", '', $elid);
-	        $type = $record->field_lc_type_value;
-	        $type = str_replace("\r", '', $type);
-	        $type = str_replace("\n", '', $type);
-	        $title = $record->title;
-	        $icon = $type;
-	        if ($icon == "question") {
-	          $icon = "warning"; //temporarily using this icon until question available in JOBAD
-	        }
-	        $options = array();
-	        $options['class'] = $icon;
-	        $options['text'] = $title;
-	        $options['click'] = 'function() {window.open("?q=node/' . $nid . '");}';
-	        if ($type == "question") {
-	           $options['menu'] = '{"Answer" : function(){window.open("?q=node/' . $nid . '");}}';
-	        }
-	        if ($type == "error") {
-	           $options['menu'] = '{"Fix" : function(){window.open("?q=node/' . $node->nid . '/edit", "_self");}}';
-	        }
-
-	        jobad_add_to_sidebar($inst_id, '$(document.getElementById("' . $elid . '"))', $options);
-	    }
-      */
 	    $content = $node->content['field_external'][0]['content']['#markup'];
-      
 	    $node->content['field_external'][0]['content']['#markup'] = 
       '<div id="' . $inst_id . '" class="bootstrap" >' . $content . '</div>' . 
       oaff_svg_html($pathinfo) . '<div id="dynamic_modal" class="modal fade bs-example-modal-lg" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
@@ -303,13 +257,9 @@ function oaff_node_view($node, $view_mode, $langcode) {
       </div>
     </div>  
   </div>';
-
-      // $node->content['field_external'][0]['content']['#contextual_links'] = "<p>test</p>"; 
 	  }
   }
-
 }
-
 
 function oaff_svg_html($pathinfo) {
   $relpath = $pathinfo['rel_path'];
@@ -320,7 +270,7 @@ function oaff_svg_html($pathinfo) {
     array_pop($args);
     $svgname = implode(".",$args) . ".svg";
   }
-  $svg_path = planetary_repo_access_rel_path(oaff_join_path(array($pathinfo['group'], $pathinfo['archive'], "export/svg", $svgname)));
+  $svg_path = planetary_repo_access_rel_path(oaff_join_path(array($pathinfo['group'], $pathinfo['archive'], "export/svg/narration", $svgname)));
   $svg_content = file_get_contents($svg_path);
   $out = '<div id="svg_modal" class="modal fade bs-example-modal-lg" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg" style="max-width:80%">

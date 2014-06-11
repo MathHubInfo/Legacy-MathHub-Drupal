@@ -126,11 +126,11 @@ function localized_discussions_node_view($node, $view_mode, $langcode) {
     $fields = localized_discussions_get_fields($node->nid);
     $ref_node_rendering = '<div id="referenced_node" style="display:none">' . node_view(node_load($fields['referenced_nid']))['field_external']['0']['content']['#markup'] . '</div>';
     $frag_container = '<p id="referenced_node_fragment_container"> </p>';
-    $footer = '<footer> See the original article <a href="?q=/node/' 
+    $footer = '<small> <i> See the original article <a href="?q=/node/' 
         . $node->referenced_nid[$node->language][0]['value'] 
         . '#'
         . $node->xml_fragment_id[$node->language][0]['value']
-        . '">here</a></footer>';
+        . '">here</a> </small></i>';
 
     $elem = '<blockquote>' .$ref_node_rendering . $frag_container . $footer . '</blockquote>';
 
@@ -140,7 +140,7 @@ function localized_discussions_node_view($node, $view_mode, $langcode) {
       element.appendTo("#referenced_node_fragment_container"); 
     </script>';
 
-    $node->content['body'][0]['#markup'] .= $elem;
+    $node->content['body'][0]['#markup'] = $elem;
     $node->content['body'][0]['#markup'] .= $jsscript;
     $node->content['body'][0]['#markup'] .= $fields['body'];
     unset($node->content['xml_fragment_id']);
