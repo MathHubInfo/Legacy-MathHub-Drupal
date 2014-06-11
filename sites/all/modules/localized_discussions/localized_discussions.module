@@ -1,6 +1,4 @@
 <?php
-
-
 /**
  * implements hook_menu() - Called when loading the menu to create a new message
  */
@@ -14,26 +12,7 @@ function localized_discussions_menu() {
     // 'access callback' => 'localized_discussions_check_post_comment',
     'access callback' => true,
   );
-
   return $items;
-}
-
-
-// function localized_discussions_menu() {
-//   $items['hello'] = array(
-//     'title' => 'Hello world!',
-//     'page callback' => 'localized_discussions_page',
-//     'access callback' => TRUE,
-//   );
-
-//   return $items;
-// }
-
-/**
- * Page callback for /hello.
- */
-function localized_discussions_page() {
-  return 'Hello world!';
 }
 
 
@@ -66,45 +45,107 @@ function localized_discussions_post_comment() {
 
   $node = node_submit($node); // Prepare node for saving
   node_save($node);
-  print_r($node->nid);
-  
-  // dpm($user);
 }
 
+function localized_discussions_form_alter(&$form, &$form_state, $form_id) {
+   if($form_id == 'local_discussion_question_node_form') {
+    $xml_id = $_GET['xml_id'];
+    $node_id = $_GET['node_id'];
+    $form['xml_fragment_id']["und"][0]['value']['#default_value'] = $xml_id;
+    $form['referenced_nid']["und"][0]['value']['#default_value'] = $node_id;
+   }
+}
+
+function localized_discussions_get_comments($nid) { //get comments for a node
+  $results = db_select('field_data_referenced_nid', 'g')
+    ->fields('g', array("entity_id"))
+    ->condition('referenced_nid_value', $nid, '=')
+    ->execute()
+    ->fetchAll();
+  $comments = array();
+  foreach ($results as $result) {
+    $comments[] = $result->entity_id;
+  }
+  return $comments;
+}
+
+function localized_discussions_get_fields($ldid) {
+  $ld = array('id' => $ldid);
+  $result = db_select('field_data_xml_fragment_id', 'g')
+    ->fields('g', array("xml_fragment_id_value"))
+    ->condition('entity_id', $ldid, '=')
+    ->execute()
+    ->fetchAssoc();
+  $ld['xml_fragment_id'] = $result['xml_fragment_id_value'];
+  $result = db_select('field_data_referenced_nid', 'g')
+    ->fields('g', array("referenced_nid_value"))
+    ->condition('entity_id', $ldid, '=')
+    ->execute()
+    ->fetchAssoc();
+  $ld['referenced_nid'] = $result['referenced_nid_value'];
+  $result = db_select('field_data_body', 'g')
+    ->fields('g', array("body_value"))
+    ->condition('entity_id', $ldid, '=')
+    ->execute()
+    ->fetchAssoc();
+  $ld['body'] = $result['body_value'];
+  $result = db_select('node', 'g')
+    ->fields('g', array("title"))
+    ->condition('nid', $ldid, '=')
+    ->execute()
+    ->fetchAssoc();
+  $ld['title'] = $result['title'];
+  return $ld; 
+}
 
 function localized_discussions_node_view($node, $view_mode, $langcode) {
+  if (true) { //for now
+    drupal_add_js("var ld_nid = " . $node->nid . ";", 'inline');
+    $ld_path = drupal_get_path('module', 'localized_discussions');
+    jobad_add_module($ld_path . '/jobad/comment.js', "kwarc.mmt.localized_discussions");
+    $cids = localized_discussions_get_comments($node->nid);
+    foreach ($cids as $cid) {
+      $fields = localized_discussions_get_fields($cid);
+      $xml_id = $fields['xml_fragment_id'];
+      $title = $fields['title'];
+      drupal_add_js('
+          jQuery(function(){
+            JOBAD1.Sidebar.registerNotification(document.getElementById("'.$xml_id.'"), 
+              { 
+                "class": "' . 'info' .'",
+                "text": "' .  $title . '", 
+                "click": function() {
+                  window.open("/node/'.$cid.'");
+                }
+            });
+          });', array('type' => 'inline', 'weight' => 100));
+    }
+  }
   if ($node->type == 'local_discussion_question') {
-    // dpm($node); //to see node structure
-
-    // Highlight the question
-    // $$node->body[$node->language][0]['value']['#markup'] =  
-    //   '<h2>' 
-    //   // .  $node->body[$node->language][0]['value']
-    //   .  '</h2>'
-
-    // $node->content['']
-
     // Display the original link
-    $node->content['body'][0]['#markup'] .= 
-      '<i><p> The original article can be found <a href="?q=/node/' 
+    $fields = localized_discussions_get_fields($node->nid);
+    $ref_node_rendering = '<div id="referenced_node" style="display:none">' . node_view(node_load($fields['referenced_nid']))['field_external']['0']['content']['#markup'] . '</div>';
+    $frag_container = '<p id="referenced_node_fragment_container"> </p>';
+    $footer = '<footer> See the original article <a href="?q=/node/' 
         . $node->referenced_nid[$node->language][0]['value'] 
         . '#'
         . $node->xml_fragment_id[$node->language][0]['value']
-        . '">here</b></p></i>';
-  // print_r($node);
-  unset($node->content['xml_fragment_id']);
-  unset($node->content['referenced_nid']);
+        . '">here</a></footer>';
 
+    $elem = '<blockquote>' .$ref_node_rendering . $frag_container . $footer . '</blockquote>';
+
+    $jsscript = '<script>
+      var element = jQuery(document.getElementById("'. $fields['xml_fragment_id'] .'")).clone();
+      console.log(element);
+      element.appendTo("#referenced_node_fragment_container"); 
+    </script>';
+
+    $node->content['body'][0]['#markup'] .= $elem;
+    $node->content['body'][0]['#markup'] .= $jsscript;
+    $node->content['body'][0]['#markup'] .= $fields['body'];
+    unset($node->content['xml_fragment_id']);
+    unset($node->content['referenced_nid']);
   }
-
-    // Change link reference
-
-  /*
-  $ref_node = node_load(ref_nid)
-  $ref_body = $ref_node->body
-  $fragment = ..look for fragment_id in body
-  $node->content['xml_fragment_id'][0]['#markup'] = $fragment;
-   */
 }
 
 function localized_discussions_check_post_comment() {
