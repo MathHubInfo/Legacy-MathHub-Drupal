@@ -8,25 +8,77 @@ function localized_discussions_menu() {
     'title' => 'Post Localized Discussion',
     'description' => 'Posts a Comment',
     'page callback' => 'localized_discussions_post_comment',
-    // 'page callback' => 'localized_discussions_page',
-    // 'access callback' => 'localized_discussions_check_post_comment',
-    'access callback' => true,
+    'access callback' => 'localized_discussions_check_post_comment',
+    'type' => MENU_NORMAL_ITEM,
+  );
+  $items['admin/config/content/localized_discussions'] = array(
+    'title' => 'Localized Discussions configuration',
+    'description' => 'Configure Localized Discussions. ',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('localized_discussions_config_form'),
+    'access arguments' => array('access administration pages'),
+    'type' => MENU_NORMAL_ITEM,
   );
   return $items;
 }
 
+/**
+ * Localized Discussions configuration form
+ * @param $form the form to be validated
+ * @param $form the form state, including filled in values
+ * @return the newly built form
+ */
+function localized_discussions_config_form($form, &$form_state) {
+  $form['localized_discussions_active_node_types_string'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Active Content Types'),
+    '#default_value' => variable_get('localized_discussions_active_node_types_string', ""),
+    '#description' => t('The machine name of the content types for which localized discussions will be enabled'),
+  );
+  $form['#validate'] = array('localized_discussions_config_validate');
+  $form['#submit'] = array('localized_discussions_config_submit');
+  return system_settings_form($form);
+}
+
+/**
+ * validation function of localized discussions configuration form
+ * @param $form the form to be validated
+ * @param $form the form state, including filled in values
+ */
+function localized_discussions_config_validate($form, &$form_state) {
+  $active_node_types = explode(" ", $form_state['values']['localized_discussions_active_node_types_string']);
+  $all_node_types = node_type_get_types();
+
+  foreach ($active_node_types as $node_type) {
+    if (!isset($all_node_types[$node_type])) {
+      form_set_error('localized_discussions_active_node_types_string', t($node_type . ' is not a valid content type'));       
+    }
+  }
+}
+
+/**
+ * submit function of the localized discussions configuration form
+ * @param $form the form to be validated
+ * @param $form the form state, including filled in values
+ */
+function localized_discussions_config_submit($form, &$form_state) {
+  $active_node_types = explode(" ", $form_state['values']['localized_discussions_active_node_types_string']);
+  variable_set("localized_discussions_active_node_types", $active_node_types);   
+}
+
+
+function localized_discussions_get_active_node_types() {
+  $nodes = variable_get("localized_discussions_active_node_types");
+  return $nodes;
+}
 
 function localized_discussions_post_comment() {
-
 	$params = array(
 		'title' => $_POST['title'],
 		'body' => $_POST['body'],
 		'xml_id' => $_POST['xml_id'],
 		'node_id' => $_POST['node_id']
 	);
-  // dpm($params);
-  print_r($params);
-
   global $user; // get user that is currently on the page
   $node = new stdClass();
   $node->title = $params['title'];
@@ -40,17 +92,38 @@ function localized_discussions_post_comment() {
   // Term reference (taxonomy) field
   $node->body[$node->language][0]['value'] = $params['body'];
   $node->xml_fragment_id[$node->language][0]['value'] = $params['xml_id'];
- 
   $node->referenced_nid[$node->language][0]['value'] = $params['node_id'];
-
   $node = node_submit($node); // Prepare node for saving
   node_save($node);
 }
 
 function localized_discussions_form_alter(&$form, &$form_state, $form_id) {
-   if($form_id == 'local_discussion_question_node_form') {
+   if($form_id == 'local_discussion_question_node_form' && isset($_GET['xml_id']) && isset($_GET['node_id'])) {
+    //getting data from get request
     $xml_id = $_GET['xml_id'];
     $node_id = $_GET['node_id'];
+    //adding presentation of referenced node
+    $ref_node_rendering = '<div id="referenced_node" style="display:none">' . node_view(node_load($node_id))['field_external']['0']['content']['#markup'] . '</div>';
+    $label = '<label> Quoted Fragment </label>';
+    $frag_container = '<div id="referenced_node_fragment_container"> </div>';
+    $footer = '<small> <i> See the original article <a href="?q=/node/' 
+        . $node_id 
+        . '#'
+        . $xml_id
+        . '">here</a> </small></i>';
+
+    $elem = $ref_node_rendering . $label . '<blockquote style="font-size:130%;">' . $frag_container . $footer . ' </blockquote>';
+
+    $jsscript = '<script>
+      var element = jQuery(document.getElementById("'. $xml_id .'")).clone();
+      console.log(element);
+      element.appendTo("#referenced_node_fragment_container"); 
+    </script>';
+    $form['referenced_node_rendering'] = array(
+      '#markup' =>  $elem . $jsscript,
+      '#weight' => -99.
+      );
+    //setting fields
     $form['xml_fragment_id']["und"][0]['value']['#default_value'] = $xml_id;
     $form['referenced_nid']["und"][0]['value']['#default_value'] = $node_id;
    }
@@ -99,7 +172,8 @@ function localized_discussions_get_fields($ldid) {
 }
 
 function localized_discussions_node_view($node, $view_mode, $langcode) {
-  if (true) { //for now
+  $active_node_types = localized_discussions_get_active_node_types();
+  if (in_array($node->type, $active_node_types)) { //for now
     drupal_add_js("var ld_nid = " . $node->nid . ";", 'inline');
     $ld_path = drupal_get_path('module', 'localized_discussions');
     jobad_add_module($ld_path . '/jobad/comment.js', "kwarc.mmt.localized_discussions");
@@ -107,7 +181,7 @@ function localized_discussions_node_view($node, $view_mode, $langcode) {
     foreach ($cids as $cid) {
       $fields = localized_discussions_get_fields($cid);
       $xml_id = $fields['xml_fragment_id'];
-      $title = $fields['title'];
+      $title = $fields['title']; 
       drupal_add_js('
           jQuery(function(){
             JOBAD1.Sidebar.registerNotification(document.getElementById("'.$xml_id.'"), 
@@ -150,7 +224,7 @@ function localized_discussions_node_view($node, $view_mode, $langcode) {
 
 function localized_discussions_check_post_comment() {
   global $user;
-  if ($user->uid != 0) { // 0 is id of anonymous user
+  if ($user->uid) { // 0 is id of anonymous user
     return true;
   } else {
     return false;
