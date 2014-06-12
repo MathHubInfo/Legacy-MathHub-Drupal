@@ -42,6 +42,9 @@ function oaff_create_node_types() {
   ); 
   node_type_save($oaff_doc);
   oaff_add_vfs_field('oaff_doc');
+  variable_set('node_submitted_oaff_doc', false);
+  variable_set('comment_oaff_doc', '0');
+    
   
   // Creating node type for OAFF modules
   $oaff_doc = (object) array(
@@ -53,7 +56,8 @@ function oaff_create_node_types() {
   ); 
   node_type_save($oaff_doc);
   oaff_add_vfs_field('oaff_virtdoc');
-
+  variable_set('node_submitted_oaff_virtdoc', false);
+  variable_set('comment_oaff_virtdoc', '0');
 }
 
 function delete_node_type($node_type_name, $remove_type = true) {

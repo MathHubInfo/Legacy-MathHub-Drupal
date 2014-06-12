@@ -916,8 +916,8 @@ function oaff_create_node($title, $lang, $format, $dpath, $location, $node_type)
    'uid' => 0,
    'created' => strtotime("now"),
    'changed' => strtotime("now"),
-   'status' => 1,
-   'comment' => 2,
+   'status' => 1, //published
+   'comment' => 0, //comments disabled 
    'promote' => 0,
    'moderate' => 0,
    'sticky' => 0,
