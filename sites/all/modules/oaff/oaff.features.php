@@ -124,13 +124,14 @@ function oaff_features_common_errors() {
       $compilers[$compiler] = array();
     }
     if (!isset($compilers[$compiler][$type])) {
-      $compilers[$compiler][$type] = array();
+      $compilers[$compiler][$type] = array('msgs' => array(), 'occurs' => 0);
     }
-    if (!isset($compilers[$compiler][$type][$msg])) {
-      $compilers[$compiler][$type][$msg] = array('occurs' => 0, 'nids' => array());
+    if (!isset($compilers[$compiler][$type]['msgs'][$msg])) {
+      $compilers[$compiler][$type]['msgs'][$msg] = array('occurs' => 0, 'nids' => array());
     }
-    $compilers[$compiler][$type][$msg]['occurs'] += 1; 
-    $compilers[$compiler][$type][$msg]['nids'][] = $result->nid; 
+    $compilers[$compiler][$type]['occurs'] += 1;   
+    $compilers[$compiler][$type]['msgs'][$msg]['occurs'] += 1; 
+    $compilers[$compiler][$type]['msgs'][$msg]['nids'][] = $result->nid; 
      
   }
 
@@ -141,7 +142,7 @@ function oaff_features_common_errors() {
   $errors = array();
   foreach ($compilers as $compiler => $types) {
     foreach ($types as $type => $msgs) {
-      foreach ($msgs as $msg => $occurs) {
+      foreach ($msgs['msgs'] as $msg => $occurs) {
         $errors[] = array(
           'compiler' => $compiler,
           'type' => $type,
@@ -159,6 +160,16 @@ function oaff_features_common_errors() {
   $class_map = array(0 => 'text-info', 1 => "text-warning", 2 => "text-danger", 3 =>  "text-danger");
   $out = '<div>';
   $i = 0;
+  $out .= '<div class="alert alert-info"> <h4><span "> Overview: </span></h4>';     
+  foreach ($compilers as $compiler => $types) {
+    $out .= '<div class="links bg-info"><ul class="list-inline"><span> ' . $compiler . ' compiler: ';
+    foreach ($types as $type => $msgs) {
+      $occurs = $msgs['occurs'];
+      $out .=  '<span class="' . $class_map[$type] . '"> ' . $occurs . ' ' . $name_map[$type] . '(s)<span>,';
+    }
+    $out .= '</span></li><ul></div>';
+  }
+  $out .= '</div>';
   foreach ($errors as $error) {
     $out .= '<div class="node-teaser">';
     $out .= '<h4><span class="' . $class_map[$error['type']] . '"> ' . $error['msg'] . '  </span></h4>';
@@ -192,15 +203,12 @@ function oaff_features_common_errors() {
     $out .= '</ul></div>';
     $out .= '</div>';
     $out .= '<hr/>';
-    $node = node_view(node_load($error['nids'][0]), 'teaser');
-    // $out .= drupal_render($node);
     $i += 1;
   }
   $out .= '</div>';
 
   return $out;
 }
-
 
 function oaff_features_broken_nodes() {
   $results = db_select('oaff_errors', 'e')
