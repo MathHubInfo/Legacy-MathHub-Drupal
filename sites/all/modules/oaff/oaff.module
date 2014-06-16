@@ -52,6 +52,95 @@ function oaff_help_page() {
   return $out;
 }
 
+/**
+ * implements hook_field_formatter_info, declares the formatter types implemented 
+ * by this module.
+ * Currently:  
+ *   'mmt_formatter' which formats mmt content 
+ */
+function oaff_field_formatter_info() {
+   return array(
+    'oaff_help_formatter' => array(
+      'label' => t('Formatter of Help Files'),
+      'field types' => array('vfs_file'),
+    ),
+  );
+}
+
+
+function __oaff_generate_html_list($elems) {
+  $body = '<ul>';
+  foreach ($elems as $name => $link) {
+    $body .= '<li> <a href="/' . $link . '">' . $name . '</a></li>';
+  }
+  $body .= '</ul>';
+  return $body;
+}
+
+/**
+ * implements hook_filed_formatter view, 
+ * @param $entity_type The type of $entity
+ * @param $entity The entity being displayed
+ * @param $field The field structure
+ * @param $instance The field instance
+ * @param $langcode The language associated with $items
+ * @param $items Array of values for this field
+ * @param $display The display settings to use, as found in the 'display' entry of instance definitions
+ */
+function oaff_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+  $element = array();
+  
+  switch ($display['type']) {
+    case 'oaff_help_formatter':
+      $lang = $entity->language;
+      foreach ($items as $delta => $item) {
+        $location = $item['path'];
+        if (planetary_repo_stat_file($location)) {
+          $markup = planetary_repo_load_file($location);
+        } else {
+          drupal_set_message("Help File missing or empty, auto-generating description", 'warning');
+          $segs = explode("/", $location); //format is "$base" / "help" / "index.html"
+          if (count($segs) == 2) { //at top level
+            $groups = planetary_repo_list("");
+            $elems = array();
+            foreach ($groups as $group) {
+              if (planetary_repo_is_dir($group) && $group[0] != '.' && $group != "help" && drupal_lookup_path('source', $group)) {
+                $elems[$group] = $group;
+              }
+            }
+            $markup = __oaff_generate_html_list($elems);
+          } else if (count($segs) == 3) { //at group level
+            $group = $segs[0];
+            $archives = planetary_repo_list($group);
+            $elems = array();
+            foreach ($archives as $archive) {
+              $arch_path = oaff_join_path(array($group, $archive));
+              if (planetary_repo_is_dir($arch_path) && $archive[0] != '.' && $archive != "help" && drupal_lookup_path('source', $arch_path)) {
+                $elems[$archive] = $arch_path;
+              }
+            }
+            $markup = __oaff_generate_html_list($elems);
+          } else { //at archive level
+            $group = $segs[0];
+            $archive = $segs[1];
+            $markup = "<ul><li><a href=\"/$group/$archive/source\">Content</a> </li><li><a href=\"http://gl.mathhub.info/$group/$archive\" target=\"_blank\">Sources</a> </li></ul>";
+          }
+        }
+        $element[$delta] = array(
+          "#type" => "container",
+          "#attributes" => array(),
+          "content" => array(
+            '#markup' => $markup,
+          )
+        );
+      }
+      break;
+    }
+  return $element;
+}
+
+
+
 
 function oaff_form_alter(&$form, &$form_state, $form_id) {
   if ($form_id == 'oaff_doc_node_form') {
@@ -212,7 +301,7 @@ function oaff_initialize() {
 function oaff_node_view($node, $view_mode, $langcode) {
   if ($view_mode != "full")
 		return;
-  
+ 
   $oaff_config = variable_get('oaff_config');
   //handling node rendering
   global $filter_context;
@@ -464,37 +553,28 @@ function oaff_create_nodes() {
  */
 function _oaff_create_meta_nodes() {
   $oaff_config = variable_get('oaff_config');
-  $archives_nid = $oaff_config['archives_nid'];
-  $archives_node = node_load($archives_nid);
-  $archives_body = $archives_node->body['und'][0]['value'];
-  if ($archives_body == "") {
-    $archives_body = "<ul>";
-    $groups = planetary_repo_list("");
-    foreach ($groups as $group) {
-      if (planetary_repo_is_dir($group) && $group[0] != '.') {
-        $archives = planetary_repo_list($group);
-        foreach ($archives as $archive) {
-          if (planetary_repo_is_dir(oaff_join_path(array($group, $archive))) && $archive[0] != '.') {
-            $arch_info = _oaff_get_archive_info($group, $archive);
-            $archive_id = $arch_info['id'];
-            if (isset($oaff_config['formats'][$archive_id])) {
-              $archives_body .= "<li> <a href=\"/$group/$archive\"> $archive_id </a> </li>";
-              $archive_desc = "<ul><li><a href=\"/$group/$archive/source\">Content</a> </li><li><a href=\"http://gl.mathhub.info/$group/$archive\" target=\"_blank\">Sources</a> </li></ul>";
-              if (!drupal_lookup_path('source', "$group/$archive")) {
-                $node_info = oaff_create_static_node($archive_id, "$group/$archive", $archive_desc);
-                //$oaff_config['nids'][] = $node_info['nid'];
-              }
-            }
+  $root_nid = $oaff_config['archives_nid'];
+  $groups = planetary_repo_list("");
+  foreach ($groups as $group) {
+    if (planetary_repo_is_dir(oaff_join_path(array($group))) && isset($oaff_config['archive_id'][$group]) && $group[0] != '.' && $group != 'help') {
+      $group_help_fpath = oaff_join_path(array($group, 'help', 'index.html'));
+      if (!drupal_lookup_path('source', $group)) { //node doesn't already exist
+        print_r(drupal_lookup_path('source', $group));
+        print_r(!drupal_lookup_path('source', $group));
+
+        oaff_create_help_node($group, $group, $group_help_fpath);
+      }
+      $archives = planetary_repo_list($group);
+      foreach ($archives as $archive) {
+        if (planetary_repo_is_dir(oaff_join_path(array($group, $archive))) && isset($oaff_config['archive_id'][$group][$archive])  && $archive[0] != '.' && $archive != 'help') {
+          $arch_help_fpath = oaff_join_path(array($group, $archive, 'help', 'index.html'));
+          $arch_path = oaff_join_path(array($group, $archive));
+          if (!drupal_lookup_path('source', $arch_path)) {
+            oaff_create_help_node($archive, $arch_path, $arch_help_fpath);
           }
         }
       }
     }
-    $archives_body .= "</ul>";
-    $archives_node->body['und'][0]['value'] = $archives_body;
-    node_save($archives_node);
-    variable_set('oaff_config',$oaff_config);
-  } else {
-    drupal_set_message("Archives node already has content, delete to regenerate or update it manually if needed", 'warning');
   }
 }
 
@@ -519,7 +599,6 @@ function _oaff_crawl_archives() {
     }
   }
 }
-
 
 function _oaff_get_archive_info($group, $archive_path) {
   $oaff_config = variable_get('oaff_config');
@@ -660,7 +739,7 @@ function oaff_create_static_node($title, $alias, $content, $show_in_menu = false
    'created' => strtotime("now"),
    'changed' => strtotime("now"),
    'status' => 1,
-   'comment' => 2,
+   'comment' => 0,
    'promote' => 0,
    'moderate' => 0,
    'sticky' => 0,
@@ -688,6 +767,44 @@ function oaff_create_static_node($title, $alias, $content, $show_in_menu = false
     return array('nid' => $static_node->nid, 'mlid' => $mlid);
   } else {
     return array('nid' => $static_node->nid);
+  }
+}
+
+function oaff_create_help_node($title, $alias, $fpath, $show_in_menu = false) {
+  $help_node = (object) array(
+   'type' => 'oaff_helpdoc',
+   'uid' => 0,
+   'created' => strtotime("now"),
+   'changed' => strtotime("now"),
+   'status' => 1,
+   'comment' => 0,
+   'promote' => 0,
+   'moderate' => 0,
+   'sticky' => 0,
+   'language' => 'und'
+  );
+
+  $help_node->title = $title;
+  node_object_prepare($help_node);
+  $help_node->field_external['und']['0'] = array('path' => $fpath);
+  node_save($help_node);
+  $path_opt = array(
+    'source' => 'node/' . $help_node->nid,
+    'alias' => $alias,
+  );
+  path_save($path_opt);
+  
+  if ($show_in_menu) { //adding menu entry
+    $arch_item = array(
+      'link_path' => drupal_get_normal_path($alias),
+      'link_title' => $title,
+      'weight' => 10,
+      'menu_name' => 'main-menu'
+    );
+    $mlid = menu_link_save($arch_item);
+    return array('nid' => $help_node->nid, 'mlid' => $mlid);
+  } else {
+    return array('nid' => $help_node->nid);
   }
 }
 

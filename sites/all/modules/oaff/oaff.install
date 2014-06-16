@@ -1,8 +1,7 @@
 <?php
 
-function oaff_add_vfs_field($node_type) {
+function oaff_add_vfs_field($node_type, $formatter = 'mmt_formatter') { // TODO replace with oaff_formatter
   // Check if our field is not already created.
-    
   if (!field_info_field('field_external')) {
     $field = array(
         'field_name' => 'field_external',
@@ -24,7 +23,7 @@ function oaff_add_vfs_field($node_type) {
     ),
     'display' => array(
       'default' => array( 
-        'type' => 'mmt_formatter', // TODO replace with oaff_formatter
+        'type' => $formatter, 
       ),
     ),    
   );
@@ -42,22 +41,36 @@ function oaff_create_node_types() {
   ); 
   node_type_save($oaff_doc);
   oaff_add_vfs_field('oaff_doc');
-  variable_set('node_submitted_oaff_doc', false);
-  variable_set('comment_oaff_doc', '0');
+  variable_set('node_submitted_oaff_doc', false); //disable showing creation time and author
+  variable_set('comment_oaff_doc', '0'); //disable comments
     
   
-  // Creating node type for OAFF modules
-  $oaff_doc = (object) array(
+  // Creating node type for OAFF folders
+  $oaff_virtdoc = (object) array(
     'type' => 'oaff_virtdoc',
     'name' => 'MathHub Virtual Document',
     'base' => 'node_content',
     'description' => 'A node containing an flexiformal, multilingual OAFF document, that does not have a corresponding source file',
     'has_title' => true,
   ); 
-  node_type_save($oaff_doc);
+  node_type_save($oaff_virtdoc);
   oaff_add_vfs_field('oaff_virtdoc');
   variable_set('node_submitted_oaff_virtdoc', false);
   variable_set('comment_oaff_virtdoc', '0');
+
+  //creating node type for OAFF help nodes
+  $oaff_help = (object) array(
+    'type' => 'oaff_helpdoc',
+    'name' => 'MathHub Help Document',
+    'base' => 'node_content',
+    'description' => 'A help node containing documentation from the filesystem',
+    'has_title' => true,
+  ); 
+  node_type_save($oaff_help);
+  oaff_add_vfs_field('oaff_helpdoc', 'oaff_help_formatter');
+  variable_set('node_submitted_oaff_helpdoc', false);
+  variable_set('comment_oaff_helpdoc', '0');
+
 }
 
 function delete_node_type($node_type_name, $remove_type = true) {
@@ -82,7 +95,7 @@ function oaff_install() {
   $oaff_config['crawl_nodes_offset'] = 0;
   $mlids = array();
   $nids = array();
-  $arch_info = oaff_create_static_node('Archives', 'mh/archives', "", true);
+  $arch_info = oaff_create_help_node('Archives', 'mh/archives', oaff_join_path(array("help", "index.html")), true);
   $oaff_config['archives_nid'] = $arch_info['nid'];
   $nids[] = $arch_info['nid'];
   $mlids[] = $arch_info['mlid'];
@@ -119,7 +132,9 @@ function oaff_uninstall() {
   
   // for easy debugging, deleting content on reinstall
   delete_node_type('oaff_doc'); 
-  delete_node_type('oaff_virtdoc');  
+  delete_node_type('oaff_virtdoc'); 
+  delete_node_type('oaff_helpdoc'); 
+   
   delete_node_type('mmtdoc', false);
  
   $mlids = $oaff_config['mlids'];
