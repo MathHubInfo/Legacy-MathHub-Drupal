@@ -24,6 +24,7 @@ function oaff_add_vfs_field($node_type, $formatter = 'mmt_formatter') { // TODO 
     'display' => array(
       'default' => array( 
         'type' => $formatter, 
+        'label' => 'hidden',
       ),
     ),    
   );
