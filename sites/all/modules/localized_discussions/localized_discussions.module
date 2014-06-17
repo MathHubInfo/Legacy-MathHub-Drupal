@@ -4,13 +4,6 @@
  */
 function localized_discussions_menu() {
   $items = array();
-  $items['post_local_discussion'] = array(
-    'title' => 'Post Localized Discussion',
-    'description' => 'Posts a Comment',
-    'page callback' => 'localized_discussions_post_comment',
-    'access callback' => 'localized_discussions_check_post_comment',
-    'type' => MENU_NORMAL_ITEM,
-  );
   $items['admin/config/content/localized_discussions'] = array(
     'title' => 'Localized Discussions configuration',
     'description' => 'Configure Localized Discussions. ',
@@ -70,31 +63,6 @@ function localized_discussions_config_submit($form, &$form_state) {
 function localized_discussions_get_active_node_types() {
   $nodes = variable_get("localized_discussions_active_node_types");
   return $nodes;
-}
-
-function localized_discussions_post_comment() {
-	$params = array(
-		'title' => $_POST['title'],
-		'body' => $_POST['body'],
-		'xml_id' => $_POST['xml_id'],
-		'node_id' => $_POST['node_id']
-	);
-  global $user; // get user that is currently on the page
-  $node = new stdClass();
-  $node->title = $params['title'];
-  $node->type = "local_discussion_question"; // or something along the lines of "node-question"
-  node_object_prepare($node); // Sets some defaults. Invokes hook_prepare() and hook_node_prepare().
-  $node->language = LANGUAGE_NONE; 
-  $node->uid = $user->uid;
-  $node->status = 1; // (1 or 0): published or not
-  $node->promote = 0; // (1 or 0): promoted to front page
-  $node->comment = 2; // 0 = comments disabled, 1 = read only, 2 = read/write
-  // Term reference (taxonomy) field
-  $node->body[$node->language][0]['value'] = $params['body'];
-  $node->xml_fragment_id[$node->language][0]['value'] = $params['xml_id'];
-  $node->referenced_nid[$node->language][0]['value'] = $params['node_id'];
-  $node = node_submit($node); // Prepare node for saving
-  node_save($node);
 }
 
 function localized_discussions_form_alter(&$form, &$form_state, $form_id) {
