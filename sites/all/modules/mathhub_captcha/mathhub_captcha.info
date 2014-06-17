@@ -1,0 +1,5 @@
+name = "MathHub CAPTCHA"
+description = "The MathHub CAPTCHA requires the user to solve simple math problems."
+package = "MathHub"
+dependencies[] = captcha
+core = 7.x

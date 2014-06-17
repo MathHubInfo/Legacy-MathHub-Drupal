@@ -1,0 +1,41 @@
+<?php
+
+/**
+ * Implementation of hook_captcha().
+ */
+function mathhub_captcha_captcha($op, $captcha_type='') {
+  switch ($op) {
+    case 'list':
+      return array('MathHub CAPTCHA');
+    case 'generate':
+      if ($captcha_type == 'MathHub CAPTCHA') {
+        $pi = "&#960;";
+        $e = "&#8455;";
+        $left_ceiling ="&#8968;";
+        $right_ceiling ="&#8969;";
+        $left_floor = "&#8970;";
+        $right_floor = "&#8971;";
+        
+        $symbols = array();
+        $symbols[] = array('html' => $left_ceiling . $pi . $right_ceiling, 'value' => 4);
+        $symbols[] = array('html' => $left_ceiling . $e . $right_ceiling, 'value' => 3);
+        $symbols[] = array('html' => $left_floor . $pi . $right_floor, 'value' => 3);
+        $symbols[] = array('html' => $left_floor . $e . $right_floor, 'value' => 2);
+        $first = mt_rand(2,9);
+        $second = mt_rand(0, count($symbols) - 1);
+        $third = mt_rand(11,39);
+        $question = $first . " &#215; " . $symbols[$second]['html'] . " &#43; " . "<math><msqrt><msup><mi>" . $third . "</mi><mn>2</mn></msup></msqrt></math>";
+        $answer = $first *  $symbols[$second]['value'] + $third;        
+        $captcha = array();
+        $captcha['solution'] = $answer;
+        $captcha['form']['captcha_response'] = array(
+          '#type' => 'textfield',
+          '#title' => 'Enter the result of the computation below',
+          '#description' => "Compute: " . $question,
+          '#required' => TRUE,
+        );
+        return $captcha;
+      }
+      break;
+  }
+}
