@@ -1,0 +1,331 @@
+<?php
+/**
+ * @file
+ * A module that synchronizes the drupal accounts with gitlab accounts.
+ * @todo extend curl error checks for cURL after deciding how to talk to gitlab
+ */
+
+/**
+ * Implements the function log_http_code.
+ *
+ * The function log_http_code logs the given httpcode together with an info string into the drupal logs.
+ *
+ * @param httpcode
+ *   The HTTP Code returned by the GitLab API call.
+ * @param info
+ *   A string containing information about the function and action, where we called the GitLab API.
+ * @todo Requirements for usernames in GitLab are different from the requirements for usernames in Drupal
+ *       We need to discuss hwo this should be handled. 
+ *
+ */
+function log_http_code($httpcode, $info =''){
+  switch ($httpcode) {
+    case 200:
+      watchdog('sync_gitlab', '%info. Succesful: 200 OK', array('%info' => $info) ,WATCHDOG_NOTICE, '');
+      break;
+    case 201:
+      watchdog('sync_gitlab', '%info. Succesful: 201 Created', array('%info' => $info) ,WATCHDOG_NOTICE, '');
+      break;
+    case 400:
+      watchdog('sync_gitlab', '%info. Error: 400 Bad Request', array('%info' => $info) ,WATCHDOG_ERROR, '');
+      break;
+    case 401:
+      watchdog('sync_gitlab', '%info. Error: 401 Unauthorized. Please check the authentication token.', array('%info' => $info) ,WATCHDOG_ERROR, '');
+      break;
+    case 403:
+      watchdog('sync_gitlab', '%info. Error: 403 Forbidden. Please check the authentication token.', array('%info' => $info) ,WATCHDOG_ERROR, '');
+      break;
+    case 404:
+      watchdog('sync_gitlab', '%info. Error: 404 Not Found. Please check for already existing account.', array('%info' => $info) ,WATCHDOG_ERROR, '');
+      break;
+    case 405:
+      watchdog('sync_gitlab', '%info. Error: 405 Method Not Allowed. Please check the module.', array('%info' => $info) ,WATCHDOG_ERROR, '');
+      break;
+    case 409:
+      watchdog('sync_gitlab', '%info. Error: 409 Conflict. Please check for already existing account.', array('%info' => $info) ,WATCHDOG_ERROR, '');
+      break;
+    case 500:
+      watchdog('sync_gitlab', '%info. Error: 500 Server Error. Please check the GitLab server.', array('%info' => $info) ,WATCHDOG_ERROR, '');
+      break;
+    default:
+      watchdog('sync_gitlab', '%info. Error: Unknown Return Code. Please check the GitLab server.', array('%info' => $info) ,WATCHDOG_ERROR, '');
+  }
+}
+
+/**
+ * Implements hook_help().
+ *
+ * Displays help and module information.
+ *
+ * @param path
+ *   Which path of the site we're using to display help
+ * @param arg
+ *   Array that holds the current path as returned from arg() function
+ */
+function sync_gitlab_help($path, $arg) {
+  switch ($path) {
+    case "admin/help#sync_gitlab":
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('A module that synchronizes the drupal accounts with gitlab accounts.') . '</p>';
+      return $output;
+      break;
+  }
+} 
+
+/**
+ * Implements hook_menu().
+ *
+ * The function sync_gitlab_menu implements the hook_menu and allows therefore to display the configuration menu.
+ */
+function sync_gitlab_menu() {
+  $items = array();
+  $items['admin/config/system/sync_gitlab'] = array(
+    'title' => 'Sync GitLab',
+    'description' => 'Configuration for Sync GitLab module',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('sync_gitlab_form'),
+    'access arguments' => array('access administration pages'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+  return $items;
+}
+
+/**
+ * Page callback: Sync GitLab settings
+ *
+ * @see sync_gitlab_menu()
+ */
+function sync_gitlab_form($form, &$form_state) {
+  $form['sync_gitlab_private_token'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Private Token of GitLab Server administrator account'),
+    '#default_value' => variable_get('sync_gitlab_private_token', ''),
+    '#size' => 20,
+    '#maxlength' => 128,
+    '#description' => t('The private token needed for authentication with the GitLab server.'),
+    '#required' => TRUE,
+  );
+  $form['sync_gitlab_server_api_url'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Server URL of GitLab Server'),
+    '#default_value' => variable_get('sync_gitlab_server_api_url', ''),
+    '#size' => 128,
+    '#maxlength' => 512,
+    '#description' => t('The Server URL of the GitLab Server. Needed to be able to connect to it.'),
+    '#required' => TRUE,
+  );
+  $form['sync_gitlab_admin_id'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Admin ID of gitlab account'),
+    '#default_value' => variable_get('sync_gitlab_admin_id', 1),
+    '#size' => 4,
+    '#maxlength' => 8,
+    '#description' => t('The Server URL of the GitLab Server. Needed to be able to connect to it.'),
+    '#required' => TRUE,
+  );
+    $form['sync_gitlab_log_messages'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Log Module Messages'),
+    '#default_value' => variable_get('sync_gitlab_log_messages', 1),
+    '#description' => t('The Server URL of the GitLab Server. Needed to be able to connect to it.'),
+    '#required' => FALSE,
+  );
+  return system_settings_form($form);
+}
+
+/**
+ * Implements hook_user_delete().
+ *
+ * The function sync_gitlab_user_delete deletes the specified GitLab account.
+ *
+ * @param account
+ *   The account that is being deleted from gitlab  
+ */
+function sync_gitlab_user_delete($account) {
+  // init curl and set options
+  $ch = curl_init();                                                                
+  curl_setopt_array($ch, array(
+    CURLOPT_SSL_VERIFYPEER => false,
+    CURLOPT_URL => variable_get('sync_gitlab_server_api_url') . '/users/?search=' . $account->mail,
+    CURLOPT_RETURNTRANSFER => true,
+    CURLINFO_HEADER_OUT    => true,
+    CURLOPT_CUSTOMREQUEST  => "GET",
+    CURLOPT_HTTPHEADER     => array(
+      'PRIVATE-TOKEN: ' . variable_get('sync_gitlab_private_token'),
+      'SUDO: ' . variable_get('sync_gitlab_admin_id')   
+    ),
+  ));                                                                       
+    
+  // execute query                                                                                                 
+  $result = curl_exec($ch); // return Value is a string in the following format [JSON]
+
+  $result = substr($result, 1,-1); // delete [] to have only JSON
+  $id = json_decode($result); // decode the json string
+  $id = $id->id;
+  if (isset($id)) {
+    // set new curl options                                                        
+    curl_setopt_array($ch, array(
+      CURLOPT_SSL_VERIFYPEER => false,
+      CURLOPT_URL => variable_get('sync_gitlab_server_api_url') . '/users/' . $id,
+      CURLOPT_RETURNTRANSFER => true,
+      CURLINFO_HEADER_OUT    => true,
+      CURLOPT_CUSTOMREQUEST  => "DELETE",
+      CURLOPT_HTTPHEADER     => array(
+        'PRIVATE-TOKEN: ' . variable_get('sync_gitlab_private_token'),
+        'SUDO: ' . variable_get('sync_gitlab_admin_id')   
+      ),
+    ));                                                             
+
+    // execute query                                                                                                 
+    $result = curl_exec($ch); // return Value is a string in the following format [JSON]
+    // get http code
+    $returnCode = intval(curl_getinfo($ch)['http_code']);
+    // handle the returnCode
+    if (variable_get('sync_gitlab_log_messages') === 1) {
+      log_http_code($returnCode, 'GitLab Account Deletion');
+    }
+  } 
+  else {
+    watchdog('sync_gitlab', 'GitLab Account Delete. Error: Invalid User ID', NULL ,WATCHDOG_ERROR, '');
+  }
+  //close curl
+  curl_close($ch);
+}
+
+/**
+ * Implements hook_user_insert().
+ *
+ * The function sync_gitlab_user_insert creates the specified GitLab account.
+ *
+ * @param edit
+ *   The array of form values submitted by the user.
+ * @param account
+ *   The user object on which the operation is being performed.
+ * @param category
+ *   The active category of user information being edited.  
+ * @bug The password has to be set at creation
+ */
+function sync_gitlab_user_insert(&$edit, $account, $category) {
+  // data which is send with the api call
+  $data = array(
+    'email' =>  $edit['mail'],
+    'password' => 'dummypassword',
+    'username' => $edit['name'],
+    'name' => $edit['name']
+  );
+  $data = json_encode($data); 
+  
+  // init curl and set options
+  $ch = curl_init();                                                                
+  curl_setopt_array($ch, array(
+    CURLOPT_SSL_VERIFYPEER => false,
+    CURLOPT_URL => variable_get('sync_gitlab_server_api_url') . '/users',
+    CURLOPT_RETURNTRANSFER => true,
+    CURLINFO_HEADER_OUT    => true,
+    CURLOPT_CUSTOMREQUEST  => "POST",
+    CURLOPT_POSTFIELDS     => $data,
+    CURLOPT_HTTPHEADER     => array(
+      'Content-Type: application/json',    
+      'PRIVATE-TOKEN: ' . variable_get('sync_gitlab_private_token'),
+      'SUDO: ' . variable_get('sync_gitlab_admin_id')   
+    ),
+  ));                                                                       
+    
+  // execute query                                                                                                 
+  $result = curl_exec($ch);
+  // get http code
+  $returnCode = intval(curl_getinfo($ch)['http_code']);
+  // handle the returnCode
+  if (variable_get('sync_gitlab_log_messages') === 1) {
+    log_http_code($returnCode, 'GitLab Account Creation');
+  }
+  //close curl
+  curl_close($ch); 
+}
+
+/**
+ * Implements hook_user_update().
+ *
+ * The function sync_gitlab_user_update modifies the specified GitLab account.
+ *
+ * @param edit
+ *   The array of form values submitted by the user.
+ * @param account
+ *   The user object on which the operation is performed.
+ * @param category
+ *   The active category of user information being edited.  
+ *
+ * @todo Handle $account->status changes in this hook, when it is implemented on the 
+ * GitLab API. 
+ *
+ */
+function sync_gitlab_user_update(&$edit, $account, $category) {  
+  // send api call if we change some user values
+  if ($account->name != $account->original->name || $account->mail != $account->original->mail) {
+    // init curl and set options
+    $ch = curl_init();                                                                
+    curl_setopt_array($ch, array(
+      CURLOPT_SSL_VERIFYPEER => false,
+      CURLOPT_URL => variable_get('sync_gitlab_server_api_url') . '/users/?search=' . $account->original->mail,
+      CURLOPT_RETURNTRANSFER => true,
+      CURLINFO_HEADER_OUT    => true,
+      CURLOPT_CUSTOMREQUEST  => "GET",
+      CURLOPT_HTTPHEADER     => array(
+        'PRIVATE-TOKEN: ' . variable_get('sync_gitlab_private_token'),
+        'SUDO: ' . variable_get('sync_gitlab_admin_id')   
+      ),
+    ));                                                                       
+    
+    // execute query                                                                                                 
+    $result = curl_exec($ch); // return Value is a string in the following format [JSON]
+    $result = substr($result, 1,-1); // delete [] to have only a valid JSON string
+    $response   = json_decode($result); // decode the json string
+
+    // check if we obtained a valid user id
+    if (isset($response->id)) {
+      // data which is send with the api call
+      $data = array();
+      // check if data exists
+      if (isset($edit['name'])) {
+        $data['username'] = $edit['name'];
+      }
+      if (isset($edit['name'])) {
+        $data['name'] = $edit['name'];
+      }
+      if (isset($edit['mail'])) {
+        $data['email'] = $edit['mail'];
+      }
+      // encode the data to be send as json
+      $data = json_encode($data); 
+      // set new curl options                                                        
+      curl_setopt_array($ch, array(
+        CURLOPT_SSL_VERIFYPEER => false,
+        CURLOPT_URL => variable_get('sync_gitlab_server_api_url') . '/users/' . $response->id,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLINFO_HEADER_OUT    => true,
+        CURLOPT_CUSTOMREQUEST  => "PUT",
+        CURLOPT_POSTFIELDS     => $data,
+        CURLOPT_HTTPHEADER     => array(
+          'Content-Type: application/json',    
+          'PRIVATE-TOKEN: ' . variable_get('sync_gitlab_private_token'),
+          'SUDO: ' . variable_get('sync_gitlab_admin_id')   
+        ),
+      ));                                                      
+    
+      // execute query                                                                                                 
+      $result = curl_exec($ch); // return Value is a string in the following format [JSON]
+      // get http code
+      $returnCode = intval(curl_getinfo($ch)['http_code']);
+      // handle the returnCode of the first query
+      if (variable_get('sync_gitlab_log_messages') === 1) {
+        log_http_code($returnCode, 'GitLab Account Edit');
+      }
+    }
+    else {
+      watchdog('sync_gitlab', 'GitLab Account Edit. Error: Invalid User ID', NULL ,WATCHDOG_ERROR, '');
+    }
+    //close curl
+    curl_close($ch);
+  }
+}
