@@ -2,8 +2,13 @@
 /**
  * @file
  * A module that synchronizes the drupal accounts with gitlab accounts.
- * @todo extend curl error checks for cURL after deciding how to talk to gitlab
+ * @todo As we might need more GitLab sync. we should either use an existing php api, which handles the 
+ *       communication or we should create our own
+ *       extend curl error checks for cURL after deciding how to talk to gitlab
  *       extend curl https security, do not accept any certificate only signed ones(make it an option)
+ * @bug  account names in drupal and account names in gitlab have different rules! Unify them to allow 
+ *       synchronisation.
+ *       
  */
 
 /**
