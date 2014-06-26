@@ -153,7 +153,7 @@ function planetary_repo_git_push($rel_path) {
   $base_path = variable_get('planetary_repo_git_path');
   $path = dirname($base_path . $rel_path);
   $filename = basename($rel_path);
-  shell_exec("cd $path; git add $filename; git commit -m 'change by user $uname'; git push origin master ");
+  shell_exec("export HOME='/var/www'; cd $path; git add $filename; git commit -m 'change by user $uname'; git push origin master");
 }
 
 function planetary_repo_git_save($path, $content) {

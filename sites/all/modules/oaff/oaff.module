@@ -144,8 +144,6 @@ function oaff_field_formatter_view($entity_type, $entity, $field, $instance, $la
 
 function oaff_form_alter(&$form, &$form_state, $form_id) {
   if ($form_id == 'oaff_doc_node_form') {
-    
-
     $nid = $form['#node']->nid;
     $elems = oaff_get_language_group($nid);
     $lang_dict = array('und' => 'base', 'de' => 'deutsch', 'en' => 'english');
