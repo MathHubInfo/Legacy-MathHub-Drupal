@@ -11,12 +11,12 @@ tr.tags, tr.metadata {
 }
 
 div.constant {
-  border-width: 1;
+  border-width: 2px;
   border-style: solid;
   margin-top: 10px;
 }
 
-span.compToggle {
+button.compToggle {
   color: blue;
   margin-right: 10px;
 }
