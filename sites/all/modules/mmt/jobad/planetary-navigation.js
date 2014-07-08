@@ -67,4 +67,3 @@ var planetaryNavigation = {
 
 JOBAD.modules.register(planetaryNavigation);
 })(jQuery);
-

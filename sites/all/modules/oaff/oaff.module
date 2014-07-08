@@ -713,7 +713,7 @@ function oaff_crawler_update_dimension_folder($group, $archive_path, $archive_id
                                                                               // also lmh/stex specific ones  
       $item_path = oaff_join_path(array($folder_path, $item));
       if (planetary_repo_is_dir($item_path)) {
-        $cids[] = oaff_crawl_dimension_folder($group, $archive_path, $archive_id, $dimension, oaff_join_path(array($rel_path, $item)));
+        $cids[] = oaff_crawler_update_dimension_folder($group, $archive_path, $archive_id, $dimension, oaff_join_path(array($rel_path, $item)));
       } else {
         $pathinfo = oaff_get_path_info($item_path);
         if (isset($pathinfo['extension']) && $pathinfo['extension'] == $extension) {
