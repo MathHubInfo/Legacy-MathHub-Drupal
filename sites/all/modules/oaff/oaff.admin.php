@@ -105,8 +105,8 @@ function oaff_admin_administrate() {
 }
 
 function oaff_admin_lmh_update() {
-	$lmh_status = shell_exec('lmh update 2>&1');
-    oaff_log("OAFF.ADMIN", "`lmh update` returned: <pre>$lmh_status</pre>");
+	$lmh_status = shell_exec('lmh update --all 2>&1');
+    oaff_log("OAFF.ADMIN", "`lmh update --all` returned: <pre>$lmh_status</pre>");
     drupal_set_message('Success');
     return '';
 }
