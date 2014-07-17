@@ -17,6 +17,7 @@ function mmt_initialize() {
     /* JavaScript */
     drupal_add_js('var mmtUrl = "' . $mmt_url . '";', 'inline');
     jobad_add_module($mmt_path . '/jobad/planetary-navigation.js', "kwarc.mmt.planetary.navigation");
+    jobad_add_module($mmt_path . '/jobad/planetary-gitlab.js', "kwarc.mmt.planetary.gitlab");
     jobad_add_module($mmt_path . '/jobad/ontology-navigation.js', "kwarc.mmt.ontology.navigation");
     jobad_add_module($mmt_path . '/jobad/hovering.js', "kwarc.mmt.hovering");
     jobad_add_module($mmt_path . '/jobad/interactive-viewing.js', "kwarc.mmt.intvw");
