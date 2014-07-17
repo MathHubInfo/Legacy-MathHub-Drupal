@@ -46,7 +46,7 @@ function mmt_node_view($node, $view_mode, $langcode) {
     return;
   $oaff_config = variable_get('oaff_config');
   $oaff_node_types = $oaff_config['compiled_node_types'];
-  if (in_array($node->type, $oaff_node_types)) {
+  if (in_array($node->type, $oaff_node_types) || drupal_get_path_alias("node/" . $node->nid) == 'mh/glossary') {
      mmt_initialize();
   }
   if ($node->type == 'mmtdoc') {
