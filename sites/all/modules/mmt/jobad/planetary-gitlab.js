@@ -23,6 +23,7 @@ var planetaryGitlab = {
 			'View Graph' : function() {$('#svg_modal').modal()},
 		};
 		return res;
+	},
 };
 
 JOBAD.modules.register(planetaryGitlab);
