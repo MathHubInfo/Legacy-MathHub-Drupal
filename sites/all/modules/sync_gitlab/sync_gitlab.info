@@ -3,3 +3,4 @@ description = A module that synchronizes the drupal accounts with gitlab account
 core = 7.x
 configure = admin/config/system/sync_gitlab
 files[] = sync_gitlab.module
+dependencies[] = libraries
