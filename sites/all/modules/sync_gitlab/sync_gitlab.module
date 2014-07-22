@@ -15,10 +15,11 @@
  * @todo add 'vendor url', 'download url' etc. in case we make the libarary stand alone
  */
 function sync_gitlab_libraries_info() {
-  $libraries['gitlab_api_php_wrapper'] = array(
+
+  $libraries['gitlab_api_php_wrapper'] = array(  // @nolint
     'name' => 'GitLab API PHP Wrapper',
-    'vendor url' => 'www.example.com', 
-    'download url' => 'www.example.com', 
+    'vendor url' => '', 
+    'download url' => '', 
     'version arguments' => array(
       'file' => 'readme.txt',
       'pattern' => '/Version (\d+)/', 
@@ -129,7 +130,7 @@ function sync_gitlab_form($form, &$form_state) {
  */
 function sync_gitlab_user_delete($account) {
   // load GitLab API PHP Wrapper
-  if (($library = libraries_load('gitlab_api_php_wrapper')) 
+  if (($library = libraries_load('gitlab_api_php_wrapper')) // @nolint 
        && !empty($library['loaded'])) {
     // create new request
     try {
@@ -202,7 +203,7 @@ function sync_gitlab_user_delete($account) {
  */
 function sync_gitlab_user_insert(&$edit, $account, $category) {
   // load GitLab API PHP Wrapper
-  if (($library = libraries_load('gitlab_api_php_wrapper'))
+  if (($library = libraries_load('gitlab_api_php_wrapper')) // @nolint
        && !empty($library['loaded'])) {
     // create new request
     try {
@@ -267,7 +268,7 @@ function sync_gitlab_user_update(&$edit, $account, $category) {
   if ($account->name != $account->original->name 
       || $account->mail != $account->original->mail) {
     // load GitLab API PHP Wrapper
-    if (($library = libraries_load('gitlab_api_php_wrapper'))
+    if (($library = libraries_load('gitlab_api_php_wrapper')) // @nolint
          && !empty($library['loaded'])) {
       // create new request
       try {

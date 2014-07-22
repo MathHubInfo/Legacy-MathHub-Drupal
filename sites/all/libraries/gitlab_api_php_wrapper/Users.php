@@ -212,7 +212,7 @@ class Users extends Client {
   }
 
   /**
-   *  The function editUser creates a GitLab user
+   *  The function editUser edits a GitLab user
    *  @param int $user_id
    *    The user ID of the user, which is changed.
    *  @param array $params
