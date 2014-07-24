@@ -91,7 +91,6 @@ class Users extends Client {
    *    the request could not be performed.
    *  @throws InvalidArgumentException
    *    Throws InvalidArgumentException in case arguments were not set.
-   *  @todo parse the result better and include error checks
    */
   public function getUser($search_term) {
     if (isset($search_term)) {
