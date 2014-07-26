@@ -104,7 +104,6 @@ class Repositories extends Client {
    *    Optional parameters
    *    - path - The path inside repository. 
    *    - ref_name - The name of a repository branch or tag.
-   *  @todo Implement optional parameters.
    *  @return array
    *    Returns the project tree as an array.
    *  @throws RuntimeException
@@ -114,7 +113,7 @@ class Repositories extends Client {
   public function getRepositoryTree($search_term, array $params = null) {
     if (isset($search_term)) {
       $search_term = urlencode($search_term);
-      $result = $this->get('/projects/'.$search_term.'/repository/tree');
+      $result = $this->get('/projects/'.$search_term.'/repository/tree', $params);
       if ($result !== false) {
         $return_code = intval(curl_getinfo($this->curlClient)['http_code']);
         if ($return_code === 200) {
@@ -146,12 +145,12 @@ class Repositories extends Client {
    *  @throws RuntimeException
    *    Throws RuntimeException if an HTTP error was encounterd or in case
    *    the request could not be performed.
-   *  @todo Finish by including file path!
    */
   public function getRepositoryFileRaw($search_term, $sha, $filepath) {
     if (isset($search_term) && isset($sha) && isset($filepath)) {
       $search_term = urlencode($search_term);
-      $result = $this->get('/projects/'.$search_term.'/repository/blobs/'.$sha); //@nolint
+      $query_data = array('file_path' => $file_path);
+      $result = $this->get('/projects/'.$search_term.'/repository/blobs/'.$sha, $query_data); //@nolint
       if ($result !== false) {
         $return_code = intval(curl_getinfo($this->curlClient)['http_code']);
         if ($return_code === 200) {
@@ -215,12 +214,17 @@ class Repositories extends Client {
    *  @throws RuntimeException
    *    Throws RuntimeException if an HTTP error was encounterd or in case
    *    the request could not be performed.
-   *  @todo Include SHA.
    */
   public function getRepositoryArchive($search_term, $sha = null) {
-    if (isset($search_term) && isset($sha)) {
+    if (isset($search_term)) {
       $search_term = urlencode($search_term);
-      $result = $this->get('/projects/'.$search_term.'/repository/archive'); 
+      if(isset($sha)) {
+        $query_data = array('sha' => $sha);
+        $result = $this->get('/projects/'.$search_term.'/repository/archive', $query_data);
+      }
+      else {
+        $result = $this->get('/projects/'.$search_term.'/repository/archive');
+      } 
       if ($result !== false) {
         $return_code = intval(curl_getinfo($this->curlClient)['http_code']);
         if ($return_code === 200) {

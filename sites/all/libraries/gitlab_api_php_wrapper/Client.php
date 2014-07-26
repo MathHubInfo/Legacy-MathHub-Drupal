@@ -81,13 +81,20 @@ class Client {
    *
    *  @param string $sub_url
    *    The sub URL which then gets appended to the server URL.
+   *  @param string $data
+   *    The data which might be send with the request.
    *  @return object
    *    Returns the result of the request.
    */
-  protected function delete($sub_url) {
+  protected function delete($sub_url, array $data = null) {
+    if(isset($data))
+    {
+       $sub_url .= '?' . http_build_query($data);
+    }
+    $url = $this->gitlabServerUrl.$sub_url;
     curl_setopt_array($this->curlClient, array(
       CURLOPT_SSL_VERIFYPEER => false,
-      CURLOPT_URL => $this->gitlabServerUrl.$sub_url,
+      CURLOPT_URL => $url,
       CURLOPT_RETURNTRANSFER => true,
       CURLINFO_HEADER_OUT => true,
       CURLOPT_CUSTOMREQUEST => 'DELETE',
@@ -104,13 +111,20 @@ class Client {
    *
    *  @param string $sub_url
    *    The sub URL which then gets appended to the server URL.
+   *  @param string $data
+   *    The data which might be send with the request.
    *  @return object
    *    Returns the result of the request.
    */
-  protected function get($sub_url) {
+  protected function get($sub_url, array $data = null) {
+    if(isset($data))
+    {
+       $sub_url .= '?' . http_build_query($data);
+    }
+    $url = $this->gitlabServerUrl.$sub_url;
     curl_setopt_array($this->curlClient, array(
       CURLOPT_SSL_VERIFYPEER => false,
-      CURLOPT_URL => $this->gitlabServerUrl.$sub_url,
+      CURLOPT_URL => $url,
       CURLOPT_RETURNTRANSFER => true,
       CURLINFO_HEADER_OUT => true,
       CURLOPT_CUSTOMREQUEST => 'GET',
