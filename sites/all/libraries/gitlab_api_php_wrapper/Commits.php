@@ -36,6 +36,7 @@ class Commits extends Client {
    */
   public function getAllRepositoryCommits($search_term, $ref_name = null) {
     if (isset($search_term)) {
+      $search_term = urlencode($search_term);
       if(isset($ref_name)) {
         $query_data = array('ref_name' => $ref_name);
         $result = $this->get('/projects/'.$search_term.'/repository/commits', $query_data); //@nolint
@@ -78,6 +79,7 @@ class Commits extends Client {
    */
   public function getRepositoryCommit($search_term, $sha) {
     if (isset($search_term) && isset($sha)) {
+      $search_term = urlencode($search_term);
       $result = $this->get('/projects/'.$search_term.'/repository/commits/'.$sha); //@nolint
       if ($result !== false) {
         $return_code = intval(curl_getinfo($this->curlClient)['http_code']);
@@ -115,6 +117,7 @@ class Commits extends Client {
    */
   public function getRepositoryCommitDiff($search_term, $sha) {
     if (isset($search_term) && isset($sha)) {
+      $search_term = urlencode($search_term);
       $result = $this->get('/projects/'.$search_term.'/repository/commits/'.$sha.'/diff'); //@nolint
       if ($result !== false) {
         $return_code = intval(curl_getinfo($this->curlClient)['http_code']);

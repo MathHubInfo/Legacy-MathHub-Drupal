@@ -38,6 +38,8 @@ class RepositoryFiles extends Client {
    */
   public function getRepositoryFile($search_term, $file_path, $ref) {
     if (isset($search_term) && isset($file_path) && isset($ref)) {
+      $search_term = urlencode($search_term);
+      // set data
       $query_data = array('file_path' => $file_path, 'ref' => $ref);
       $result = $this->get('/projects/'.$search_term.'/repository/files', $query_data); //@nolint
       if ($result !== false) {

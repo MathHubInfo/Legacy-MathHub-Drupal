@@ -1,0 +1,28 @@
+The library is easy to use with drupal. First add the following hook to you module:
+
+function modulename_libraries_info() {
+
+  $libraries['gitlab_api_php_wrapper'] = array(
+    'name' => 'GitLab API PHP Wrapper',
+    'vendor url' => '',
+    'download url' => '',
+    'version arguments' => array(
+      'file' => 'readme.txt',
+      'pattern' => '/Version (\d+)/',
+      'lines' => 5,
+    ),
+    'files' => array(
+      'php' => array(FILES),
+      ),
+    );
+  return $libraries;
+}
+
+Specify the class files you want to use in the FILES array.
+
+Then where ever you want to use the library use the following if statement before.
+ if (($library = libraries_load('gitlab_api_php_wrapper'))
+       && !empty($library['loaded']))
+{
+// Your code
+}

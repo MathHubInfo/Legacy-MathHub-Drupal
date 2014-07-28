@@ -73,6 +73,7 @@ class Repositories extends Client {
    */
   public function createProjectRepositoryTag($search_term, $tag_name, $ref) { //@nolint
     if (isset($search_term) && isset($tag_name) && isset($ref)) {
+      $search_term = urlencode($search_term);
       // set data
       $data = array('tag_name' => $tag_name,
                     'ref' => $ref);

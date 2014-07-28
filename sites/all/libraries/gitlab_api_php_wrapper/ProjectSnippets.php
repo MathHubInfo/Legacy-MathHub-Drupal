@@ -34,6 +34,7 @@ class ProjectSnippets extends Client {
    *    @link http://doc.gitlab.com/ce/api/ Pagination @endlink
    */
   public function getAllProjectSnippets($search_term) {
+    $search_term = urlencode($search_term);
     $result = $this->get('/projects/'.$search_term.'/snippets');
     if ($result !== false) {
       $return_code = intval(curl_getinfo($this->curlClient)['http_code']);
@@ -194,6 +195,7 @@ class ProjectSnippets extends Client {
    */
   public function editProjectSnippet($search_term, $snippet_id, array $params) {
     if (isset($params) && isset($search_term) && isset($snippet_id)) {
+      $search_term = urlencode($search_term);
       $result = $this->put('/projects/'.$search_term.'/snippets/'.$snippet_id, $params);
       if ($result !== false) {
         $return_code = intval(curl_getinfo($this->curlClient)['http_code']);
