@@ -961,12 +961,22 @@ function oaff_set_children($pid, $cids) {
 }
 
 function oaff_set_mtime($nid, $mtime) {
- db_insert('oaff_node_mtime')
+  $old = oaff_get_mtime($nid);
+  if ($old == "") { //not set
+    db_insert('oaff_node_mtime')
       ->fields(array(
         'nid' => $nid,
         'mtime' => $mtime,
       ))
       ->execute();
+  } else { //updating
+    db_update('oaff_node_mtime')
+      ->fields(array(
+        'mtime' => $mtime,
+      ))
+      ->condition('nid', $nid, '=')
+      ->execute();
+  }
 }
 
 function oaff_get_mtime($nid) {
