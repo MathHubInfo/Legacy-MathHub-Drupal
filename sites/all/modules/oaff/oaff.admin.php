@@ -7,6 +7,12 @@ function oaff_admin_menu(& $items) {
     'access callback' => 'oaff_admin_access',
     'menu_name' => MENU_CALLBACK,
   );
+  $items['mh/touch-files'] = array(
+    'title' => "Touch Source Files",
+    'page callback' => 'oaff_admin_touch_files',
+    'access callback' => 'oaff_admin_access',
+    'menu_name' => MENU_CALLBACK,
+  );
   $items['mh/lmh-update'] = array(
   	'title' => "Lmh Update",
   	'page callback' => 'oaff_admin_lmh_update',
@@ -40,6 +46,12 @@ function oaff_admin_menu(& $items) {
   return $items;
 }
 
+
+function oaff_admin_touch_files() {
+  shell_exec("find /var/data/localmh/MathHub/*/*/source/* | xargs touch");
+  drupal_set_message("Success");
+  return "";
+}
 
 /**
  * Implements access callback for OAFF auto-load feature
@@ -140,9 +152,11 @@ function oaff_admin_administrate() {
   $out .= '<button onclick="window.location = \'/mh/lmh-gen-omdoc\'" class="btn btn-warning btn-xs"> Lmh Generate OMDoc </button> </li>';
   $out .= '<li> Update Libraries (sTeX, MMT) ';
   $out .= '<button onclick="window.location = \'/mh/libs-update\'" class="btn btn-primary btn-xs"> Update Libs </button> </li>';
-  $out .= '<li> Rebuild MMT archives';
+  $out .= '<li> Touch Source Files (useful in case of compiler update to mark them as modified for crawler) ';
+  $out .= '<button onclick="window.location = \'/mh/touch-files\'" class="btn btn-primary btn-xs"> Touch Files </button> </li>';
+  $out .= '<li> Rebuild MMT archives ';
   $out .= '<button onclick="window.location = \'/mh/mmt-rebuild\'" class="btn btn-primary btn-xs"> Rebuild MMT Archives </button> </li>';  
-  $out .= '<li> Crawl Loaded Nodes';
+  $out .= '<li> Crawl Loaded Nodes (normally handled by cron, run manually if needed) ';
   $out .= '<button onclick="window.location = \'/mh/crawl-nodes\'" class="btn btn-primary btn-xs"> Crawl Nodes </button> </li> </ul>';
   //$out .= ' <button class="btn btn-primary " onclick="window.location = \'/mh/crawl-nodes\'"> Continue </button> </div> ';
   return $out;
