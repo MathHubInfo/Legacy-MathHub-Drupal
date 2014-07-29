@@ -119,7 +119,7 @@ function oaff_admin_node_crawler($arg = array()) {
   }
   variable_set('oaff_config', $oaff_config);
 
-  $result = array("crawled" => $crawled, "compiled" => $compiled_nodes);
+  $result = array("crawled" => $crawled, "compiled" => $compiled_nodes, "offset" => $offset);
   return $result;
 }
 
@@ -130,14 +130,15 @@ function oaff_admin_crawl_nodes() {
   $result = oaff_admin_node_crawler();
   $crawled = $result['crawled'];
   $compiled = $result['compiled'];
+  $offset = $result['offset'];
   if ($compiled == 0) {
     if ($crawled == 0) {
       drupal_set_message("Nothing to crawl (no nodes) (perhaps initialize nodes)");
     } else {
-       drupal_set_message("Finished crawling nodes, no modified nodes to recompile ($crawled)");
+       drupal_set_message("Checked $crawled source files, no modified nodes to recompile ");
     }
   } else {
-    drupal_set_message("Crawled $crawled nodes, reran $compiled");
+    drupal_set_message("Checked $crawled nodes, reran $compiled (offset $offset)");
   }
   drupal_set_breadcrumb(array());
   $out = '<div> <button class="btn btn-primary " onclick="window.location = \'/mh/crawl-nodes\'"> Continue </button> </div> ';
