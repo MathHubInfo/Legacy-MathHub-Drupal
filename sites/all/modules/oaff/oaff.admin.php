@@ -132,7 +132,7 @@ function oaff_admin_crawl_nodes() {
   $compiled = $result['compiled'];
   $offset = $result['offset'];
   if ($compiled == 0) {
-    if ($crawled == 0) {
+    if ($crawled == 0 && $offset == 0) {
       drupal_set_message("Nothing to crawl (no nodes) (perhaps initialize nodes)");
     } else {
        drupal_set_message("Checked $crawled source files, no modified nodes to recompile ");
