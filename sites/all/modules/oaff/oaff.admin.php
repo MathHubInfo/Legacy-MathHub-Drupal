@@ -77,6 +77,9 @@ function oaff_cron() {
   $data = array();
   $queue = DrupalQueue::get('oaff_crawl_nodes');
   $queue->createItem($data);
+  $queue->createItem($data);
+  $queue->createItem($data);
+  $queue->createItem($data); 
 }
 
 
@@ -118,7 +121,7 @@ function oaff_admin_node_crawler($arg = array()) {
     $oaff_config['crawl_nodes_offset'] = $offset + $crawled;
   }
   variable_set('oaff_config', $oaff_config);
-
+  drupal_set_message("Crawl-Nodes Task Done");
   $result = array("crawled" => $crawled, "compiled" => $compiled_nodes, "offset" => $offset);
   return $result;
 }
