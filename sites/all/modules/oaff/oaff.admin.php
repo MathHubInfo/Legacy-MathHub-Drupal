@@ -68,7 +68,7 @@ function oaff_admin_access() {
 function oaff_cron_queue_info() {
   $queues['oaff_crawl_nodes'] = array(
     'worker callback' => 'oaff_admin_node_crawler',
-    'time' => 60,
+    'time' => 260,
   );
   return $queues;
 }
