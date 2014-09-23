@@ -79,9 +79,8 @@ function oaff_cron() {
   $queue->createItem($data);
   $queue->createItem($data);
   $queue->createItem($data);
-  $queue->createItem($data); 
+  $queue->createItem($data);
 }
-
 
 function oaff_admin_node_crawler($arg = array()) {
   $oaff_config = variable_get('oaff_config');
@@ -144,7 +143,12 @@ function oaff_admin_crawl_nodes() {
     drupal_set_message("Checked $crawled nodes, reran $compiled (offset $offset)");
   }
   drupal_set_breadcrumb(array());
-  $out = '<div> <button class="btn btn-primary " onclick="window.location = \'/mh/crawl-nodes\'"> Continue </button> </div> ';
+  $out = '<div> <button class="btn btn-primary " onclick="window.location = \'/mh/crawl-nodes\'"> Continue </button> ';
+  $out .= ' <button class="btn btn-danger" title="keeps reloading this tab" onclick="window.location = \'/mh/crawl-nodes?auto=true\'"> Auto-Pilot </button> </div> ';
+  if (isset($_GET['auto'])) {
+    drupal_set_message("Running on auto-pilot", 'warning');
+    drupal_add_js("window.onload = function() {console.log('now'); window.location.reload('true');}", "inline");
+  }
   return $out;
 }
 
