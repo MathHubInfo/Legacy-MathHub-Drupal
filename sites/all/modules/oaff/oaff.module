@@ -29,9 +29,24 @@ function oaff_menu() {
     'access callback' => true,
     'menu_name' => 'navigation'
   );
+  $items['mh/content'] = array(
+    'title' => "MMT Content",
+    'page callback' => 'oaff_dynamic_content_page',
+    'access callback' => true,
+    'type' => MENU_CALLBACK,
+  );
+
   oaff_features_menu($items);
   oaff_admin_menu($items);
   return $items;
+}
+
+
+function oaff_dynamic_content_page() {
+  $uri = $_GET["uri"];
+  drupal_add_js("$ = jQuery;", "inline");
+  $response = mmt_get($uri);
+  return $response;
 }
 
 function oaff_permission() {
@@ -347,9 +362,15 @@ function oaff_node_view($node, $view_mode, $langcode) {
     drupal_add_js("var oaff_node_archive = '$archive';", "inline");
     drupal_add_js("var oaff_node_rel_path = '$rel_path';", "inline");
   	if (isset($filter_context['failed']) && $filter_context['failed']) { // time to report errors
+      
+      $omdoc_location = $pathinfo['alias'];
+      $omdoc = ""; //default
+      if (planetary_repo_stat_file($omdoc_location)) { //omdoc exists
+        $omdoc = planetary_repo_load_file($omdoc_location);
+      }
       $inst_id = oaff_initialize();
       $source = $filter_context['source'];
-      $output = oaff_mark_source_errors(check_plain($source), $filter_context['status'],$node->nid);
+      $output = oaff_mark_source_errors(check_plain($source), $filter_context['status'],$node->nid, $omdoc);
 
       $node->content['field_external'][0]['content']['#markup'] =  
          '<div id="' . $inst_id . '" class="bootstrap" >' . $output . '</div>';      
@@ -451,13 +472,19 @@ function oaff_save_error_status($nid, $status) {
  * function to mark errors, annotates source string with error information
  * @param $source the source string
  * @param $status the compilation status (containing error information)
+ * @param $nid the node id
+ * @param $omdoc optionally, the content of the omdoc file (empty string otherwise)
  * @return the processed string (with errors marked)
  */
-function oaff_mark_source_errors($source, $status, $nid) {
+function oaff_mark_source_errors($source, $status, $nid, $omdoc) {
 
   $color_catalog = array("Error" => "#FF8888", "Warning" => "#BBBB00", "Fatal" => "#FF3333", "Info" => "#9999FF");
   // creating log
-  $log = '<div> <p style="color:red"> Conversion Failed <a style="cursor:pointer;" onclick="if ($(this).html() == \'Show Log\') {$(this).html(\'Hide Log\')} else {$(this).html(\'Show Log\')}; $(\'#oaff_error_log\' ).toggle( \'fold\' );" >Show Log</a> </p> </div>';
+  $log = '<div> <p style="color:red"> Conversion Failed <a style="cursor:pointer;" onclick="if ($(this).html() == \'Show Log\') {$(this).html(\'Hide Log\')} else {$(this).html(\'Show Log\')}; $(\'#oaff_error_log\' ).toggle( \'fold\' );" >Show Log</a> ';
+  if ($omdoc != "") {
+    $log .= ' <a style="cursor:pointer;" onclick="if ($(this).html() == \'Show OMDoc\') {$(this).html(\'Hide OMDoc\')} else {$(this).html(\'Show OMDoc\')}; $(\'#oaff_omdoc_log\' ).toggle( \'fold\' );" >Show OMDoc</a> ';
+  }
+  $log .= '</p> </div>';
   $log .= '<div id="oaff_error_log" style="display: none;"><ul>';
   foreach ($status as $filter_name => $filter_status) {
     foreach ($filter_status['messages'] as $msg) {
@@ -479,6 +506,9 @@ function oaff_mark_source_errors($source, $status, $nid) {
   }
   $log .= "</ul></div>";
 
+  if ($omdoc != "") {
+      $log .= '<div id="oaff_omdoc_log" style="display: none;"><pre>' . check_plain($omdoc) . "</pre></div>";
+  }
   //wrapping lines with ids for later referencing
   $lines = explode("\n", $source);
   $new_lines = array();
