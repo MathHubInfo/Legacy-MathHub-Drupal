@@ -63,7 +63,7 @@ function mmt_node_view($node, $view_mode, $langcode) {
  * @param $style the style to be used for presentation
  * @return the rendered content
  */
-function mmt_get($dpath, $style = 'http://cds.omdoc.org/styles/omdoc/mathml.omdoc?html5') {
+function mmt_get($dpath, $style = 'planetary') {
   $mmt_config = variable_get('mmt_config');
   $mmt_url = $mmt_config['mmturl'];
   $url = "$mmt_url/:mmt?get%20$dpath??%20present%20$style%20respond";
