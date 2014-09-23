@@ -136,7 +136,13 @@ function oaff_features_common_errors() {
   }
 
   $comp = function($a, $b) {
-    return $a['occurs'] < $b['occurs'];
+    if ($a['type'] < $b['type']) {
+      return true;
+    } else if ($a['type'] > $b['type']) {
+      return false;
+    } else {
+      return $a['occurs'] < $b['occurs'];
+    }
   };
 
   $errors = array();
