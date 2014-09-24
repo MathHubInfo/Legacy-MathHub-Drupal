@@ -93,14 +93,14 @@ function oaff_admin_node_crawler($arg = array()) {
     $results = db_select('node', 'n')
             ->fields('n', array('nid'))
             ->condition('n.type', 'oaff_doc', '=')
-            ->range($offset + $crawled, 20)
+            ->range($offset + $crawled, 5)
             ->execute()
             ->fetchAll();
     foreach ($results as $result) {
       $node = node_load($result->nid);
       $location = $node->field_external['und']['0']['path'];
       $mtime = planetary_repo_stat_file($location)['mtime'];
-      if (oaff_get_mtime($result->nid) != $mtime) { //file changed -> recompiling
+      if (oaff_get_mtime($result->nid) != $mtime || oaff_has_errors($result->nid)) { //file changed or file had errors last time => trying recompiling
         node_view($node);
         oaff_set_mtime($result->nid, $mtime);
         $compiled_nodes += 1;
