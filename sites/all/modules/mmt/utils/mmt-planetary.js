@@ -24,7 +24,7 @@ var planetary = {
   },
 
   navigate: function(uri) {
-  	var path = URIToURL(uri);
+  	var path = planetary.URIToURL(uri);
   	window.location = path;
-  },  
+  },
 };
