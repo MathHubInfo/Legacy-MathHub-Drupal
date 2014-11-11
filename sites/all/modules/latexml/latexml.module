@@ -33,6 +33,26 @@ function latexml_compile($location) {
   return $result;
 }
 
+
+function latexml_get_compiled($location) {
+  $pathinfo = pathinfo($location);
+  $base_relpath = oaff_join_path(array($pathinfo['dirname'], $pathinfo['filename']));
+  $out_location = $base_relpath . '.omdoc';
+  $log_location = $base_relpath . '.ltxlog';
+  if (planetary_repo_stat_file($log_location) == null || planetary_repo_stat_file($out_location) == null) { //something failed
+    // TODO add a message to status
+    oaff_log("LATEXML", "Could not find .log or .omdoc file for $base_relpath (generation failed)");
+    $latexml_status = array("conversion" => 3, "messages" => array()); // conversion failed => fatal error 
+    $content = ""; 
+  } else {
+    $log = planetary_repo_load_file($log_location);
+    $latexml_status = _latexml_produce_status_msg($log);
+    $content = planetary_repo_load_file($out_location);  
+  }
+  $result = array("content" => $content, "status" => $latexml_status);
+  return $result;
+}
+
 function _latexml_produce_status_msg($log) {
   $status = array();
   $status['messages'] = array();
@@ -124,7 +144,7 @@ function latexml_filter_local_process($text, $filter, $format, $langcode, $cache
   }
 
   $fpath = $filter_context['mmt']['location'];
-  $response = latexml_compile($fpath);
+  $response = latexml_get_compiled($fpath);
 
   if (!isset($filter_context['status'])) {
     $filter_context['status'] = array();

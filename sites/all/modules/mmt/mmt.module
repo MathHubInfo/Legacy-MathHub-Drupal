@@ -293,27 +293,22 @@ function mmt_filter_presentation_process($text, $filter, $format, $langcode, $ca
   
   $fpath = $filter_context['mmt']['location'];
   $dpath = oaff_get_path_info($fpath)['dpath'];
-  $style = $filter->settings['mmt_style'];
-  if ($text == "") { // no source => we get what is currently already in MMT ( node type probably virtdoc)
-    $response = mmt_get($dpath, $style);
-    return $response;
+  $style = $filter->settings['mmt_style'];  
+  //$response = mmt_present($dpath, $text, $style);
+  $response = mmt_get_presentation($fpath, $style);
+  if ($response == "") {
+    drupal_set_message('Cannot connect to MMT instance, is MMT running?', 'error');
+    $filter_context['failed'] = true;    
+    return $text;
+  }
+  $filter_context['status']['mmt_pres'] = $response['status'];
+  if ($response['status']['conversion'] != 0) { // compilation failed
+    $filter_context['failed'] = true;
+    oaff_log("MMT", "presentation filter failed");
   } else {
-    $response = mmt_present($dpath, $text, $style);
-    if ($response == "") {
-      drupal_set_message('Cannot connect to MMT instance, is MMT running?', 'error');
-      $filter_context['failed'] = true;    
-      return $text;
-    }
-    $result = json_decode($response, true);
-    $filter_context['status']['mmt_pres'] = $result['status'];
-    if ($result['status']['conversion'] != 0) { // compilation failed
-      $filter_context['failed'] = true;
-      oaff_log("MMT", "presentation filter failed");
-    } else {
-      oaff_log("MMT", "presentation filter succeeded");
-    }
-    return $result['content'];
-  } 
+    oaff_log("MMT", "presentation filter succeeded");
+  }
+  return $response['content'];
 }
 
 /**
@@ -341,22 +336,24 @@ function mmt_filter_compilation_process($text, $filter, $format, $langcode, $cac
   $fpath = $filter_context['mmt']['location'];
   $dpath = oaff_get_path_info($fpath)['dpath'];
   $format = $filter->settings['mmt_format'];
-  $response = mmt_compile($text, $dpath, $format);
+  //$response = mmt_compile($text, $dpath, $format);
+  //todo $format -> $compiler translation
+  $response = mmt_get_compiled($fpath);
 
   if ($response == "") {
     drupal_set_message('Cannot connect to MMT instance, is MMT running?', 'error');
     $filter_context['failed'] = true;    
     return $text;
   }
-  $result = json_decode($response, true);
-  $filter_context['status']['mmt_comp'] = $result['status'];
-  if ($result['status']['conversion'] != 0) {
+  //$result = json_decode($response, true);
+  $filter_context['status']['mmt_comp'] = $response['status'];
+  if ($response['status']['conversion'] != 0) {
     oaff_log("MMT", "compilation filter failed");
     $filter_context['failed'] = true;
   } else {
     oaff_log("MMT", "compilation filter succeeded");
   }
-  return $result['content'];
+  return $response['content'];
 }
 
 /**
@@ -440,6 +437,87 @@ function mmt_field_formatter_info() {
     ),
   );
 }
+
+
+function mmt_get_compiled($location, $compiler = "stex-omdoc") {
+  $pathinfo = oaff_get_path_info($location);
+  $base = oaff_join_path(array($pathinfo['group'], $pathinfo['archive']));
+  $rel_parent = $pathinfo['rel_parent'];
+  $basename = $pathinfo['module'];
+  $log_filename = $basename . '.err';    
+
+  $log_location = oaff_join_path(array($base, "errors", $compiler, $rel_parent, $log_filename));
+  if (planetary_repo_stat_file($log_location) == null) { //something failed
+    // TODO add a message to status
+    oaff_log("MMT", "Could not find .log file for compiling $location with $compiler (generation failed)");
+    $mmt_status = array("conversion" => 3, "messages" => array()); // conversion failed => fatal error 
+    $content = ""; 
+  } else {
+    $log = planetary_repo_load_file($log_location);
+    $mmt_status = _mmt_produce_status_msg($log);
+    $content = "TODO"; //Content Empty for MMT index  
+  }
+  $result = array("content" => $content, "status" => $mmt_status);
+  return $result;
+}
+
+function mmt_get_presentation($location, $presenter = "planetary") {
+  $pathinfo = oaff_get_path_info($location);
+  $base = oaff_join_path(array($pathinfo['group'], $pathinfo['archive']));
+  $rel_parent = $pathinfo['rel_parent'];
+  $rel_path = $pathinfo['rel_path'];
+  $basename = $pathinfo['module'];
+  if (planetary_repo_is_dir($location)) {
+    $out_location = oaff_join_path(array($base, "export", $presenter, "narration", $rel_path, ".html"));
+  } else {
+    $out_filename = $basename . '.html';  
+    $out_location = oaff_join_path(array($base, "export", $presenter, "narration", $rel_parent, $out_filename));
+  }
+  if (planetary_repo_stat_file($out_location) == null) { //something failed
+    // TODO add a message to status
+    oaff_log("MMT", "Could not find .html file for presenting $location with $presenter (generation failed)");
+    $mmt_status = array("conversion" => 3, "messages" => array()); // conversion failed => fatal error 
+    $content = ""; 
+  } else {
+    $mmt_status = array("conversion" => 0, "messages" => array()); // conversion succeeded, no log for presentation yet 
+    $content = planetary_repo_load_file($out_location); 
+  }
+  $result = array("content" => $content, "status" => $mmt_status);
+  return $result;
+}
+
+function _mmt_produce_status_msg($log) {
+  $xmllog = new SimpleXMLElement($log);
+  $lvlmap = array(0 => "Info", 1 => "Warning", 2 => "Error", 3 => "Fatal");
+  $errors = array();
+  $conversion_status = 0;
+  foreach ($xmllog->error as $error) {
+    $current = array();
+    $current['shortMsg'] = $error['shortMsg'];
+    $level = $error['level'];
+    if (!isset($lvlmap[$level])) {
+      $level = 3; //assuming Fatal.
+    } 
+    $current['type'] = $lvlmap[$level];
+    $conversion_status = max($conversion_status, $level);
+    $current['longMsg'] = (string) $error;
+    /*
+    $current_message["srcref"] = array();
+    $current_message["srcref"]['from'] = array();
+    $current_message["srcref"]['from']['line'] = $matches[1] + 1; // oaff standard is that lines nr starts at 1 not 0
+    $current_message["srcref"]['from']['col'] = $matches[2];
+    $current_message["srcref"]['to'] = array();
+    $current_message["srcref"]['to']['line'] = $matches[3] + 1; // oaff standard is that lines nr starts at 1 not 0
+    $current_message["srcref"]['to']['col'] = $matches[4];
+    */
+    $errors[] = $current;
+  }
+  $status = array();
+  $status['messages'] = $errors;
+  $status['conversion'] = $conversion_status; 
+  return $status;
+}
+
 /**
  * implements hook_filed_formatter view, 
  * @param $entity_type The type of $entity
@@ -452,7 +530,6 @@ function mmt_field_formatter_info() {
  */
 function mmt_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
   $element = array();
-  
   switch ($display['type']) {
     case 'mmt_formatter':
       $lang = $entity->language;
@@ -462,47 +539,27 @@ function mmt_field_formatter_view($entity_type, $entity, $field, $instance, $lan
         $filter_context = array();
         $filter_context['mmt']['location'] = $location;
         $pathinfo = oaff_get_path_info($location);
-        $exporter = "planetary";
         if ($entity->type == 'mmtdoc') {
-          $content = planetary_repo_load_file($location);
-          $html_filename = $pathinfo['module'] . '.html';
-          $html_location = oaff_join_path(array($pathinfo['group'], $pathinfo['archive'], 'export/html/narration', $pathinfo['rel_parent'], $html_filename));           
+          $exporter = "html";           
         } else if ($entity->type == "oaff_virtdoc") { // there is no source
-          $content = "";
-          $html_location = oaff_join_path(array($pathinfo['group'], $pathinfo['archive'], 'export/planetary-headers/narration', $pathinfo['rel_parent'], '.html'));
+          $exporter = "planetary-headers";
         } else {
-          $content = planetary_repo_load_file($location);
-          $html_filename = $pathinfo['module'] . '.html';
-          $html_location = oaff_join_path(array($pathinfo['group'], $pathinfo['archive'], 'export/planetary/narration', $pathinfo['rel_parent'], $html_filename));
+          $exporter = "planetary";
         }
+        $filter_context['mmt']['exporter'] = $exporter; //TODO, this isn't used yet
         global $filter_debug;
         $filter_debug = array();
         $mtime = planetary_repo_stat_file($location)['mtime'];
         $last_ran_time = oaff_get_mtime($entity->nid);
 
-        if ($last_ran_time == $mtime && planetary_repo_stat_file($html_location) != null) {
-          oaff_log("OAFF(MMT)", "Getting html presentation from filesystem cache");
-          $markup = planetary_repo_load_file($html_location);
-        } else {
-          $reasons = '';
-          if ($last_ran_time != $mtime) {
-            $reasons .= "source file changed ";
-          }
-          if (planetary_repo_stat_file($html_location) == null) {
-            $reasons .= "html cache file missing ";
-          }
-          oaff_log("OAFF(MMT)", "regenerating because: $reasons");
-          $markup = check_markup($content, $item['filter'], $lang);
-          if (!isset($filter_context['failed']) || !$filter_context['failed']) {
-            oaff_set_mtime($entity->nid, $mtime); 
-            $html_parent = pathinfo($html_location)['dirname'];
-            if (planetary_repo_stat_file($html_parent) != null) {
-              planetary_repo_save_file($html_location, $markup);
-            } else {
-              oaff_log("OAFF(MMT)", "Cannot write html cache file, parent doesn't exist: $html_parent");
-            // TODO else create parents
-            }
-          }
+        if ($last_ran_time == $mtime) {
+          oaff_log("OAFF(MMT)", "No change, no need to re-process errors");
+          $filter_context['mmt']['modified'] = false;
+        } 
+        $content = planetary_repo_load_file($location);//passing content to show source if compilers fail
+        $markup = check_markup($content, $item['filter'], $lang);
+        if (!isset($filter_context['failed']) || !$filter_context['failed']) {
+          oaff_set_mtime($entity->nid, $mtime);   
         }
         $element[$delta] = array(
           "#type" => "container",
