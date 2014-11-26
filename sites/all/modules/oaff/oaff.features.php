@@ -95,10 +95,14 @@ function oaff_features_rerun_error() {
     $rerun_nidsS = $_GET['nids'];
     $rerun_nids = explode(",", $rerun_nidsS);
     foreach ($rerun_nids as $nid) {
-          node_view(node_load($nid));
+        $node = node_load($nid);
+        $rel_path = $node->field_external['und'][0]['path'];
+        $location = planetary_repo_access_rel_path($rel_path);
+        shell_exec("touch $location"); //marked for rerun
+        node_view($node);
     }
     $count = count($rerun_nids);
-    drupal_set_message("Reran $count nodes, see developer log below (page bottom)");    
+    drupal_set_message("Re-crawled $count nodes and marked them for re-run. See developer log below (page bottom)");    
     drupal_goto('mh/common-errors');
   } else {
     drupal_set_message("No error given (to rerun)", "warning");
