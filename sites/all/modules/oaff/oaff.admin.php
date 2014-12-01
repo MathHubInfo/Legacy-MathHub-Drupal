@@ -37,7 +37,30 @@ function oaff_admin_menu(& $items) {
   	'access callback' => 'oaff_admin_access',
   	'menu_name' => 'navigation',
   );  
+  $items['mh/update_errors'] = array(
+    'title' => "Update Errors",
+    'page callback' => 'oaff_admin_update_errors',
+    'access callback' => true, //needs public for providing builder API?
+    'menu_name' => 'navigation',
+  );
+
   return $items;
+}
+
+function oaff_admin_update_errors() {
+  if (isset($_POST["path"])) {
+    $location = $_POST["path"];
+    $path_info = oaff_get_path_info($location);
+    $alias = $path_info['alias'];
+    $path = drupal_lookup_path("source", $alias);
+    $node = menu_get_object("node", 1, $path);
+    node_view($node);
+    drupal_set_message("Success");
+    return " ";
+  } else {
+    drupal_set_message("Failure, no field 'path' in post request");
+    return " ";
+  }
 }
 
 
