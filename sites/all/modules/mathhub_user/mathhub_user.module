@@ -1,0 +1,563 @@
+<?php
+/**
+ * @file
+ * A module that synchronizes the drupal accounts with gitlab accounts.
+ *       
+ */
+
+/**
+ * Implements hook_libraries_info().
+ *
+ * For defining external libraries.
+ * @todo add 'vendor url', 'download url' etc. in case we make the libarary stand alone
+ */
+function mathhub_user_libraries_info() {
+
+  $libraries['gitlab_api_php_wrapper'] = array(  // @nolint
+    'name' => 'GitLab API PHP Wrapper',
+    'vendor url' => '', 
+    'download url' => '', 
+    'version arguments' => array(
+      'file' => 'readme.txt',
+      'pattern' => '/Version (\d+)/', 
+      'lines' => 5,
+    ),
+    'files' => array(
+      'php' => array('Users.php'),
+      ),
+    );
+  return $libraries;
+}
+
+/**
+ * Implements hook_help().
+ *
+ * Displays help and module information.
+ *
+ * @param path
+ *   Which path of the site we're using to display help
+ * @param arg
+ *   Array that holds the current path as returned from arg() function
+ */
+function mathhub_user_help($path, $arg) {
+  switch ($path) {
+    case 'admin/help#mathhub_user':
+      $output = '';
+      $output .= '<h3>'.t('About').'</h3>';
+      $output .= '<p>'.t('A module that synchronizes the drupal accounts with
+                  gitlab accounts.').'</p>';
+      return $output;
+      break;
+  }
+} 
+
+/**
+ * Implements hook_menu().
+ *
+ * The function mathhub_user_menu implements the hook_menu and allows therefore 
+ * to display the configuration menu.
+ */
+function mathhub_user_menu() {
+  $items = array();
+  $items['admin/config/system/mathhub_user'] = array(
+    'title' => 'Mathhub User',
+    'description' => 'Configuration for Mathhub User module',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('mathhub_user_form'),
+    'access arguments' => array('access administration pages'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+  return $items;
+}
+
+/**
+ * Page callback: Mathhub User settings
+ *
+ * @see mathhub_user_menu()
+ */
+function mathhub_user_form($form, &$form_state) {
+  $form['mathhub_user_private_token'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Private Token of GitLab Server administrator account'),
+    '#default_value' => variable_get('mathhub_user_private_token', ''),
+    '#size' => 20,
+    '#maxlength' => 128,
+    '#description' => t('The private token needed for authentication with the
+      GitLab server.'),
+    '#required' => true,
+  );
+  $form['mathhub_user_server_api_url'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Server URL of GitLab Server'),
+    '#default_value' => variable_get('mathhub_user_server_api_url', ''),
+    '#size' => 128,
+    '#maxlength' => 512,
+    '#description' => t('The Server URL of the GitLab Server. Should be in the 
+      form of "http://serverURL/api/v3". Needed to be able to connect to it.'),
+    '#required' => true,
+  );
+  $form['mathhub_user_admin_id'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Admin ID of gitlab account'),
+    '#default_value' => variable_get('mathhub_user_admin_id', 1),
+    '#size' => 4,
+    '#maxlength' => 8,
+    '#description' => t('The Admin ID of the admin account. Has to correspond
+      to the private token.'),
+    '#required' => true,
+  );
+  $form['mathhub_user_log_messages'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Log Module Messages'),
+    '#default_value' => variable_get('mathhub_user_log_messages', 1),
+    '#description' => t('Wheter or not the module should create log files.'),
+    '#required' => false,
+  );
+  return system_settings_form($form);
+}
+
+/**
+ * Implements hook_form_user_register_form_alter().
+ *
+ * The function mathhub_user_form_user_register_form_alter implements the 
+ * hook_form_user_register_form_alter and allows therefore to add our extra 
+ * user fields to the user registration form and then synchronize them with 
+ * GitLab by recreating the same user on GitLab.
+ */
+function mathhub_user_form_user_register_form_alter(&$form, &$form_state, $form_id) {
+  $form['#validate'][] = 'mathhub_user_user_form_validate';
+  $form['#submit'][] = 'mathhub_user_user_register_submit';
+
+  $form['account']['name']['#description'] = 'Punctuation is not allowed except for periods, hyphens, apostrophes, and underscores.';
+  $form['account']['pass']['#description'] = 'Provide a password for the new account in both fields. Minimum length is 8 characters.';
+  $form['account']['realname'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Name',
+    '#description' => 'Please give us your name, so people you know can recognize you.',
+    '#required' => true,
+    '#weight' => 5);
+  $form['account']['skype'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Skype ID',
+    '#description' => 'Your Skype ID, so people you know can stay in touch with you.',
+    '#required' => false,
+    '#weight' => 6);
+  $form['account']['linkedin'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Linkedin',
+    '#description' => 'Your Linkedin ID, so people you know can stay in touch with you.',
+    '#required' => false,
+    '#weight' => 7);
+  $form['account']['twitter'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Twitter account',
+    '#description' => 'Your Twitter account name, so people you know can stay in touch with you.',
+    '#required' => false,
+    '#weight' => 8);
+  $form['account']['website_url'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Website',
+    '#description' => 'So people you know can see your other work.',
+    '#required' => false,
+    '#weight' => 9);
+  $form['account']['bio'] = array(
+    '#type' => 'textarea',
+    '#title' => 'Biography',
+    '#description' => 'Tell something about yourself, but use no more than 250 characters.',
+    '#required' => false,
+    '#weight' => 10);
+}
+
+/**
+ * Implements hook_form_user_profile_form_alter().
+ *
+ * The function mathhub_user_form_user_profile_form_alter implements the 
+ * hook_form_user_profile_form_alter and allows therefore to add our extra 
+ * user fields to the user profile edit form and then synchronize them with 
+ * GitLab by doing the same changes to it the same user on GitLab.
+ */
+function mathhub_user_form_user_profile_form_alter(&$form, &$form_state, $form_id) {
+  $form['#validate'][] = 'mathhub_user_user_form_validate';
+  $form['#submit'][] = 'mathhub_user_user_edit_submit';
+
+  // save old email address for submit handler in order to pass it to gitlab API
+  $form['old_email_address'] = array(
+    '#type' => 'value',
+    '#value' => $form_state['user']->mail
+  );
+
+  $form['account']['name']['#description'] = 'Punctuation is not allowed except for periods, hyphens, apostrophes, and underscores.';
+  $form['account']['pass']['#description'] = 'Provide a password for the new account in both fields. Minimum length is 8 characters.';
+
+  $form['account']['realname'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Name',
+    '#description' => 'Please give us your name, so people you know can recognize you.',
+    '#required' => true,
+    '#weight' => 5);
+  if(isset($form_state['user']->data['realname'])) {
+    $form['account']['realname']['#default_value'] = $form_state['user']->data['realname'];
+  }
+
+  $form['account']['skype'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Skype ID',
+    '#description' => 'Your Skype ID, so people you know can stay in touch with you.',
+    '#required' => false,
+    '#weight' => 6);
+  if(isset($form_state['user']->data['skype'])) {
+    $form['account']['skype']['#default_value'] = $form_state['user']->data['skype'];
+  }
+
+  $form['account']['linkedin'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Linkedin',
+    '#description' => 'Your Linkedin ID, so people you know can stay in touch with you.',
+    '#required' => false,
+    '#weight' => 7);
+  if(isset($form_state['user']->data['linkedin'])) {
+    $form['account']['linkedin']['#default_value'] = $form_state['user']->data['linkedin'];
+  }
+
+  $form['account']['twitter'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Twitter account',
+    '#description' => 'Your Twitter account name, so people you know can stay in touch with you.',
+    '#required' => false,
+    '#weight' => 8);
+  if(isset($form_state['user']->data['twitter'])) {
+    $form['account']['twitter']['#default_value'] = $form_state['user']->data['twitter'];
+  }
+
+  $form['account']['website_url'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Website',
+    '#description' => 'So people you know can see your other work.',
+    '#required' => false,
+    '#weight' => 9);
+  if(isset($form_state['user']->data['website_url'])) {
+    $form['account']['website_url']['#default_value'] = $form_state['user']->data['website_url'];
+  }
+
+  $form['account']['bio'] = array(
+    '#type' => 'textarea',
+    '#title' => 'Biography',
+    '#description' => 'Tell something about yourself, but use no more than 250 characters.',
+    '#required' => false,
+    '#weight' => 10);
+  if(isset($form_state['user']->data['bio'])) {
+    $form['account']['bio']['#default_value'] = $form_state['user']->data['bio'];
+  }
+}
+
+/**
+ * Function mathhub_user_user_form_validate
+ *
+ * This function validates the changes to users. Used by 
+ * mathhub_user_form_user_profile_form_alter and 
+ * hook_form_user_register_form_alter
+ */
+function mathhub_user_user_form_validate($form, &$form_state) {
+  if(!isset($form_state['input']['name']) || 
+     !preg_match("/\A[a-zA-Z0-9_.][a-zA-Z0-9_\-\.]*(?<!\.git)\z/", $form_state['input']['name'])) {
+    form_set_error('name', t("You must adhere to the username rules. 
+                              The username can contain only letters, digits, '-', '.' and '_'. 
+                              Moreover due to GitLab synchronisation it also cannot start with '-' or end in '.git'"));
+  }
+  if(!isset($form_state['input']['pass']) || 
+      strlen($form_state['input']['pass']['pass1']) < 8 ||
+      $form_state['input']['pass']['pass1'] !== $form_state['input']['pass']['pass2']) {
+    form_set_error('pass', t("The password needs to be atleast 8 characters long."));    
+  }
+  if(!isset($form_state['input']['realname'])) {
+    form_set_error('realname', t("You need to provide us with your name."));  
+  }
+  return;
+}
+
+/**
+ * Function mathhub_user_user_register_submit
+ *
+ * This function process the registration to a user. Used by 
+ * hook_form_user_register_form_alter. 
+ */
+function mathhub_user_user_register_submit(&$form, &$form_state) {
+  // load GitLab API PHP Wrapper
+  if (($library = libraries_load('gitlab_api_php_wrapper')) // @nolint
+       && !empty($library['loaded'])) {
+    // create new request
+    try {
+      $request = new GitLabAPI\Users(variable_get('mathhub_user_private_token'),
+                                 variable_get('mathhub_user_admin_id'),
+                                 variable_get('mathhub_user_server_api_url'));
+    } 
+    catch (RuntimeException $e) {
+      if (variable_get('mathhub_user_log_messages') === 1) {
+        watchdog('mathhub_user', 
+                 'Error in Mathhub User: %info.', 
+                 array('%info' => $e->getMessage()),
+                 WATCHDOG_ERROR, 
+                 '');
+      }
+      return;
+    }
+    // create user in GitLab
+    try {
+      $additional_params = array();
+      if (isset($form_state['values']['skype'])) {
+        $additional_params['skype'] = $form_state['values']['skype'];
+      }
+      if (isset($form_state['values']['linkedin'])) {
+        $additional_params['linkedin'] = $form_state['values']['linkedin'];
+      }
+      if (isset($form_state['values']['twitter'])) {
+        $additional_params['twitter'] = $form_state['values']['twitter'];
+      }
+      if (isset($form_state['values']['website_url'])) {
+        $additional_params['website_url'] = $form_state['values']['website_url'];
+      }
+      if (isset($form_state['values']['bio'])) {
+        $additional_params['bio'] = $form_state['values']['bio'];
+      }
+      $request->createUser($form_state['values']['name'],
+                           $form_state['values']['realname'],
+                           $form_state['values']['pass'], 
+                           $form_state['values']['mail'],
+                           $additional_params); 
+    } 
+    catch (RuntimeException $e) {
+      if (variable_get('mathhub_user_log_messages') === 1) {
+        watchdog('mathhub_user', 
+                 'Error in Mathhub User: %info.', 
+                 array('%info' => $e->getMessage()),
+                 WATCHDOG_ERROR, 
+                 '');
+      }
+      return;
+    }
+    // we performed the request without errors. 
+    if (variable_get('mathhub_user_log_messages') === 1) {
+      watchdog('mathhub_user',
+               'Created GitLab User succesfully.',
+               array(),
+               WATCHDOG_NOTICE,
+               '');
+    }
+    return;
+  } else {
+    if (variable_get('mathhub_user_log_messages') === 1) {
+      watchdog('mathhub_user', 
+               'Error in Mathhub User: Could not load library "gitlab_api_php_wrapper".', 
+               array(),
+               WATCHDOG_ERROR, 
+               '');
+    }
+  }
+}
+
+/**
+ * Function mathhub_user_user_edit_submit
+ *
+ * This function process the change to a user. Used by 
+ * mathhub_user_form_user_profile_form_alter. 
+ */
+function mathhub_user_user_edit_submit(&$form, &$form_state) {
+  // load GitLab API PHP Wrapper
+  if (($library = libraries_load('gitlab_api_php_wrapper')) // @nolint
+       && !empty($library['loaded'])) {
+    // create new request
+    try {
+      $request = new GitLabAPI\Users(variable_get('mathhub_user_private_token'),
+                                 variable_get('mathhub_user_admin_id'),
+                                 variable_get('mathhub_user_server_api_url'));
+    } 
+    catch (RuntimeException $e) {
+      if (variable_get('mathhub_user_log_messages') === 1) {
+        watchdog('mathhub_user', 
+                 'Error in Mathhub User: %info.', 
+                 array('%info' => $e->getMessage()),
+                 WATCHDOG_ERROR, 
+                 '');
+      }
+      return;
+    }
+    // get GitLab ID
+    try {
+      $user_id = $request->getUserID($form_state['values']['old_email_address']);
+    } 
+    catch (RuntimeException $e) {
+      if (variable_get('mathhub_user_log_messages') === 1) {
+        watchdog('mathhub_user', 
+                 'Error in Mathhub User: %info.', 
+                 array('%info' => $e->getMessage()),
+                 WATCHDOG_ERROR, 
+                 '');
+      }
+      return;
+    }
+    // data which is send with the api call
+    $data = array();
+    // check if data exists
+    if (isset($form_state['values']['name'])) {
+      $data['username'] = $form_state['values']['name'];
+    }
+    if (isset($form_state['values']['realname'])) {
+      $data['name'] = $form_state['values']['realname'];
+    }
+    if (isset($form_state['values']['mail'])) {
+      $data['email'] = $form_state['values']['mail'];
+    }
+    if (isset($form_state['values']['pass'])) {
+      $data['password'] = $form_state['values']['pass'];
+    }
+    if (isset($form_state['values']['skype'])) {
+      $data['skype'] = $form_state['values']['skype'];
+    }
+    if (isset($form_state['values']['linkedin'])) {
+      $data['linkedin'] = $form_state['values']['linkedin'];
+    }
+    if (isset($form_state['values']['twitter'])) {
+      $data['twitter'] = $form_state['values']['twitter'];
+    }
+    if (isset($form_state['values']['website_url'])) {
+      $data['website_url'] = $form_state['values']['website_url'];
+    }
+    if (isset($form_state['values']['bio'])) {
+      $data['bio'] = $form_state['values']['bio'];
+    }
+    // edit user in GitLab
+    try {
+      $request->editUser($user_id, $data);
+    } 
+    catch (RuntimeException $e) {
+      if (variable_get('mathhub_user_log_messages') === 1) {
+        watchdog('mathhub_user', 
+                 'Error in Mathhub User: %info.', 
+                 array('%info' => $e->getMessage()),
+                 WATCHDOG_ERROR, 
+                 '');
+      }
+      return;
+    }
+    // we performed the request without errors. 
+    if (variable_get('mathhub_user_log_messages') === 1) {
+      watchdog('mathhub_user',
+               'Updated MathHub User succesfully.',
+               array(),
+               WATCHDOG_NOTICE,
+               '');
+    }
+    return;
+  } else {
+    if (variable_get('mathhub_user_log_messages') === 1) {
+      watchdog('mathhub_user', 
+               'Error in Mathhub User: Could not load library "gitlab_api_php_wrapper".', 
+               array(),
+               WATCHDOG_ERROR, 
+               '');
+    }
+  }
+}
+
+
+/**
+ * Implements hook_user_delete().
+ *
+ * The function mathhub_user_user_delete deletes the specified GitLab account.
+ *
+ * @param account
+ *   The account that is being deleted from gitlab  
+ */
+function mathhub_user_user_delete($account) {
+  // load GitLab API PHP Wrapper
+  if (($library = libraries_load('gitlab_api_php_wrapper')) // @nolint 
+       && !empty($library['loaded'])) {
+    // create new request
+    try {
+      $request = new GitLabAPI\Users(variable_get('mathhub_user_private_token'),
+                                 variable_get('mathhub_user_admin_id'),
+                                 variable_get('mathhub_user_server_api_url'));
+    } 
+    catch (RuntimeException $e) {
+      if (variable_get('mathhub_user_log_messages') === 1) {
+        watchdog('mathhub_user', 
+                 'Error in Mathhub User: %info.', 
+                 array('%info' => $e->getMessage()),
+                 WATCHDOG_ERROR, 
+                 '');
+      }
+      return;
+    }
+    // get GitLab ID
+    try {
+      $user_id = $request->getUserID($account->mail);
+    } 
+    catch (RuntimeException $e) {
+      if (variable_get('mathhub_user_log_messages') === 1) {
+        watchdog('mathhub_user', 
+                 'Error in Mathhub User: %info.', 
+                 array('%info' => $e->getMessage()),
+                 WATCHDOG_ERROR, 
+                 '');
+      }
+      return;
+    }
+    // delete user from GitLab
+    try {
+      $request->deleteUser($user_id);
+    } 
+    catch (RuntimeException $e) {
+      if (variable_get('mathhub_user_log_messages') === 1) {
+        watchdog('mathhub_user', 
+                 'Error in Mathhub User: %info.', 
+                 array('%info' => $e->getMessage()),
+                 WATCHDOG_ERROR, 
+                 '');
+      }
+      return;
+    }
+    // we performed the request without errors. 
+    if (variable_get('mathhub_user_log_messages') === 1) {
+      watchdog('mathhub_user',
+               'Deleted GitLab User succesfully.',
+               array(),
+               WATCHDOG_NOTICE,
+               '');
+    }
+    return;
+  } else {
+    if (variable_get('mathhub_user_log_messages') === 1) {
+      watchdog('mathhub_user', 
+               'Error in Mathhub User: Could not load library "gitlab_api_php_wrapper".', 
+               array(),
+               WATCHDOG_ERROR, 
+               '');
+    }
+  }
+}
+
+/**
+ * Implement hook_user_presave().
+ *
+ * Used to save additional data with the user. 
+ */
+function mathhub_user_user_presave(&$edit, $account, $category) {
+  if (isset($edit['realname'])) {
+    $edit['data']['realname'] = $edit['realname'];
+  }
+  if (isset($edit['skype'])) {
+    $edit['data']['skype'] = $edit['skype'];
+  }
+  if (isset($edit['linkedin'])) {
+    $edit['data']['linkedin'] = $edit['linkedin'];
+  }
+  if (isset($edit['twitter'])) {
+    $edit['data']['twitter'] = $edit['twitter'];
+  }  
+  if (isset($edit['website_url'])) {
+    $edit['data']['website_url'] = $edit['website_url'];
+  }
+  if (isset($edit['bio'])) {
+    $edit['data']['bio'] = $edit['bio'];
+  }
+}

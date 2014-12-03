@@ -1,0 +1,7 @@
+name = Mathhub User
+description = A module that handles synchronizes the drupal accounts with gitlab accounts and also extends the User accounts with various fields.
+core = 7.x
+configure = admin/config/system/mathhub_user
+files[] = mathhub_user.module
+dependencies[] = libraries
+package = "MathHub"
