@@ -21,6 +21,68 @@
     }
   };
 
+  /**
+   * Autogrow plugin which auto resizes the input of the multiple value.
+   *
+   * http://stackoverflow.com/questions/931207/is-there-a-jquery-autogrow-plugin-for-text-fields
+   *
+   */
+  $.fn.autoGrowInput = function(o) {
+
+    o = $.extend({
+      maxWidth: 1000,
+      minWidth: 0,
+      comfortZone: 70
+    }, o);
+
+    this.filter('input:text').each(function(){
+
+      var minWidth = o.minWidth || $(this).width(),
+        val = '',
+        input = $(this),
+        testSubject = $('<tester/>').css({
+          position: 'absolute',
+          top: -9999,
+          left: -9999,
+          width: 'auto',
+          fontSize: input.css('fontSize'),
+          fontFamily: input.css('fontFamily'),
+          fontWeight: input.css('fontWeight'),
+          letterSpacing: input.css('letterSpacing'),
+          whiteSpace: 'nowrap'
+        }),
+        check = function() {
+
+          if (val === (val = input.val())) {return;}
+
+          // Enter new content into testSubject
+          var escaped = val.replace(/&/g, '&amp;').replace(/\s/g,'&nbsp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+          testSubject.html(escaped);
+
+          // Calculate new width + whether to change
+          var testerWidth = testSubject.width(),
+            newWidth = (testerWidth + o.comfortZone) >= minWidth ? testerWidth + o.comfortZone : minWidth,
+            currentWidth = input.width(),
+            isValidWidthChange = (newWidth < currentWidth && newWidth >= minWidth)
+              || (newWidth > minWidth && newWidth < o.maxWidth);
+
+          // Animate width
+          if (isValidWidthChange) {
+            input.width(newWidth);
+          }
+
+        };
+
+      testSubject.insertAfter(input);
+
+      $(this).bind('keyup keydown blur update', check);
+
+    });
+
+    return this;
+  };
+
+
   Drupal.autocomplete_deluxe.empty =  {label: '- ' + Drupal.t('None') + ' -', value: "" };
 
   /**
@@ -57,6 +119,9 @@
   };
 
   Drupal.autocomplete_deluxe.Widget.prototype.init = function(settings) {
+    if ($.browser.msie && $.browser.version === "6.0") {
+      return;
+    }
 
     this.id = settings.input_id;
     this.jqObject = $('#' + this.id);
@@ -64,6 +129,19 @@
     this.uri = settings.uri;
     this.multiple = settings.multiple;
     this.required = settings.required;
+    this.limit = settings.limit;
+    this.synonyms = typeof settings.use_synonyms == 'undefined' ? false : settings.use_synonyms;
+
+    this.wrapper = '""';
+
+    if (typeof settings.delimiter == 'undefined') {
+      this.delimiter = true;
+    } else {
+      this.delimiter =  settings.delimiter.charCodeAt(0);
+    }
+
+
+    this.items = {};
 
     var self = this;
     var parent = this.jqObject.parent();
@@ -75,7 +153,7 @@
 
     var generateValues = function(data, term) {
       var result = new Array();
-      for (terms in data) {
+      for (var terms in data) {
         if (self.acceptTerm(terms)) {
           result.push({
             label: data[terms],
@@ -103,7 +181,15 @@
         return;
       }
 
-      lastXhr = $.getJSON(settings.uri + '/' + term, request, function(data, status, xhr) {
+      // Some server collapse two slashes if the term is empty, so insert at
+      // least a whitespace. This whitespace will later on be trimmed in the
+      // autocomplete callback.
+      if (!term) {
+        term = " ";
+      }
+      request.synonyms = self.synonyms;
+      var url = settings.uri + '/' + term +'/' +  self.limit;
+      lastXhr = $.getJSON(url, request, function(data, status, xhr) {
         cache[term] = data;
         if (xhr === lastXhr) {
           response(generateValues(data, term));
@@ -111,13 +197,37 @@
       });
     };
 
-    this.jqObject.data("autocomplete", {
+    this.jqObject.autocomplete({
       'source' : this.source,
       'minLength': settings.min_length
     });
 
-    this.jqObject.data("autocomplete")._renderItem = function(ul, item) {
-      return $("<li></li>").data("item.autocomplete", item).append("<a>" + item.label + "</a>").appendTo(ul);
+    var jqObject = this.jqObject;
+    var throbber = $('<div class="autocomplete-deluxe-throbber autocomplete-deluxe-closed">&nbsp;</div>').insertAfter(jqObject);
+
+    this.jqObject.bind("autocompletesearch", function(event, ui) {
+      throbber.removeClass('autocomplete-deluxe-closed');
+      throbber.addClass('autocomplete-deluxe-open');
+    });
+
+    this.jqObject.bind("autocompleteopen", function(event, ui) {
+      throbber.addClass('autocomplete-deluxe-closed');
+      throbber.removeClass('autocomplete-deluxe-open');
+    });
+
+    // Monkey patch the _renderItem function jquery so we can highlight the
+    // text, that we already entered.
+    $.ui.autocomplete.prototype._renderItem = function( ul, item) {
+      var t = item.label;
+      if (this.term != "") {
+        var escapedValue = Drupal.autocomplete_deluxe.escapeRegex( this.term );
+        var re = new RegExp('()*""' + escapedValue + '""|' + escapedValue + '()*', 'gi');
+        var t = item.label.replace(re,"<span class='autocomplete-deluxe-highlight-char'>$&</span>");
+      }
+      return $( "<li></li>" )
+        .data( "item.autocomplete", item )
+        .append( "<a>" + t + "</a>" )
+        .appendTo( ul );
     };
   };
 
@@ -135,7 +245,7 @@
   Drupal.autocomplete_deluxe.SingleWidget = function(settings) {
     this.init(settings);
     this.setup();
-
+    this.jqObject.addClass('autocomplete-deluxe-form-single');
   };
 
   Drupal.autocomplete_deluxe.SingleWidget.prototype = new Drupal.autocomplete_deluxe.Widget();
@@ -144,31 +254,12 @@
     var jqObject = this.jqObject;
     var parent = jqObject.parent();
 
-    parent.addClass('autocomplete-deluxe-single-container');
-
     parent.mousedown(function() {
       if (parent.hasClass('autocomplete-deluxe-single-open')) {
         jqObject.autocomplete('close');
       } else {
         jqObject.autocomplete('search', '');
       }
-    });
-
-    var arrow = $('<span class="autocomplete-deluxe-arrow ui-icon ui-icon-triangle-1-s">&nbsp;</span>').insertAfter(jqObject);
-
-    jqObject.addClass('ui-corner-left');
-
-    jqObject.bind( "autocompleteopen", function(event, ui) {
-      arrow.removeClass('ui-icon-triangle-1-s')
-      arrow.addClass('ui-icon-triangle-1-n');
-
-      parent.addClass('autocomplete-deluxe-single-open');
-    });
-
-    jqObject.bind( "autocompleteclose", function(event, ui) {
-      arrow.removeClass('ui-icon-triangle-1-n')
-      arrow.addClass('ui-icon-triangle-1-s');
-      parent.removeClass('autocomplete-deluxe-single-open');
     });
   };
 
@@ -212,7 +303,8 @@
   Drupal.autocomplete_deluxe.MultipleWidget.Item.prototype.remove = function() {
     this.element.remove();
     var values = this.widget.valueForm.val();
-    var regex = new RegExp('( )*""' + this.item.value + '""|' + this.item.value + '( )*', 'gi');
+    var escapedValue = Drupal.autocomplete_deluxe.escapeRegex( this.item.value );
+    var regex = new RegExp('()*""' + escapedValue + '""|' + escapedValue + '()*', 'gi');
     this.widget.valueForm.val(values.replace(regex, ''));
     delete this.widget.items[this.value];
   };
@@ -231,6 +323,7 @@
     jqObject.data("autocomplete")._resizeMenu = function()  {};
 
     jqObject.show();
+
     value_container.hide();
 
     // Add the default values to the box.
@@ -258,12 +351,13 @@
     jqObject.addClass('autocomplete-deluxe-multiple');
     parent.addClass('autocomplete-deluxe-multiple');
 
+
     // Adds a value to the list.
     this.addValue = function(ui_item) {
       var item = new Drupal.autocomplete_deluxe.MultipleWidget.Item(self, ui_item);
       item.element.insertBefore(jqObject);
       items[ui_item.value] = item;
-      var new_value = ' ""' + ui_item.value + '""';
+      var new_value = ' ' + self.wrapper + ui_item.value + self.wrapper;
       var values = value_input.val();
       value_input.val(values + new_value);
       jqObject.val('');
@@ -292,13 +386,13 @@
 
     var clear = false;
 
-    jqObject.keydown(function (event) {
+    jqObject.keypress(function (event) {
       var value = jqObject.val();
-      // If a comma was entered and there is none or more then one comma,
-      // then enter the new term.
-      if (event.which == 188 && (value.split('"').length - 1) != 1) {
+      // If a comma was entered and there is none or more then one comma,or the
+      // enter key was entered, then enter the new term.
+      if ((event.which == self.delimiter && (value.split('"').length - 1) != 1) || (event.which == 13 && jqObject.val() != "")) {
         value = value.substr(0, value.length);
-        if (self.items[value] === undefined && value != '') {
+        if (typeof self.items[value] == 'undefined' && value != '') {
           var ui_item = {
             label: value,
             value: value
@@ -306,6 +400,9 @@
           self.addValue(ui_item);
         }
         clear = true;
+        if (event.which == 13) {
+          return false;
+        }
       }
 
       // If the Backspace key was hit and the input is empty
@@ -326,16 +423,22 @@
       }
     });
 
+    jqObject.autoGrowInput({
+      comfortZone: 50,
+      minWidth: 10,
+      maxWidth: 460
+    });
 
-    jqObject.keydown(function (event) {
+
+    jqObject.keyup(function (event) {
       if (clear) {
+        // Trigger the search, so it display the values for an empty string.
+        jqObject.autocomplete('search', '');
         jqObject.val('');
         clear = false;
         // Return false to prevent entering the last character.
         return false;
       }
-      var cur_width = jqObject.width();
-      jqObject.width(cur_width+9);
     });
   };
 })(jQuery);

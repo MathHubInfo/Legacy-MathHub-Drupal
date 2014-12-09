@@ -6,21 +6,14 @@ ul.ui-autocomplete {
   overflow-x: hidden;
   overflow-y: scroll;
   padding: 3px;
-  position: relative;
 }
 
 a.autocomplete-deluxe-single:hover {
   text-decoration: none;
 }
 
-.autocomplete-deluxe-arrow {
-  display: inline-block;
-  height: 13px;
-}
-
-.ui-state-hover {
+.ui-autocomplete .ui-state-hover {
   background-color: #3875d7;
-  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#3875d7', endColorstr='#2a62bc', GradientType=0 );
   background-image: -webkit-gradient(linear, 0% 0%, 0% 100%, color-stop(20%, #3875d7), color-stop(90%, #2a62bc));
   background-image: -webkit-linear-gradient(top, #3875d7 20%, #2a62bc 90%);
   background-image: -moz-linear-gradient(top, #3875d7 20%, #2a62bc 90%);
@@ -36,35 +29,29 @@ a.autocomplete-deluxe-single:hover {
   display: inline-block;
   position: relative;
   padding: 0;
-}
-
-.autocomplete-deluxe-single-container {
-  background-clip: padding-box;
-  background-color: #FFFFFF;
-  background-image: -webkit-linear-gradient(top, white 20%, #F6F6F6 50%, #EEE 52%, #F4F4F4 100%);
-  background-image: -moz-linear-gradient(top, white 20%, #F6F6F6 50%, #EEE 52%, #F4F4F4 100%);
-  background-image: -o-linear-gradient(top, white 20%, #F6F6F6 50%, #EEE 52%, #F4F4F4 100%);
-  background-image: -ms-linear-gradient(top, white 20%, #F6F6F6 50%, #EEE 52%, #F4F4F4 100%);
-  background-image: linear-gradient(top, white 20%, #F6F6F6 50%, #EEE 52%, #F4F4F4 100%);
-  border: 1px solid #AAAAAA;
-  border-radius: 5px 5px 5px 5px;
-  box-shadow: 0 0 3px #FFFFFF inset, 0 1px 1px rgba(0, 0, 0, 0.1);
-  color: #444444;
-  overflow: hidden;
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.autocomplete-deluxe-form {
-  width: 185px;
-  background: #fff no-repeat -38px -22px;
+  border: 1px solid #CCCCCC;
   background: no-repeat -38px -22px, -webkit-gradient(linear, 0% 0%, 0% 100%, color-stop(1%, #eeeeee), color-stop(15%, #ffffff));
   background: no-repeat -38px -22px, -webkit-linear-gradient(top, #eeeeee 1%, #ffffff 15%);
   background: no-repeat -38px -22px, -moz-linear-gradient(top, #eeeeee 1%, #ffffff 15%);
   background: no-repeat -38px -22px, -o-linear-gradient(top, #eeeeee 1%, #ffffff 15%);
   background: no-repeat -38px -22px, -ms-linear-gradient(top, #eeeeee 1%, #ffffff 15%);
   background: no-repeat -38px -22px, linear-gradient(top, #eeeeee 1%, #ffffff 15%);
-  padding: 4px 5px 4px 20px;
+}
+div.autocomplete-deluxe-container input.autocomplete-deluxe-form {
+  background: #fff no-repeat -38px -22px;
+  padding: 4px 5px 4px 5px;
+  border: none;
+}
+
+div.autocomplete-deluxe-container input.autocomplete-deluxe-form-single  {
+  width: 90%;
+  border: none;
+  background: no-repeat -38px -22px, -webkit-gradient(linear, 0% 0%, 0% 100%, color-stop(1%, #eeeeee), color-stop(15%, #ffffff));
+  background: no-repeat -38px -22px, -webkit-linear-gradient(top, #eeeeee 1%, #ffffff 15%);
+  background: no-repeat -38px -22px, -moz-linear-gradient(top, #eeeeee 1%, #ffffff 15%);
+  background: no-repeat -38px -22px, -o-linear-gradient(top, #eeeeee 1%, #ffffff 15%);
+  background: no-repeat -38px -22px, -ms-linear-gradient(top, #eeeeee 1%, #ffffff 15%);
+  background: no-repeat -38px -22px, linear-gradient(top, #eeeeee 1%, #ffffff 15%);
 }
 
 .autocomplete-deluxe-search {
@@ -81,7 +68,7 @@ span.autocomplete-deluxe-value-delete {
   background:url('x.gif') no-repeat center;
   width: 18px;
   width: 18px;
- 
+
   /* Prevent text selection. */
   -moz-user-select: -moz-none;
   -khtml-user-select: none;
@@ -112,6 +99,9 @@ span.autocomplete-deluxe-value-delete {
   border-bottom-right-radius: 0;
 }
 
+input.autocomplete-deluxe-closed {
+}
+
 div.autocomplete-deluxe-multiple {
   display: inline-block;
   font-size: 13px;
@@ -138,11 +128,24 @@ div.autocomplete-deluxe-multiple {
 }
 
 input.autocomplete-deluxe-form.autocomplete-deluxe-multiple {
-  background: none;
   border: 3px none;
   width: 25px;
   margin-left: 5px;
   float: left;
+}
+
+div.autocomplete-deluxe-throbber {
+  width: 16px;
+  float: right;
+  height: 50%;
+}
+
+.autocomplete-deluxe-closed {
+  background: url(throbber.gif) no-repeat 100% 6px;
+}
+
+.autocomplete-deluxe-open {
+  background: url(throbber.gif) no-repeat 100% -14px;
 }
 
 .autocomplete-deluxe-item {
@@ -173,4 +176,9 @@ input.autocomplete-deluxe-form.autocomplete-deluxe-multiple {
 }
 .autocomplete-deluxe-item-focus {
   background: none repeat scroll 0 0 #D4D4D4;
+}
+
+.autocomplete-deluxe-highlight-char {
+  color: blue;
+  font-weight: bold;
 }

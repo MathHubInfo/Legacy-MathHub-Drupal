@@ -27,8 +27,9 @@ function autocomplete_deluxe_field_widget_info() {
 /**
  * Custom taxonomy callback, which also accepts an empty string search.
  */
-function taxonomy_autocomplete_deluxe($field_name, $tags_typed = '') {
+function taxonomy_autocomplete_deluxe($field_name, $tags_typed = '', $limit = 10) {
   $field = field_info_field($field_name);
+  $use_synonyms = !empty($_GET['synonyms']);
 
   // The user enters a comma-separated list of tags. We only autocomplete the last tag.
   $tags_typed = drupal_explode_tags($tags_typed);
@@ -51,26 +52,47 @@ function taxonomy_autocomplete_deluxe($field_name, $tags_typed = '') {
   $query->addTag('translatable');
   $query->addTag('term_access');
 
+  if (module_exists('synonyms') && !empty($use_synonyms)) {
+    $query->leftJoin('field_data_synonyms_synonym', 'fdss', 'fdss.entity_id = t.tid');
+  }
+
   if ($tag_last != '') {
     // Do not select already entered terms.
     if (!empty($tags_typed)) {
       $query->condition('t.name', $tags_typed, 'NOT IN');
     }
     // Select rows that match by term name.
-    $tags_return = $query
+    $query
       ->fields('t', array('tid', 'name'))
-      ->condition('t.vid', $vids)
-      ->condition('t.name', '%' . db_like($tag_last) . '%', 'LIKE')
-      ->range(0, 10)
-      ->execute()
+      ->condition('t.vid', $vids);
+
+    if (module_exists('synonyms') && !empty($use_synonyms)) {
+      $or = db_or();
+      $or->condition('fdss.synonyms_synonym_value', '%' . db_like($tag_last) . '%', 'LIKE');
+      $or->condition('t.name', '%' . db_like($tag_last) . '%', 'LIKE');
+      $query->condition($or);
+    }
+    else {
+      $query->condition('t.name', '%' . db_like($tag_last) . '%', 'LIKE');
+    }
+
+    if (isset($limit) && $limit > 0) {
+      $query->range(0, $limit);
+    }
+
+    $tags_return = $query->execute()
       ->fetchAllKeyed();
   }
   else {
-    $tags_return = $query
+    $query
       ->fields('t', array('tid', 'name'))
-      ->condition('t.vid', $vids)
-      ->range(0, 10)
-      ->execute()
+      ->condition('t.vid', $vids);
+
+    if (isset($limit) && $limit > 0) {
+      $query->range(0, $limit);
+    }
+
+    $tags_return = $query->execute()
       ->fetchAllKeyed();
   }
 
@@ -120,7 +142,36 @@ function autocomplete_deluxe_field_widget_settings_form($field, $instance) {
     '#element_validate' => array('_element_validate_integer_positive'),
     '#required' => TRUE,
   );
+  $form['limit'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Limit of the output.'),
+    '#description' => t('If set to zero no limit will be used'),
+    '#default_value' => isset($settings['limit']) ? $settings['limit'] : 10,
+    '#element_validate' => array('_element_validate_integer'),
+  );
+  $form['min_length'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Mininum length.'),
+    '#description' => t('The minimum length of characters to enter to open the suggestion list.'),
+    '#default_value' => isset($settings['min_length']) ? $settings['min_length'] : 0,
+    '#element_validate' => array('_element_validate_integer'),
+  );
+  $form['delimiter'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Delimiter.'),
+    '#description' => t('A character which should be used beside the enter key, to seperate terms.'),
+    '#default_value' => isset($settings['delimiter']) ? $settings['delimiter'] : '',
+    '#size' => 1,
+  );
 
+  if (module_exists('synonyms')) {
+    $form['use_synonyms'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Allow synonyms'),
+      '#description' => t('Should users be able to search for synonyms of terms?'),
+      '#default_value' => isset($settings['use_synonyms']) ? $settings['use_synonyms'] : FALSE,
+    );
+  }
   return $form;
 }
 
@@ -164,6 +215,10 @@ function autocomplete_deluxe_field_widget_form(&$form, &$form_state, $field, $in
   $element += array(
     '#type' => 'autocomplete_deluxe',
     '#size' => $instance['widget']['settings']['size'],
+    '#limit' => isset($instance['widget']['settings']['limit']) ? $instance['widget']['settings']['limit'] : 10,
+    '#min_length' => isset($instance['widget']['settings']['min_length']) ? $instance['widget']['settings']['min_length'] : 0,
+    '#use_synonyms' =>isset($instance['widget']['settings']['use_synonyms']) ? $instance['widget']['settings']['use_synonyms'] : 0,
+    '#delimiter' =>isset($instance['widget']['settings']['delimiter']) ? $instance['widget']['settings']['delimiter'] : '',
   );
 
   $multiple = $field['cardinality'] > 1 || $field['cardinality'] == FIELD_CARDINALITY_UNLIMITED ? TRUE : FALSE;
@@ -204,13 +259,6 @@ function autocomplete_deluxe_element_process($element) {
   // Set default options for multiple values.
   $element['#multiple'] = isset($element['#multiple']) ? $element['#multiple'] : FALSE;
 
-  $element['values'] = array(
-    '#type' => 'container',
-    '#attributes' => array(
-      'class' => array('autocomplete-deluxe-values'),
-    ),
-  );
-
   $element['textfield'] = array(
     '#type' => 'textfield',
     '#size' => isset($element['#size']) ? $element['#size'] : '',
@@ -222,9 +270,12 @@ function autocomplete_deluxe_element_process($element) {
 
   $js_settings['autocomplete_deluxe'][$html_id] = array(
     'input_id' => $html_id,
-    'min_length' => isset($element['#autocomplete_min_length']) ? $element['#autocomplete_min_length'] : 0,
     'multiple' => $element['#multiple'],
     'required' => $element['#required'],
+    'limit' => isset($element['#limit']) ? $element['#limit'] : 10,
+    'min_length' => isset($element['#min_length']) ? $element['#min_length'] : 0,
+    'use_synonyms' => isset($element['#use_synonyms']) ? $element['#use_synonyms'] : 0,
+    'delimiter' => isset($element['#delimiter']) ? $element['#delimiter'] : '',
   );
 
   if (isset($element['#autocomplete_deluxe_path'])) {
@@ -264,6 +315,7 @@ function autocomplete_deluxe_element_process($element) {
     return $element;
   }
   $element['#attached']['js'][] = array('data' => $js_settings, 'type' => 'setting');
+  $element['#tree'] = TRUE;
 
   return $element;
 }
@@ -295,14 +347,18 @@ function autocomplete_deluxe_after_build($element, &$form_state) {
   // Set the elements value from either the value field or text field input.
   $element['#value'] = isset($element['value_field']) ? $element['value_field']['#value'] : $element['textfield']['#value'];
 
-  $element['#value'] = trim($element['#value']);
-  // Replace all double double quotes and space with a comma. This will allows
-  // us to keep entries in double quotes.
-  $element['#value'] = str_replace('"" ""', ',', $element['#value']);
-  // Remove the double quotes at the beginning and the end from the first and
-  // the last term.
-  $element['#value'] = substr($element['#value'], 2, strlen($element['#value']) - 4);
-  unset($element['value_field']['#maxlength']);
+  if (isset($element['value_field'])) {
+    $element['#value'] = trim($element['#value']);
+    // Replace all double double quotes and space with a comma. This will allows
+    // us to keep entries in double quotes.
+    $element['#value'] = str_replace('"" ""', ',', $element['#value']);
+    $element['#value'] = str_replace('""  ""', ',', $element['#value']);
+    // Remove the double quotes at the beginning and the end from the first and
+    // the last term.
+    $element['#value'] = substr($element['#value'], 2, strlen($element['#value']) - 4);
+
+    unset($element['value_field']['#maxlength']);
+  }
 
 
   form_set_value($element, $element['#value'], $form_state);
