@@ -690,7 +690,7 @@ function _oaff_crawl_archive($group, $archive_path) {
 
 function _oaff_crawler_update_content($groups) {
   $oaff_config = variable_get('oaff_config');
-  $rid = $oaff_config['archives_nid'];
+  $rid = $oaff_config['libraries_nid'];
   $gids = array();
   foreach ($groups as $group => $archives) {
     $group_help_fpath = oaff_join_path(array($group, 'help', 'index.html'));
@@ -1043,7 +1043,7 @@ function oaff_set_lang_groups($groups) {
  */
 function oaff_set_breadcrumb($nid) {
   $oaff_config = variable_get('oaff_config');
-  $a_nid = $oaff_config['archives_nid'];
+  $l_nid = $oaff_config['libraries_nid'];
 
   $found_root = false;
   $pids = array();
@@ -1063,7 +1063,7 @@ function oaff_set_breadcrumb($nid) {
     }
     $pid = $result['pid'];
     $pids[] = $pid;
-    if ($pid == $a_nid) {
+    if ($pid == $l_nid) {
       $found_root = true;
     }
   }

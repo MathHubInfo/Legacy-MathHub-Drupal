@@ -98,8 +98,8 @@ function oaff_install() {
   $oaff_config['crawl_nodes_offset'] = 0;
   $mlids = array();
   $nids = array();
-  $arch_info = oaff_create_help_node('Archives', 'mh/archives', oaff_join_path(array("help", "index.html")), true);
-  $oaff_config['archives_nid'] = $arch_info['nid'];
+  $arch_info = oaff_create_help_node('Libraries', 'mh/libraries', oaff_join_path(array("help", "index.html")), true);
+  $oaff_config['libraries_nid'] = $arch_info['nid'];
   $nids[] = $arch_info['nid'];
   $mlids[] = $arch_info['mlid'];
   $contr_info = oaff_create_static_node("Contribute", "mh/contribute", file_get_contents(drupal_get_path('module', 'oaff') . '/contribute.xhtml'), true);
