@@ -607,10 +607,10 @@ function _oaff_crawler_get_active_archives() {
   $groups = planetary_repo_list("");
   $active_groups = array();
   foreach ($groups as $group) {
-    if (planetary_repo_is_dir($group) && $group[0] != '.' && $group != 'help') {
+    if (planetary_repo_is_dir($group) && $group[0] != '.' && $group != 'meta') {
       $archives = planetary_repo_list($group);
       foreach ($archives as $archive) {
-        if (planetary_repo_is_dir(oaff_join_path(array($group, $archive))) && $archive[0] != '.' && $archive != 'help') {
+        if (planetary_repo_is_dir(oaff_join_path(array($group, $archive))) && $archive[0] != '.' && $archive != 'meta-inf') {
           $active = _oaff_crawl_archive($group, $archive);
           if ($active) {
             if (!isset($active_groups[$group])) {
@@ -693,7 +693,7 @@ function _oaff_crawler_update_content($groups) {
   $rid = $oaff_config['libraries_nid'];
   $gids = array();
   foreach ($groups as $group => $archives) {
-    $group_help_fpath = oaff_join_path(array($group, 'help', 'index.html'));
+    $group_help_fpath = oaff_join_path(array($group, 'meta-inf', 'index.html'));
     $srcpath = drupal_lookup_path('source', $group);
     if (!$srcpath) { //node doesn't already exist
       $gid = oaff_create_help_node($group, $group, $group_help_fpath);
@@ -704,7 +704,7 @@ function _oaff_crawler_update_content($groups) {
     $aids = array();
     foreach ($archives as $archive) {
       $archive_path = oaff_join_path(array($group, $archive));
-      $archive_help_fpath = oaff_join_path(array($group, $archive, 'help', 'index.html'));
+      $archive_help_fpath = oaff_join_path(array($group, $archive, 'META-INF', 'index.html'));
       $srcpath = drupal_lookup_path('source', $archive_path);
       if (!$srcpath) {
         $aid = oaff_create_help_node($archive, $archive_path, $archive_help_fpath);
