@@ -115,22 +115,22 @@ function oaff_field_formatter_view($entity_type, $entity, $field, $instance, $la
         } else {
           drupal_set_message("Help File missing or empty, auto-generating description", 'warning');
           $segs = explode("/", $location); //format is "$base" / "help" / "index.html"
-          if (count($segs) == 2) { //at top level
+          if ($segs[0] == 'meta') { //at top level
             $groups = planetary_repo_list("");
             $elems = array();
             foreach ($groups as $group) {
-              if (planetary_repo_is_dir($group) && $group[0] != '.' && $group != "help" && drupal_lookup_path('source', $group)) {
+              if (planetary_repo_is_dir($group) && $group[0] != '.' && $group != "meta" && drupal_lookup_path('source', $group)) {
                 $elems[$group] = $group;
               }
             }
             $markup = __oaff_generate_html_list($elems);
-          } else if (count($segs) == 3) { //at group level
+          } else if ($segs[1] == 'meta-inf') { //at group level
             $group = $segs[0];
             $archives = planetary_repo_list($group);
             $elems = array();
             foreach ($archives as $archive) {
               $arch_path = oaff_join_path(array($group, $archive));
-              if (planetary_repo_is_dir($arch_path) && $archive[0] != '.' && $archive != "help" && drupal_lookup_path('source', $arch_path)) {
+              if (planetary_repo_is_dir($arch_path) && $archive[0] != '.' && $archive != "meta-inf" && drupal_lookup_path('source', $arch_path)) {
                 $elems[$archive] = $arch_path;
               }
             }
