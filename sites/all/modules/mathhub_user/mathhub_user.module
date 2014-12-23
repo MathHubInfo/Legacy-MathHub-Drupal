@@ -45,7 +45,7 @@ function mathhub_user_help($path, $arg) {
       $output = '';
       $output .= '<h3>'.t('About').'</h3>';
       $output .= '<p>'.t('A module that synchronizes the drupal accounts with
-                  gitlab accounts.').'</p>';
+                  gitlab accounts and adds new fields to the profiles.').'</p>';
       return $output;
       break;
   }
