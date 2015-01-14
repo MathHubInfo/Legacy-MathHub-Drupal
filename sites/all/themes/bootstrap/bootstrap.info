@@ -2,6 +2,8 @@ name = Bootstrap
 description = Built to use Bootstrap, a sleek, intuitive, and powerful front-end framework for faster and easier web development.
 core = 7.x
 
+;; Style sheet from https://gist.github.com/koenpunt/6424137 to fix chosen jquery and module
+stylesheets[all][] = 'css/chosen-bootstrap.min.css'
 
 ;;;;;;;;;;;;;;;;;;;;;
 ;; Regions
