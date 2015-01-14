@@ -152,13 +152,20 @@ function mathhub_user_form_user_register_form_alter(&$form, &$form_state, $form_
     '#description' => 'Please give us your name, so people you know can recognize you.',
     '#required' => true,
     '#weight' => 5);
-  $form["account"]["understands_languages"] = array(
+  $form["account"]["reads_languages"] = array(
     '#type' => 'select', 
-    '#title' => t('Select the languages you can understand.'), 
-    '#attributes' => array('data-placeholder' => 'Choose the languages you understand'),
+    '#title' => t('Select the languages you can read'), 
+    '#attributes' => array('data-placeholder' => 'Choose the languages you can read'),
     '#multiple' => true,
     '#options' => getLanguages(),
-    '#description' => t('Select the languages you can understand.'));
+    '#description' => t('Select the languages you can read.'));
+  $form["account"]["writes_languages"] = array(
+    '#type' => 'select', 
+    '#title' => t('Select the languages you can write'), 
+    '#attributes' => array('data-placeholder' => 'Choose the languages you can write'),
+    '#multiple' => true,
+    '#options' => getLanguages(),
+    '#description' => t('Select the languages you can write.'));
   $form['account']['skype'] = array(
     '#type' => 'textfield',
     '#title' => 'Skype ID',
@@ -222,15 +229,26 @@ function mathhub_user_form_user_profile_form_alter(&$form, &$form_state, $form_i
     $form['account']['realname']['#default_value'] = $form_state['user']->data['realname'];
   }
 
-  $form["account"]["understands_languages"] = array(
+  $form["account"]["reads_languages"] = array(
     '#type' => 'select', 
-    '#title' => t('Select the languages you can understand.'), 
-    '#attributes' => array('data-placeholder' => 'Choose the languages you understand'),
+    '#title' => t('Select the languages you can read'), 
+    '#attributes' => array('data-placeholder' => 'Choose the languages you can read'),
     '#multiple' => true,
     '#options' => getLanguages(),
-    '#description' => t('Select the languages you can understand.'));
-  if(isset($form_state['user']->data['understands_languages'])) {
-    $form['account']['understands_languages']['#default_value'] = $form_state['user']->data['understands_languages'];
+    '#description' => t('Select the languages you can read.'));
+  if(!empty($form_state['user']->data['reads_languages'])) {
+    $form['account']['reads_languages']['#default_value'] = $form_state['user']->data['reads_languages'];
+  }
+
+  $form["account"]["writes_languages"] = array(
+    '#type' => 'select', 
+    '#title' => t('Select the languages you can write'), 
+    '#attributes' => array('data-placeholder' => 'Choose the languages you can write'),
+    '#multiple' => true,
+    '#options' => getLanguages(),
+    '#description' => t('Select the languages you can write.'));
+  if(!empty($form_state['user']->data['writes_languages'])) {
+    $form['account']['writes_languages']['#default_value'] = $form_state['user']->data['writes_languages'];
   }
 
   $form['account']['skype'] = array(
@@ -596,7 +614,14 @@ function mathhub_user_user_presave(&$edit, $account, $category) {
   if (isset($edit['bio'])) {
     $edit['data']['bio'] = $edit['bio'];
   }
-  if (isset($edit['understands_languages'])) {
-    $edit['data']['understands_languages'] = array_values($edit['understands_languages']);
+  if (!empty($edit['reads_languages'])) {
+    $edit['data']['reads_languages'] = array_values($edit['reads_languages']);
+  } else {
+    $edit['data']['reads_languages'] = array('en');
+  }
+  if (!empty($edit['writes_languages'])) {
+    $edit['data']['writes_languages'] = array_values($edit['writes_languages']);
+  } else {
+    $edit['data']['writes_languages'] = array('en');
   }
 }
