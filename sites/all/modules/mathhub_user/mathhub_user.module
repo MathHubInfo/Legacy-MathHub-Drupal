@@ -5,6 +5,23 @@
  *       
  */
 
+//include iso.inc for _locale_get_predefined_list
+include_once DRUPAL_ROOT . '/includes/iso.inc';
+
+/**
+ * Implements getLanguages().
+ *
+ * It provides an array with language keys and english language names.
+ */
+function getLanguages() {
+  $languages = array();
+  $drupalLanguages = _locale_get_predefined_list();
+  foreach($drupalLanguages as $key => $value) {
+    $languages[$key] = array_values($value)[0];
+  }
+  return $languages;
+}
+
 /**
  * Implements hook_libraries_info().
  *
@@ -12,7 +29,6 @@
  * @todo add 'vendor url', 'download url' etc. in case we make the libarary stand alone
  */
 function mathhub_user_libraries_info() {
-
   $libraries['gitlab_api_php_wrapper'] = array(  // @nolint
     'name' => 'GitLab API PHP Wrapper',
     'vendor url' => '', 
@@ -136,6 +152,13 @@ function mathhub_user_form_user_register_form_alter(&$form, &$form_state, $form_
     '#description' => 'Please give us your name, so people you know can recognize you.',
     '#required' => true,
     '#weight' => 5);
+  $form["account"]["understands_languages"] = array(
+    '#type' => 'select', 
+    '#title' => t('Select the languages you can understand.'), 
+    '#attributes' => array('data-placeholder' => 'Choose the languages you understand'),
+    '#multiple' => true,
+    '#options' => getLanguages(),
+    '#description' => t('Select the languages you can understand.'));
   $form['account']['skype'] = array(
     '#type' => 'textfield',
     '#title' => 'Skype ID',
@@ -197,6 +220,17 @@ function mathhub_user_form_user_profile_form_alter(&$form, &$form_state, $form_i
     '#weight' => 5);
   if(isset($form_state['user']->data['realname'])) {
     $form['account']['realname']['#default_value'] = $form_state['user']->data['realname'];
+  }
+
+  $form["account"]["understands_languages"] = array(
+    '#type' => 'select', 
+    '#title' => t('Select the languages you can understand.'), 
+    '#attributes' => array('data-placeholder' => 'Choose the languages you understand'),
+    '#multiple' => true,
+    '#options' => getLanguages(),
+    '#description' => t('Select the languages you can understand.'));
+  if(isset($form_state['user']->data['understands_languages'])) {
+    $form['account']['understands_languages']['#default_value'] = $form_state['user']->data['understands_languages'];
   }
 
   $form['account']['skype'] = array(
@@ -353,6 +387,8 @@ function mathhub_user_user_register_submit(&$form, &$form_state) {
                '');
     }
   }
+
+
 }
 
 /**
@@ -559,5 +595,8 @@ function mathhub_user_user_presave(&$edit, $account, $category) {
   }
   if (isset($edit['bio'])) {
     $edit['data']['bio'] = $edit['bio'];
+  }
+  if (isset($edit['understands_languages'])) {
+    $edit['data']['understands_languages'] = array_values($edit['understands_languages']);
   }
 }
