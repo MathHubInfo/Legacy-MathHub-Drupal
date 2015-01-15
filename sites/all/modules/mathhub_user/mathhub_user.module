@@ -310,8 +310,9 @@ function mathhub_user_form_user_profile_form_alter(&$form, &$form_state, $form_i
  * hook_form_user_register_form_alter
  */
 function mathhub_user_user_form_validate($form, &$form_state) {
-  if(!isset($form_state['input']['name']) || 
-     !preg_match("/\A[a-zA-Z0-9_.][a-zA-Z0-9_\-\.]*(?<!\.git)\z/", $form_state['input']['name'])) {
+  if(isset($form_state['input']['name']) && 
+    (empty($form_state['input']['name']) ||
+     !preg_match("/\A[a-zA-Z0-9_.][a-zA-Z0-9_\-\.]*(?<!\.git)\z/", $form_state['input']['name']))) {
     form_set_error('name', t("You must adhere to the username rules. 
                               The username can contain only letters, digits, '-', '.' and '_'. 
                               Moreover due to GitLab synchronisation it also cannot start with '-' or end in '.git'"));
