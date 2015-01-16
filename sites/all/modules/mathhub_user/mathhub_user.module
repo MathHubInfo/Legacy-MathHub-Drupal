@@ -133,6 +133,71 @@ function mathhub_user_form($form, &$form_state) {
 }
 
 /**
+ * Implements hook_user_view().
+ *
+ * The function mathhub_user_user_view implements the hook_user_view and 
+ * therefore shows the added fields on the user page.
+ */
+function mathhub_user_user_view($account, $viewmode) {
+  $account->content['about'] = array(
+    '#type' => 'user_profile_category',
+    '#title' => t('About'),
+  );
+  $account->content['about']['realname'] = array(
+    '#type' => 'user_profile_item',
+    '#title' => t('Name'),
+    '#markup' => $account->data['realname'],
+  );
+  $account->content['about']['email'] = array(
+    '#type' => 'user_profile_item',
+    '#title' => t('Email'),
+    '#markup' => $account->mail,
+  );
+  if(!empty($account->data['linkedin'])) {
+    $account->content['about']['linkedin'] = array(
+      '#type' => 'user_profile_item',
+      '#title' => t('LinkedIn'),
+      '#markup' => $account->data['linkedin'],
+    );
+  }
+  if(!empty($account->data['twitter'])) {
+    $account->content['about']['twitter'] = array(
+      '#type' => 'user_profile_item',
+      '#title' => t('Twitter'),
+      '#markup' => $account->data['twitter'],
+    );
+  }
+  if(!empty($account->data['website_url'])) {
+    $account->content['about']['website_url'] = array(
+      '#type' => 'user_profile_item',
+      '#title' => t('Website'),
+      '#markup' => $account->data['website_url'],
+    );
+  }
+  if(!empty($account->data['reads_languages'])) {
+    $account->content['about']['reads_languages'] = array(
+      '#type' => 'user_profile_item',
+      '#title' => t('Reads languages:'),
+      '#markup' => implode(', ', array_intersect_key(getLanguages(), array_flip($account->data['reads_languages']))),
+    );
+  }
+  if(!empty($account->data['writes_languages'])) {
+    $account->content['about']['writes_languages'] = array(
+      '#type' => 'user_profile_item',
+      '#title' => t('Writes languages:'),
+      '#markup' => implode(', ', array_intersect_key(getLanguages(), array_flip($account->data['writes_languages']))),
+    );
+  }
+  if(!empty($account->data['bio'])) {
+    $account->content['about']['bio'] = array(
+      '#type' => 'user_profile_item',
+      '#title' => t('Biography'),
+      '#markup' => $account->data['bio'],
+    );
+  }
+}
+
+/**
  * Implements hook_form_user_register_form_alter().
  *
  * The function mathhub_user_form_user_register_form_alter implements the 
