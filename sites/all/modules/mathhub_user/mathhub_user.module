@@ -146,32 +146,39 @@ function mathhub_user_user_view($account, $viewmode) {
   $account->content['about']['realname'] = array(
     '#type' => 'user_profile_item',
     '#title' => t('Name'),
-    '#markup' => $account->data['realname'],
+    '#markup' => check_plain($account->data['realname']),
   );
   $account->content['about']['email'] = array(
     '#type' => 'user_profile_item',
     '#title' => t('Email'),
-    '#markup' => $account->mail,
+    '#markup' => check_url($account->mail),
   );
+  if(!empty($account->data['skype'])) {
+    $account->content['about']['skype'] = array(
+      '#type' => 'user_profile_item',
+      '#title' => t('Skype'),
+      '#markup' => check_plain($account->data['skype']),
+    );
+  }
   if(!empty($account->data['linkedin'])) {
     $account->content['about']['linkedin'] = array(
       '#type' => 'user_profile_item',
       '#title' => t('LinkedIn'),
-      '#markup' => $account->data['linkedin'],
+      '#markup' => check_url($account->data['linkedin']),
     );
   }
   if(!empty($account->data['twitter'])) {
     $account->content['about']['twitter'] = array(
       '#type' => 'user_profile_item',
       '#title' => t('Twitter'),
-      '#markup' => $account->data['twitter'],
+      '#markup' => check_url($account->data['twitter']),
     );
   }
   if(!empty($account->data['website_url'])) {
     $account->content['about']['website_url'] = array(
       '#type' => 'user_profile_item',
       '#title' => t('Website'),
-      '#markup' => $account->data['website_url'],
+      '#markup' => check_url($account->data['website_url']),
     );
   }
   if(!empty($account->data['reads_languages'])) {
@@ -192,7 +199,7 @@ function mathhub_user_user_view($account, $viewmode) {
     $account->content['about']['bio'] = array(
       '#type' => 'user_profile_item',
       '#title' => t('Biography'),
-      '#markup' => $account->data['bio'],
+      '#markup' => check_plain($account->data['bio']),
     );
   }
 }
@@ -274,7 +281,6 @@ function mathhub_user_form_user_register_form_alter(&$form, &$form_state, $form_
 function mathhub_user_form_user_profile_form_alter(&$form, &$form_state, $form_id) {
   $form['#validate'][] = 'mathhub_user_user_form_validate';
   $form['#submit'][] = 'mathhub_user_user_edit_submit';
-
   // save old email address for submit handler in order to pass it to gitlab API
   $form['old_email_address'] = array(
     '#type' => 'value',
