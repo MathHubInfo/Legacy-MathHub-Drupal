@@ -75,7 +75,7 @@ function mathhub_user_help($path, $arg) {
  */
 function mathhub_user_menu() {
   $items = array();
-  $items['admin/config/system/mathhub_user'] = array(
+  $items['admin/config/mathhub/mathhub_user'] = array(
     'title' => 'Mathhub User',
     'description' => 'Configuration for Mathhub User module.',
     'page callback' => 'drupal_get_form',
