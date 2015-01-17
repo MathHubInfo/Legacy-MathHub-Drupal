@@ -126,7 +126,7 @@ function mathhub_user_form($form, &$form_state) {
     '#type' => 'checkbox',
     '#title' => t('Log Module Messages'),
     '#default_value' => variable_get('mathhub_user_log_messages', 1),
-    '#description' => t('Wheter or not the module should create log files.'),
+    '#description' => t('Whether the module should create log files or not.'),
     '#required' => false,
   );
   return system_settings_form($form);
