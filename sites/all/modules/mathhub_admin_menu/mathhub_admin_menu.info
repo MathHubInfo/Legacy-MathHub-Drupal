@@ -1,0 +1,5 @@
+name = Mathhub Admin Menu
+description = A module that adds the admin menu category Mathhub to the admin pages. Should be used by all mathhub modules with configuration pages.
+core = 7.x
+files[] = mathhub_admin_menu.module
+package = "MathHub"

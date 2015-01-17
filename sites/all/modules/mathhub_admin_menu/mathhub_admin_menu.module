@@ -1,0 +1,48 @@
+<?php
+/**
+ * @file
+ * A module that synchronizes the drupal accounts with gitlab accounts.
+ *       
+ */
+
+/**
+ * Implements hook_help().
+ *
+ * Displays help and module information.
+ *
+ * @param path
+ *   Which path of the site we're using to display help
+ * @param arg
+ *   Array that holds the current path as returned from arg() function
+ */
+function mathhub_admin_menu_help($path, $arg) {
+  switch ($path) {
+    case 'admin/help#mathhub_admin_menu':
+      $output = '';
+      $output .= '<h3>'.t('About').'</h3>';
+      $output .= '<p>'.t('A module that adds the admin menu category Mathhub to the admin pages. 
+                          Should be used by all mathhub modules with configuration pages.').'</p>';
+      return $output;
+      break;
+  }
+} 
+
+/**
+ * Implements hook_menu().
+ *
+ * Creates a new block in the admin configuration page to group mathhub related modules.
+ *
+ */
+function mathhub_admin_menu_menu() {
+  $menu['admin/config/mathhub'] = array( 
+    'title' => t('Mathhub Configuration'),
+    'description' => t('Configuration of Mathhub modules.'),
+    'weight' => -25, 
+    'page callback' => 'system_admin_menu_block_page',
+    'access arguments' => array('access administration pages'),
+    'file' => 'system.admin.inc', 
+    'file path' => drupal_get_path('module', 'system'),
+    'position' => 'left', 
+  ); 
+  return $menu;
+}
