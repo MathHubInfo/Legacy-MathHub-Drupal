@@ -1,0 +1,8 @@
+name = Mathhub Public Escrow License
+description = A module that implements the Mathhub public escrow license model. 
+core = 7.x
+configure = admin/config/mathhub/mathhub_public_escrow
+files[] = mathhub_public_escrow.module
+dependencies[] = mathhub_admin_menu
+dependencies[] = libraries
+package = "MathHub"

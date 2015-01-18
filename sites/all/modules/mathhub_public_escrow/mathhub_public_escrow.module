@@ -1,0 +1,115 @@
+<?php
+/**
+ * @file
+ * A module that implements the Mathhub public escrow license model. 
+ *       
+ */
+
+/**
+ * Implements hook_libraries_info().
+ *
+ * For defining external libraries.
+ * @todo add 'vendor url', 'download url' etc. in case we make the libarary stand alone
+ */
+function mathhub_public_escrow_libraries_info() {
+  $libraries['gitlab_api_php_wrapper'] = array(  // @nolint
+    'name' => 'GitLab API PHP Wrapper',
+    'vendor url' => '', 
+    'download url' => '', 
+    'version arguments' => array(
+      'file' => 'readme.txt',
+      'pattern' => '/Version (\d+)/', 
+      'lines' => 5,
+    ),
+    'files' => array(
+      'php' => array('Users.php'),
+      ),
+    );
+  return $libraries;
+}
+
+/**
+ * Implements hook_help().
+ *
+ * Displays help and module information.
+ *
+ * @param path
+ *   Which path of the site we're using to display help
+ * @param arg
+ *   Array that holds the current path as returned from arg() function
+ */
+function mathhub_public_escrow_help($path, $arg) {
+  switch ($path) {
+    case 'admin/help#mathhub_public_escrow':
+      $output = '';
+      $output .= '<h3>'.t('About').'</h3>';
+      $output .= '<p>'.t('A module that implements the Mathhub public escrow license model.').'</p>';
+      return $output;
+      break;
+  }
+} 
+
+/**
+ * Implements hook_menu().
+ *
+ * The function mathhub_public_escrow_menu implements the hook_menu and allows therefore 
+ * to display the configuration menu.
+ */
+function mathhub_public_escrow_menu() {
+  $items = array();
+  $items['admin/config/mathhub/mathhub_public_escrow'] = array(
+    'title' => 'Mathhub Public Escrow',
+    'description' => 'Configuration for Mathhub Public Escrow module.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('mathhub_public_escrow_form'),
+    'access arguments' => array('access administration pages'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+  return $items;
+}
+
+/**
+ * Page callback: Mathhub User settings
+ *
+ * @see mathhub_public_escrow_menu()
+ */
+function mathhub_public_escrow_form($form, &$form_state) {
+  $form['mathhub_public_escrow_private_token'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Private Token of GitLab Server administrator account'),
+    '#default_value' => variable_get('mathhub_public_escrow_private_token', ''),
+    '#size' => 20,
+    '#maxlength' => 128,
+    '#description' => t('The private token needed for authentication with the
+      GitLab server.'),
+    '#required' => true,
+  );
+  $form['mathhub_public_escrow_server_api_url'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Server URL of GitLab Server'),
+    '#default_value' => variable_get('mathhub_public_escrow_server_api_url', ''),
+    '#size' => 128,
+    '#maxlength' => 512,
+    '#description' => t('The Server URL of the GitLab Server. Should be in the 
+      form of "http://serverURL/api/v3". Needed to be able to connect to it.'),
+    '#required' => true,
+  );
+  $form['mathhub_public_escrow_admin_id'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Admin ID of gitlab account'),
+    '#default_value' => variable_get('mathhub_public_escrow_admin_id', 1),
+    '#size' => 4,
+    '#maxlength' => 8,
+    '#description' => t('The Admin ID of the admin account. Has to correspond
+      to the private token.'),
+    '#required' => true,
+  );
+  $form['mathhub_public_escrow_log_messages'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Log Module Messages'),
+    '#default_value' => variable_get('mathhub_public_escrow_log_messages', 1),
+    '#description' => t('Whether the module should create log files or not.'),
+    '#required' => false,
+  );
+  return system_settings_form($form);
+}
