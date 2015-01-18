@@ -22,6 +22,13 @@ function getLanguages() {
   return $languages;
 }
 
+function getOutsideLinkURL($website_url_string) {
+  if(strpos($website_url_string, "http://") === false && strpos($website_url_string, "https://") === false) {
+    return "http://".$website_url_string;
+  }
+  return $website_url_string;
+}
+
 /**
  * Implements hook_libraries_info().
  *
@@ -175,10 +182,11 @@ function mathhub_user_user_view($account, $viewmode) {
     );
   }
   if(!empty($account->data['website_url'])) {
+    $website_url = check_url($account->data['website_url']);
     $account->content['about']['website_url'] = array(
       '#type' => 'user_profile_item',
       '#title' => t('Website'),
-      '#markup' => check_url($account->data['website_url']),
+      '#markup' => "<a href=".getOutsideLinkURL($website_url).">".$website_url."</a>",
     );
   }
   if(!empty($account->data['reads_languages'])) {
