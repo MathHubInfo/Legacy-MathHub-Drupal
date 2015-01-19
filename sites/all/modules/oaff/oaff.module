@@ -62,7 +62,7 @@ function oaff_help_page() {
   $out = '<p> Using MathHub should be documented on the <a href="/">homepage</a>. For any other issues, use the links below. </p>';
   $out .= '<div>';
   $out .= '<a href="mailto:m.iancu@jacobs-university.de?Subject=[MathHub]" target="_blank" class="btn btn-primary"> Contact a human </a> ';
-  $out .= '<a href="http://gl.mathhub.info/MathHub/webmh/issues/new?issue" target="_blank" class="btn btn-danger" data-toggle="tooltip" data-placement="top" title="Requires Authentication"> Report an Issue </a>';
+  $out .= '<a href="http://github.com/KWARC/MathHub/issues/new?issue" target="_blank" class="btn btn-danger" data-toggle="tooltip" data-placement="top" title="Requires Authentication"> Report an Issue </a> (click <a href="https://github.com/KWARC/MathHub/issues/" target="_blank">here</a> for known issues)';
   $out .= '</div>';
   return $out;
 }
