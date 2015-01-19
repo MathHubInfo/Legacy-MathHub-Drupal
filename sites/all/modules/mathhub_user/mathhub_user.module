@@ -168,10 +168,11 @@ function mathhub_user_user_view($account, $viewmode) {
     );
   }
   if(!empty($account->data['linkedin'])) {
+    $linkedin_url = check_url($account->data['linkedin']);
     $account->content['about']['linkedin'] = array(
       '#type' => 'user_profile_item',
       '#title' => t('LinkedIn'),
-      '#markup' => check_url($account->data['linkedin']),
+      '#markup' => "<a href=".getOutsideLinkURL($linkedin_url).">".$linkedin_url."</a>",
     );
   }
   if(!empty($account->data['twitter'])) {
