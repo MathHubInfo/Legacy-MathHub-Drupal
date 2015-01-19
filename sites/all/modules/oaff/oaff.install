@@ -118,7 +118,8 @@ function oaff_install() {
   
   $oaff_config['mlids'] = $mlids;
   $oaff_config['nids'] = $nids;
-  $oaff_config['log'] = array();
+  $oaff_config['log'] = array(); //oaff log
+  $oaff_config['archives'] = array(); //archive properties
   variable_set('oaff_config', $oaff_config);
 
   $formats_s = variable_get("oaff_archive_formats", '');

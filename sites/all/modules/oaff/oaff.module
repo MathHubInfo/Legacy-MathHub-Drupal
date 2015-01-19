@@ -92,6 +92,65 @@ function __oaff_generate_html_list($elems) {
   return $body;
 }
 
+function oaff_autogenerate_top_doc() {
+  $groups = planetary_repo_list("");
+  $elems = array();
+  foreach ($groups as $group) {
+    if (planetary_repo_is_dir($group) && $group[0] != '.' && $group != "meta" && drupal_lookup_path('source', $group)) {
+      $elems[$group] = $group;
+    }
+  }
+  $html = __oaff_generate_html_list($elems);
+  return $html;
+}
+
+function oaff_autogenerate_group_doc($group) {
+  $archives = planetary_repo_list($group);
+  $oaff_config= variable_get('oaff_config');
+  $html = '<ul>';
+  foreach ($archives as $archive) {
+    $arch_path = oaff_join_path(array($group, $archive));
+    if (planetary_repo_is_dir($arch_path) && $archive[0] != '.' && $archive != "meta-inf" && drupal_lookup_path('source', $arch_path)) { //valid archive
+      $oaff_config = variable_get('oaff_config');
+      $arch_info = $oaff_config['archives'][$arch_path];
+      $name = $arch_path; // default
+      if (isset($arch_info['name'])) {
+        $name = $arch_info['name'];
+      }
+      $desc = ""; // default    
+      if (isset($arch_info['description'])) {
+        $desc = $arch_info['description'];
+      }
+
+      $html .= '<li> <a href="/' . $arch_path . '">' . $name .  ' </a>  <small> '. $desc .' </small></li>';
+    }
+  }
+  $html .= "</ul>";
+  return $html;
+}
+
+function oaff_autogenerate_archive_doc($group, $archive) {
+  $arch_path = oaff_join_path(array($group, $archive));
+  $html = "";
+  $oaff_config= variable_get('oaff_config');
+  print_r($oaff_config['archives']);
+  $arch_info = $oaff_config['archives'][$arch_path];
+  $name = $arch_path; // default
+  if (isset($arch_info['name'])) {
+    $name = $arch_info['name'];
+  }
+  $desc = ""; //default
+  if (isset($arch_info['description'])) {
+    $desc = $arch_info['description'];
+  }
+  $html .= $desc;
+
+  $html .= "<ul><li><a href=\"/$group/$archive/source\">Content</a> </li><li><a href=\"http://gl.mathhub.info/$group/$archive\" target=\"_blank\">Sources</a> </li></ul>";
+
+  return $html;
+}
+
+
 /**
  * implements hook_filed_formatter view, 
  * @param $entity_type The type of $entity
@@ -104,7 +163,6 @@ function __oaff_generate_html_list($elems) {
  */
 function oaff_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
   $element = array();
-  
   switch ($display['type']) {
     case 'oaff_help_formatter':
       $lang = $entity->language;
@@ -116,29 +174,14 @@ function oaff_field_formatter_view($entity_type, $entity, $field, $instance, $la
           drupal_set_message("Help File missing or empty, auto-generating description", 'warning');
           $segs = explode("/", $location); //format is "$base" / "help" / "index.html"
           if ($segs[0] == 'meta') { //at top level
-            $groups = planetary_repo_list("");
-            $elems = array();
-            foreach ($groups as $group) {
-              if (planetary_repo_is_dir($group) && $group[0] != '.' && $group != "meta" && drupal_lookup_path('source', $group)) {
-                $elems[$group] = $group;
-              }
-            }
-            $markup = __oaff_generate_html_list($elems);
+            $markup = oaff_autogenerate_top_doc();
           } else if ($segs[1] == 'meta-inf') { //at group level
             $group = $segs[0];
-            $archives = planetary_repo_list($group);
-            $elems = array();
-            foreach ($archives as $archive) {
-              $arch_path = oaff_join_path(array($group, $archive));
-              if (planetary_repo_is_dir($arch_path) && $archive[0] != '.' && $archive != "meta-inf" && drupal_lookup_path('source', $arch_path)) {
-                $elems[$archive] = $arch_path;
-              }
-            }
-            $markup = __oaff_generate_html_list($elems);
+            $markup = oaff_autogenerate_group_doc($group);
           } else { //at archive level
             $group = $segs[0];
             $archive = $segs[1];
-            $markup = "<ul><li><a href=\"/$group/$archive/source\">Content</a> </li><li><a href=\"http://gl.mathhub.info/$group/$archive\" target=\"_blank\">Sources</a> </li></ul>";
+            $markup = oaff_autogenerate_archive_doc($group, $archive);
           }
         }
         $element[$delta] = array(
@@ -153,9 +196,6 @@ function oaff_field_formatter_view($entity_type, $entity, $field, $instance, $la
     }
   return $element;
 }
-
-
-
 
 function oaff_form_alter(&$form, &$form_state, $form_id) {
   if ($form_id == 'oaff_doc_node_form') {
@@ -636,15 +676,20 @@ function _oaff_get_archive_info($group, $archive_path) {
   $mf_lines = explode("\n", $manifest);
   $docbase = 'http://docs.omdoc.org/default'; // default
   $archive = 'default'; // default
+  $props = array();//array of archive properties
+
   foreach ($mf_lines as $line) {
     $pair = explode(":", $line, 2);
-    if (trim($pair[0]) == "narration-base") {
-      $docbase = trim($pair[1]);
-    } elseif (trim($pair[0]) == "id") {
-      $archive = trim($pair[1]);
+    if (count($pair) == 2) { //ignoring invalid (e.g empty) lines 
+      $props[$pair[0]] = $pair[1];
+      if (trim($pair[0]) == "narration-base") {
+        $docbase = trim($pair[1]);
+      } elseif (trim($pair[0]) == "id") {
+        $archive = trim($pair[1]);
+      }
     }
   }
-  return array('docbase' => $docbase, 'id' => $archive);
+  return array('docbase' => $docbase, 'id' => $archive, 'props' => $props);
 }
 
 /**
@@ -673,13 +718,16 @@ function _oaff_crawl_archive($group, $archive_path) {
   $arch_info = _oaff_get_archive_info($group, $archive_path);
   $docbase = $arch_info['docbase'];
   $archive_id = $arch_info['id'];
+  $arch_props = $arch_info['props'];
   
-  if (isset($oaff_config['formats'][$archive_id])) {
+  if (isset($oaff_config['formats'][$archive_id])) { //archive enabled
     drupal_set_message("Crawling archive $archive_id."); 
     // crawling archive
     $docbases[$archive_id] = $docbase;
     $oaff_config['docbases'] = $docbases;
     $oaff_config['archive_id'][$group][$archive_path] = $archive_id;
+    $arch_fpath = oaff_join_path(array($group, $archive_path));
+    $oaff_config['archives'][$arch_fpath] = $arch_props;
     variable_set('oaff_config', $oaff_config);
     return true;
   } else {
