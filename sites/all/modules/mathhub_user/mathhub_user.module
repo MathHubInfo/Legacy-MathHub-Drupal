@@ -316,10 +316,12 @@ function mathhub_user_form_user_profile_form_alter(&$form, &$form_state, $form_i
   $form["account"]["reads_languages"] = array(
     '#type' => 'select', 
     '#title' => t('Select the languages you can read'), 
+    '#description' => t('Select the languages you can read.'),
+    '#required' => false,
+    '#weight' => 6,
     '#attributes' => array('data-placeholder' => 'Choose the languages you can read'),
     '#multiple' => true,
-    '#options' => getLanguages(),
-    '#description' => t('Select the languages you can read.'));
+    '#options' => getLanguages());
   if(!empty($form_state['user']->data['reads_languages'])) {
     $form['account']['reads_languages']['#default_value'] = $form_state['user']->data['reads_languages'];
   }
@@ -327,10 +329,12 @@ function mathhub_user_form_user_profile_form_alter(&$form, &$form_state, $form_i
   $form["account"]["writes_languages"] = array(
     '#type' => 'select', 
     '#title' => t('Select the languages you can write'), 
+    '#description' => t('Select the languages you can write.'),
+    '#required' => false,
+    '#weight' => 7,
     '#attributes' => array('data-placeholder' => 'Choose the languages you can write'),
     '#multiple' => true,
-    '#options' => getLanguages(),
-    '#description' => t('Select the languages you can write.'));
+    '#options' => getLanguages());
   if(!empty($form_state['user']->data['writes_languages'])) {
     $form['account']['writes_languages']['#default_value'] = $form_state['user']->data['writes_languages'];
   }
@@ -340,7 +344,7 @@ function mathhub_user_form_user_profile_form_alter(&$form, &$form_state, $form_i
     '#title' => 'Skype ID',
     '#description' => 'Your Skype ID, so people you know can stay in touch with you.',
     '#required' => false,
-    '#weight' => 6);
+    '#weight' => 8);
   if(isset($form_state['user']->data['skype'])) {
     $form['account']['skype']['#default_value'] = $form_state['user']->data['skype'];
   }
@@ -350,7 +354,7 @@ function mathhub_user_form_user_profile_form_alter(&$form, &$form_state, $form_i
     '#title' => 'Linkedin',
     '#description' => 'Your Linkedin ID, so people you know can stay in touch with you.',
     '#required' => false,
-    '#weight' => 7);
+    '#weight' => 9);
   if(isset($form_state['user']->data['linkedin'])) {
     $form['account']['linkedin']['#default_value'] = $form_state['user']->data['linkedin'];
   }
@@ -360,7 +364,7 @@ function mathhub_user_form_user_profile_form_alter(&$form, &$form_state, $form_i
     '#title' => 'Twitter account',
     '#description' => 'Your Twitter account name, so people you know can stay in touch with you.',
     '#required' => false,
-    '#weight' => 8);
+    '#weight' => 10);
   if(isset($form_state['user']->data['twitter'])) {
     $form['account']['twitter']['#default_value'] = $form_state['user']->data['twitter'];
   }
@@ -370,7 +374,7 @@ function mathhub_user_form_user_profile_form_alter(&$form, &$form_state, $form_i
     '#title' => 'Website',
     '#description' => 'So people you know can see your other work.',
     '#required' => false,
-    '#weight' => 9);
+    '#weight' => 11);
   if(isset($form_state['user']->data['website_url'])) {
     $form['account']['website_url']['#default_value'] = $form_state['user']->data['website_url'];
   }
@@ -380,7 +384,7 @@ function mathhub_user_form_user_profile_form_alter(&$form, &$form_state, $form_i
     '#title' => 'Biography',
     '#description' => 'Tell something about yourself, but use no more than 250 characters.',
     '#required' => false,
-    '#weight' => 10);
+    '#weight' => 12);
   if(isset($form_state['user']->data['bio'])) {
     $form['account']['bio']['#default_value'] = $form_state['user']->data['bio'];
   }
