@@ -236,47 +236,51 @@ function mathhub_user_form_user_register_form_alter(&$form, &$form_state, $form_
   $form["account"]["reads_languages"] = array(
     '#type' => 'select', 
     '#title' => t('Select the languages you can read'), 
+    '#description' => t('Select the languages you can read.'),
+    '#required' => false,
+    '#weight' => 6,
     '#attributes' => array('data-placeholder' => 'Choose the languages you can read'),
     '#multiple' => true,
-    '#options' => getLanguages(),
-    '#description' => t('Select the languages you can read.'));
+    '#options' => getLanguages());
   $form["account"]["writes_languages"] = array(
     '#type' => 'select', 
     '#title' => t('Select the languages you can write'), 
+    '#description' => t('Select the languages you can write.'),
+    '#required' => false,
+    '#weight' => 7,
     '#attributes' => array('data-placeholder' => 'Choose the languages you can write'),
     '#multiple' => true,
-    '#options' => getLanguages(),
-    '#description' => t('Select the languages you can write.'));
+    '#options' => getLanguages());
   $form['account']['skype'] = array(
     '#type' => 'textfield',
     '#title' => 'Skype ID',
     '#description' => 'Your Skype ID, so people you know can stay in touch with you.',
     '#required' => false,
-    '#weight' => 6);
+    '#weight' => 8);
   $form['account']['linkedin'] = array(
     '#type' => 'textfield',
     '#title' => 'Linkedin',
     '#description' => 'Your Linkedin ID, so people you know can stay in touch with you.',
     '#required' => false,
-    '#weight' => 7);
+    '#weight' => 9);
   $form['account']['twitter'] = array(
     '#type' => 'textfield',
     '#title' => 'Twitter account',
     '#description' => 'Your Twitter account name, so people you know can stay in touch with you.',
     '#required' => false,
-    '#weight' => 8);
+    '#weight' => 10);
   $form['account']['website_url'] = array(
     '#type' => 'textfield',
     '#title' => 'Website',
     '#description' => 'So people you know can see your other work.',
     '#required' => false,
-    '#weight' => 9);
+    '#weight' => 11);
   $form['account']['bio'] = array(
     '#type' => 'textarea',
     '#title' => 'Biography',
     '#description' => 'Tell something about yourself, but use no more than 250 characters.',
     '#required' => false,
-    '#weight' => 10);
+    '#weight' => 12);
 }
 
 /**
