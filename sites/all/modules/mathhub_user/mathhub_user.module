@@ -221,7 +221,7 @@ function mathhub_user_user_view($account, $viewmode) {
  * GitLab by recreating the same user on GitLab.
  */
 function mathhub_user_form_user_register_form_alter(&$form, &$form_state, $form_id) {
-  $form['#validate'][] = 'mathhub_user_user_form_validate';
+  $form['#validate'][] = 'mathhub_user_register_user_form_validate';
   $form['#submit'][] = 'mathhub_user_user_register_submit';
 
   $form['account']['name']['#description'] = 'Punctuation is not allowed except for periods, hyphens, apostrophes, and underscores.';
@@ -287,7 +287,7 @@ function mathhub_user_form_user_register_form_alter(&$form, &$form_state, $form_
  * GitLab by doing the same changes to it the same user on GitLab.
  */
 function mathhub_user_form_user_profile_form_alter(&$form, &$form_state, $form_id) {
-  $form['#validate'][] = 'mathhub_user_user_form_validate';
+  $form['#validate'][] = 'mathhub_user_edit_user_form_validate';
   $form['#submit'][] = 'mathhub_user_user_edit_submit';
   // save old email address for submit handler in order to pass it to gitlab API
   $form['old_email_address'] = array(
@@ -382,13 +382,37 @@ function mathhub_user_form_user_profile_form_alter(&$form, &$form_state, $form_i
 }
 
 /**
+ * Function mathhub_user_edit_user_form_validate
+ *
+ * This function validates the changes to users. Used by 
+ * mathhub_user_form_user_profile_form_alter.
+ */
+function mathhub_user_edit_user_form_validate($form, &$form_state) {
+  if(isset($form_state['input']['name']) && 
+    (empty($form_state['input']['name']) ||
+     !preg_match("/\A[a-zA-Z0-9_.][a-zA-Z0-9_\-\.]*(?<!\.git)\z/", $form_state['input']['name']))) {
+    form_set_error('name', t("You must adhere to the username rules. 
+                              The username can contain only letters, digits, '-', '.' and '_'. 
+                              Moreover due to GitLab synchronisation it also cannot start with '-' or end in '.git'"));
+  }
+  if(!empty($form_state['input']['pass']['pass1']) && 
+      (strlen($form_state['input']['pass']['pass1']) < 8 ||
+      $form_state['input']['pass']['pass1'] !== $form_state['input']['pass']['pass2'])) {
+    form_set_error('pass', t("The password needs to be atleast 8 characters long."));    
+  }
+  if(!isset($form_state['input']['realname'])) {
+    form_set_error('realname', t("You need to provide us with your name."));  
+  }
+  return;
+}
+
+/**
  * Function mathhub_user_user_form_validate
  *
  * This function validates the changes to users. Used by 
- * mathhub_user_form_user_profile_form_alter and 
  * hook_form_user_register_form_alter
  */
-function mathhub_user_user_form_validate($form, &$form_state) {
+function mathhub_user_register_user_form_validate($form, &$form_state) {
   if(isset($form_state['input']['name']) && 
     (empty($form_state['input']['name']) ||
      !preg_match("/\A[a-zA-Z0-9_.][a-zA-Z0-9_\-\.]*(?<!\.git)\z/", $form_state['input']['name']))) {
