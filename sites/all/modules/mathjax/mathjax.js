@@ -1,18 +1,10 @@
-if (!jQuery.browser.mozilla) {
-	MathJax.Hub.Register.StartupHook("MathML Jax Ready", function() {
-		var PARSE = MathJax.InputJax.MathML.Parse;
-		var oldMakeMML = PARSE.prototype.MakeMML;
-		PARSE.Augment({
-			MakeMML : function(node) {
-				if (node.hasAttribute("type")) {
-					node.removeAttribute("type")
-				}
-				return oldMakeMML.apply(this, arguments);
-			}
-		});
-	});
-
-        MathJax.Hub.Config({
-          mml2jax: {preview: ["[MathJaX is rendering MathML]"]}
-        });
-}
+/**
+ * Typeset MathJax if ajax executes.
+ */
+Drupal.behaviors.mathjaxBehavior = {
+  attach: function (context, settings) {
+    jQuery( document ).ajaxComplete(function() {
+      MathJax.Hub.Queue(["Typeset",MathJax.Hub]);
+    });
+  }
+};
