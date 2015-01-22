@@ -133,7 +133,6 @@ function oaff_autogenerate_archive_doc($group, $archive) {
   $arch_path = oaff_join_path(array($group, $archive));
   $html = "";
   $oaff_config= variable_get('oaff_config');
-  print_r($oaff_config['archives']);
   $arch_info = $oaff_config['archives'][$arch_path];
   $name = $arch_path; // default
   if (isset($arch_info['name'])) {

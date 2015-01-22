@@ -37,8 +37,149 @@ function oaff_features_menu(& $items) {
     'access callback' => true,
     'type' => MENU_CALLBACK,
   );
+
+  $items['mh/translator'] = array(
+    'title' => "Multilingual dictionary",
+    'page callback' => 'oaff_multi_dictionary',
+    'access callback' => true,
+    'type' => MENU_CALLBACK,
+  );
+
   return $items;
 }
+
+
+function oaff_multi_dictionary() {
+  /*
+  drupal_add_css('
+    # .tt-dropdown-menu {
+      max-height: 150px;
+      overflow-y: auto;
+    }', "inline");
+  */
+  $html = "";
+  $html .= '<div class="form-group">
+    <div class="row"> 
+      <div > 
+        <div class="col-md-1">From:</div>
+        <div class="input-group col-md-2">
+          <select id="tr_from_lang" onchange="th_auto()" class="form-control">
+            <option>de</option>
+            <option>en</option>
+            <option>ro</option>
+            <option>tr</option>
+          </select>
+        </div>
+      </div>
+      <div> 
+        <div class="col-md-1">To:</div>
+        <div class="input-group col-md-2">
+          <select id="tr_to_lang" onchange="th_auto()" class="form-control">
+            <option>de</option>
+            <option>en</option>
+            <option>ro</option>
+            <option>tr</option>
+          </select>
+        </div>
+      </div>
+      <div class="col-mod-2">
+        <button id="btn_translate" onclick="on_translate()" type="submit" class="btn btn-primary">Translate</button>
+      </div>
+    </div>
+    <br/>
+    <div class="row">
+      <div class="input-group col-md-6">
+        <input id="tr_term" type="text" class="form-control col-md-5" placeholder="Math Term">
+      </div>
+      <div class="input-group col-md-6" >
+        <div id="tr_out_term" type="text" class="form-control col-md-5" placeholder="Translation" disabled> </div>
+      </div>
+    </div>
+    
+  </div>';
+  drupal_add_js('misc/typeahead.bundle.min.js', 'file');
+  $json = planetary_repo_load_file("test.json");
+  $links_json = planetary_repo_load_file("links.json");
+  drupal_add_js('
+    var dict_json_txt = \'' . $json .'\';
+    var dict_json = JSON.parse(dict_json_txt);
+    var links_json_txt = \'' . $links_json .'\';
+    var links_json = JSON.parse(links_json_txt);
+    
+    var get_dict_keys = function() {
+      var tr_from_lang = jQuery("#tr_from_lang").val();
+      var tr_to_lang = jQuery("#tr_to_lang").val();
+      var map = dict_json[tr_from_lang][tr_to_lang];
+
+      var keys = [], name;
+      for (name in map) {
+        if (map.hasOwnProperty(name)) {
+          keys.push(name);
+        }
+      }
+      return keys;
+    }
+    ','inline');
+
+  drupal_add_js('
+    var substringMatcher = function() {
+      var strs = get_dict_keys();
+      return function findMatches(q, cb) {
+        var matches, substrRegex;
+        matches = [];
+        substrRegex = new RegExp(q, \'i\');
+        jQuery.each(strs, function(i, str) {
+          if (substrRegex.test(str)) {
+            matches.push({ value: str });
+          } 
+        }); 
+        cb(matches);
+      };
+    };
+
+    var th_auto = function() {
+      jQuery(\'#tr_term\').typeahead(\'destroy\');
+      jQuery(\'#tr_term\').typeahead({
+        hint: true,
+        highlight: true,
+        minLength: 1
+      },
+      {
+        name: \'words\',
+        displayKey: \'value\',
+        source: substringMatcher()
+      });
+    }; 
+    jQuery(function() {
+      th_auto();
+    });
+    ', 'inline');
+
+  drupal_add_js('
+    var on_translate = function() {
+      var tr_term = jQuery("#tr_term").val();
+      var tr_from_lang = jQuery("#tr_from_lang").val();
+      var tr_to_lang = jQuery("#tr_to_lang").val();
+      console.log(dict_json);
+      console.log(tr_from_lang);
+      console.log(dict_json[tr_from_lang][tr_to_lang]);
+      console.log(dict_json[tr_from_lang][tr_to_lang][tr_term]);
+      
+      var res = dict_json[tr_from_lang][tr_to_lang][tr_term];
+      console.log(res);
+      var html = "";
+      for (var i = 0; i < res.length; i++) {
+        var name = res[i];
+        var link = links_json[name];
+        html = html + "<a href=\"" + link + "\">" + name + "<a/>";
+      }
+      jQuery("#tr_out_term").html(html);
+      };
+    ', 'inline');  
+  return $html;
+}
+
+
 
 function oaff_features_add_doc() {
   return drupal_get_form('oaff_features_add_doc_form');
