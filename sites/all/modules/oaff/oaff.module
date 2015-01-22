@@ -83,31 +83,61 @@ function oaff_field_formatter_info() {
 }
 
 
-function __oaff_generate_html_list($elems) {
-  $body = '<ul>';
-  foreach ($elems as $name => $link) {
-    $body .= '<li> <a href="/' . $link . '">' . $name . '</a></li>';
-  }
-  $body .= '</ul>';
-  return $body;
-}
-
 function oaff_autogenerate_top_doc() {
+  $html = "";
+  $oaff_config= variable_get('oaff_config');
+  $top_info = $oaff_config['top'];
+  $desc = ""; //default
+  if (isset($top_info['description'])) {
+    $desc = $top_info['description'];
+  }
+  $resp = ""; //default
+  if (isset($top_info['responsible'])) {
+    $resp = $top_info['responsible'];
+  }
+  $html .= $desc;
+  $html .= $resp;
+  //adding group list
   $groups = planetary_repo_list("");
   $elems = array();
+  $html .= "<ul>";
   foreach ($groups as $group) {
     if (planetary_repo_is_dir($group) && $group[0] != '.' && $group != "meta" && drupal_lookup_path('source', $group)) {
-      $elems[$group] = $group;
+      $group_info = $oaff_config['groups'][$group];
+      $name = $group;
+      if (isset($group_info['name'])) {
+        $name = $group_info['name'];
+      }
+      $teaser = "";
+      if (isset($group_info['teaser'])) {
+        $teaser = $group_info['teaser'];
+      }
+      $html .= '<li> <a href="/' . $group . '">' . $name .  ' </a>  <small> '. $teaser .' </small></li>';
+
     }
   }
-  $html = __oaff_generate_html_list($elems);
+  $html .= "</ul>";
+  
   return $html;
 }
 
 function oaff_autogenerate_group_doc($group) {
-  $archives = planetary_repo_list($group);
+  $html = "";
   $oaff_config= variable_get('oaff_config');
-  $html = '<ul>';
+  $group_info = $oaff_config['groups'][$group];
+  $desc = ""; //default
+  if (isset($group_info['description'])) {
+    $desc = $group_info['description'];
+  }
+  $resp = ""; //default
+  if (isset($group_info['responsible'])) {
+    $resp = $group_info['responsible'];
+  }
+  $html .= $desc;
+  $html .= $resp;
+  //adding archive list
+  $archives = planetary_repo_list($group);
+  $html .= '<ul>';
   foreach ($archives as $archive) {
     $arch_path = oaff_join_path(array($group, $archive));
     if (planetary_repo_is_dir($arch_path) && $archive[0] != '.' && $archive != "meta-inf" && drupal_lookup_path('source', $arch_path)) { //valid archive
@@ -117,12 +147,12 @@ function oaff_autogenerate_group_doc($group) {
       if (isset($arch_info['name'])) {
         $name = $arch_info['name'];
       }
-      $desc = ""; // default    
-      if (isset($arch_info['description'])) {
-        $desc = $arch_info['description'];
+      $teaser = ""; // default    
+      if (isset($arch_info['teaser'])) {
+        $teaser = $arch_info['teaser'];
       }
 
-      $html .= '<li> <a href="/' . $arch_path . '">' . $name .  ' </a>  <small> '. $desc .' </small></li>';
+      $html .= '<li> <a href="/' . $arch_path . '">' . $name .  ' </a>  <small> '. $teaser .' </small></li>';
     }
   }
   $html .= "</ul>";
@@ -134,17 +164,19 @@ function oaff_autogenerate_archive_doc($group, $archive) {
   $html = "";
   $oaff_config= variable_get('oaff_config');
   $arch_info = $oaff_config['archives'][$arch_path];
-  $name = $arch_path; // default
-  if (isset($arch_info['name'])) {
-    $name = $arch_info['name'];
-  }
   $desc = ""; //default
   if (isset($arch_info['description'])) {
     $desc = $arch_info['description'];
   }
-  $html .= $desc;
+  $resp = ""; //default
+  if (isset($arch_info['responsible'])) {
+    $resp = $arch_info['responsible'];
+  }
 
-  $html .= "<ul><li><a href=\"/$group/$archive/source\">Content</a> </li><li><a href=\"http://gl.mathhub.info/$group/$archive\" target=\"_blank\">Sources</a> </li></ul>";
+  $html .= $desc;
+  $html .= $resp;
+  $html .= "<ul><li><a href=\"/$group/$archive/source\">Content</a> </li>
+                <li><a href=\"http://gl.mathhub.info/$group/$archive\" target=\"_blank\">Sources</a> </li></ul>";
 
   return $html;
 }
@@ -170,7 +202,6 @@ function oaff_field_formatter_view($entity_type, $entity, $field, $instance, $la
         if (planetary_repo_stat_file($location)) {
           $markup = planetary_repo_load_file($location);
         } else {
-          drupal_set_message("Help File missing or empty, auto-generating description", 'warning');
           $segs = explode("/", $location); //format is "$base" / "help" / "index.html"
           if ($segs[0] == 'meta') { //at top level
             $markup = oaff_autogenerate_top_doc();
@@ -643,8 +674,13 @@ function oaff_create_nodes() {
  * is called by oaff_create_nodes
  */
 function _oaff_crawler_get_active_archives() {
+  $oaff_config = variable_get("oaff_config");
+  $oaff_config['top'] = _oaff_get_top_info();
+  variable_set('oaff_config', $oaff_config);
+
   $groups = planetary_repo_list("");
   $active_groups = array();
+  
   foreach ($groups as $group) {
     if (planetary_repo_is_dir($group) && $group[0] != '.' && $group != 'meta') {
       $archives = planetary_repo_list($group);
@@ -652,17 +688,56 @@ function _oaff_crawler_get_active_archives() {
         if (planetary_repo_is_dir(oaff_join_path(array($group, $archive))) && $archive[0] != '.' && $archive != 'meta-inf') {
           $active = _oaff_crawl_archive($group, $archive);
           if ($active) {
+            $oaff_config = variable_get("oaff_config");
+            $oaff_config['groups'][$group] = _oaff_get_group_info($group);
+            variable_set('oaff_config', $oaff_config);
             if (!isset($active_groups[$group])) {
               $active_groups[$group] = array();
             }
             $active_groups[$group][] = $archive;
           }
         }
-        $oaff_config = variable_get('oaff_config');
       }
     }
   }
   return $active_groups;
+}
+
+
+function _oaff_get_top_info() {
+ // getting info from manifest
+  $mf_path = "meta/inf/MANIFEST.MF";
+  $manifest = planetary_repo_load_file($mf_path);
+  $mf_lines = explode("\n", $manifest);
+  $props = array();//array of archive properties
+  foreach ($mf_lines as $line) {
+    $pair = explode(":", $line, 2);
+    if (count($pair) == 2) { //ignoring invalid (e.g empty) lines 
+      $props[$pair[0]] = $pair[1];
+      if ($pair[0] == 'description') {
+        $props[$pair[0]] = planetary_repo_load_file(oaff_join_path(array("meta/inf/",$pair[1])));
+      }
+    }
+  }
+  return $props;
+}
+
+function _oaff_get_group_info($group) {
+  // getting info from manifest
+  $mf_path = oaff_join_path(array($group, "meta-inf/MANIFEST.MF"));
+  $manifest = planetary_repo_load_file($mf_path);
+  $mf_lines = explode("\n", $manifest);
+  $props = array();//array of archive properties
+  foreach ($mf_lines as $line) {
+    $pair = explode(":", $line, 2);
+    if (count($pair) == 2) { //ignoring invalid (e.g empty) lines 
+      $props[$pair[0]] = $pair[1];
+      if ($pair[0] == 'description') {
+        $props[$pair[0]] = planetary_repo_load_file(oaff_join_path(array($group, "meta-inf", $pair[1])));
+      }
+    }
+  }
+  return $props;
 }
 
 function _oaff_get_archive_info($group, $archive_path) {
@@ -685,6 +760,8 @@ function _oaff_get_archive_info($group, $archive_path) {
         $docbase = trim($pair[1]);
       } elseif (trim($pair[0]) == "id") {
         $archive = trim($pair[1]);
+      } elseif ($pair[0] == 'description') {
+        $props[$pair[0]] = planetary_repo_load_file(oaff_join_path(array($group, $archive_path, "META-INF", $pair[1])));
       }
     }
   }
