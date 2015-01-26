@@ -38,8 +38,8 @@ function oaff_features_menu(& $items) {
     'type' => MENU_CALLBACK,
   );
 
-  $items['mh/translator'] = array(
-    'title' => "Multilingual dictionary",
+  $items['mh/dictionary'] = array(
+    'title' => "Math Dictionary",
     'page callback' => 'oaff_multi_dictionary',
     'access callback' => true,
     'type' => MENU_CALLBACK,
@@ -50,13 +50,54 @@ function oaff_features_menu(& $items) {
 
 
 function oaff_multi_dictionary() {
-  /*
-  drupal_add_css('
-    # .tt-dropdown-menu {
-      max-height: 150px;
-      overflow-y: auto;
-    }', "inline");
-  */
+   drupal_add_css('
+    .tt-input, .tt-hint {
+    width: 396px;
+    height: 30px;
+    padding: 8px 12px;
+    font-size: 24px;
+    line-height: 30px;
+    border: 2px solid #ccc;
+    border-radius: 8px;
+    outline: none;
+}
+
+.tt-input {
+    box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+}
+
+.tt-hint {
+    color: #999
+}
+
+.tt-dropdown-menu {
+    width: 422px;
+    margin-top: 12px;
+    padding: 8px 0;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    box-shadow: 0 5px 10px rgba(0,0,0,.2);
+}
+
+.tt-suggestion {
+    padding: 3px 20px;
+    font-size: 18px;
+    line-height: 24px;
+}
+
+.tt-suggestion.tt-cursor { /* UPDATE: newer versions use .tt-suggestion.tt-cursor */
+    color: #fff;
+    background-color: #0097cf;
+
+}
+
+.tt-suggestion p {
+    margin: 0;
+}
+    ', "inline");
+  
   $html = "";
   $html .= '<div class="form-group">
     <div class="row"> 
@@ -171,7 +212,7 @@ function oaff_multi_dictionary() {
       for (var i = 0; i < res.length; i++) {
         var name = res[i];
         var link = links_json[name];
-        html = html + "<a href=\"" + link + "\">" + name + "<a/>";
+        html = html + "<a href=\"" + link + "\">" + name + "<a/>, ";
       }
       jQuery("#tr_out_term").html(html);
       };
