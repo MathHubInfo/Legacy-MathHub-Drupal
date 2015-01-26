@@ -139,8 +139,8 @@ function oaff_multi_dictionary() {
     
   </div>';
   drupal_add_js('misc/typeahead.bundle.min.js', 'file');
-  $json = planetary_repo_load_file("test.json");
-  $links_json = planetary_repo_load_file("links.json");
+  $json = planetary_repo_load_file("dict_data.json");
+  $links_json = planetary_repo_load_file("term_links.json");
   drupal_add_js('
     var dict_json_txt = \'' . $json .'\';
     var dict_json = JSON.parse(dict_json_txt);
