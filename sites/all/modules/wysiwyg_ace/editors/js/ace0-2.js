@@ -22,6 +22,7 @@ var envID = "planetary"+Math.random();
  */
 Drupal.wysiwyg.editor.attach.ace = function(context, params, settings) {
   // Attach editor.
+    
   var editorID = "#"+params.field;
   var mode = "";
   var toolbardiv, editordiv, editorwrapper;
@@ -30,7 +31,6 @@ Drupal.wysiwyg.editor.attach.ace = function(context, params, settings) {
   	"ShareJS" : false,
   };
   
-
   if (typeof settings["enabled"]!="undefined") {
   	for (var i=0; i<settings["enabled"].length; ++i) {
   	  t = settings["enabled"][i].split("_");
@@ -40,47 +40,52 @@ Drupal.wysiwyg.editor.attach.ace = function(context, params, settings) {
 
   $(editorID).each(function (c, obj) {
   	jQuery(obj).hide();
-  	  
-  	editordiv = jQuery("<div>").attr("id","ace_"+params.field).attr("style"," height:400px; position:relative");
-	  
+        var editorid = "ace_"+params.field;
+  	editordiv = jQuery("<div>").attr("id",editorid).attr("style"," height:400px; position:relative");
+      
   	jQuery(obj).after(editordiv);
-  	var editor = ace.edit("ace_"+params.field);
+  	var editor = ace.edit(editorid);
+        var fileName = jQuery(editordiv).parents(".fieldset-wrapper").children("input").val();
 	  editor.getSession().setValue(obj.value);
 	  editor.setTheme("ace/theme/textmate");
 	  editor.getSession().setMode("ace/mode/"+cSettings["mode"]);
 
-    require.config({ baseUrl: Drupal.settings.editor_tools.editor_tools_path }),
+      require.config({ baseUrl: Drupal.settings.editor_tools.editor_tools_path,
+            paths: {
+                    "sally_client" : "extlibs/sally_client",
+                    "EventEmitter" : "extlibs/EventEmitter.min",
+                    "theo" : "extlibs/theo",
+                    "frames" : "extlibs/frames",
+                    "mathhubdocument" : "extlibs/mathhubdocument",
+            }});
 
-    require(["editor_tools/main"], function(main) {
+        require(["editor_tools/main", "sally_client", "theo", "frames", "mathhubdocument"], function(EditorTools, SallyClient, Theo, Frames, MathHubDocument) {
+            var env = null;
+            editor_tools = new EditorTools(editor, "#"+editorid);
+	    
+            var toolbar = editor_tools.getToolbar();
 
-      var filePath = jQuery((jQuery(editorID).parents(".fieldset-wrapper").find("input")[0])).attr("value");
-	handlers = main.enrich_editor(editor, "#ace_"+params.field, {root_path: Drupal.settings.editor_tools.editor_tools_path+"/", file:filePath, "sid": settings.sid, "envid": settings.sid});
+            var theo = new Theo();
+            var frames = new Frames();
+            var mathHubDocument = new MathHubDocument(editor, fileName, settings["sid"]);
+            
+            frames.on("NewDocLevelService", function(msg) {
+              toolbar.addItem(msg.id, msg.icon, function() {
+                frames.executeDocLevelService(msg.id);
+              });
+            });
 
-      var toolbar = handlers.toolbar;
-      var interpretter = handlers.interpretter;
+            frames.on("RemoveDocLevelService", function(msg) {
+              toolbar.removeItem(msg.id)
+            });
 
-      function download(file, callback) {
-        jQuery.get(file, function(data) {
-          callback(null, data);
+            client = new SallyClient({stompUrl: settings["mh_url"], stompUser : settings["mh_user"], stompPassword : settings["mh_password"]});
+
+            client.register([theo, frames, mathHubDocument], "env"+Math.floor(Math.random()*100000), function() {
+              frames.listenDocLevelServices();
+            });
+
         });
-      };
-
-      async.waterfall([
-        function(callback) { download(Drupal.settings.editor_tools.editor_tools_path+"/macros/preferences.json", callback); },
-        function(data, callback) { 
-            if (typeof(data) == "string") data = JSON.parse(data);
-            interpretter.loadAPI(data);
-            callback();
-        },
-        function(callback) { download(Drupal.settings.editor_tools.editor_tools_path+"/macros/menu_layout.json", callback); },
-        function(data, callback) {
-           if (typeof(data) == "string") data = JSON.parse(data);
-            toolbar.loadLayout(data);
-            jQuery(handlers.header).find(".ribbon").ribbon();
-            callback();
-        }
-      ]);
-    });
 
 	  jQuery.data(obj, 'editor', editor);
   });

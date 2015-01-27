@@ -84,9 +84,9 @@ function wysiwyg_ace_ace_themes($editor, $profile) {
 	}
 	$cpath = url("", array("absolute"=>true)).drupal_get_path("module", "wysiwyg_ace")."/editors/js/";
 	jobad_init_libs();
-	libraries_load("office-ribbon");
+	//libraries_load("office-ribbon");
 	libraries_load("requirejs");
-	libraries_load("editor_tools");
+	//libraries_load("editor_tools");
 
     global $filter_context;
     $config = array('editor_tools_path' => libraries_get_path("editor_tools", true));
@@ -137,6 +137,10 @@ function wysiwyg_ace_ace_settings($editor, $config, $theme) {
 	}
 	global $user;
 	$settings["sid"] = $user->sid;
+	$nd = user_load($user->uid);
+	$settings["mh_user"] = $nd->field_worker_user["und"][0]["value"];
+	$settings["mh_password"] = $nd->field_worker_password["und"][0]["value"];
+	$settings["mh_url"] = $nd->field_worker_url["und"][0]["value"];
 	return $settings;
 }
 
