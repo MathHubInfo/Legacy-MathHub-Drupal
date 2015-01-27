@@ -33,19 +33,30 @@ function latexml_compile($location) {
   return $result;
 }
 
-
 function latexml_get_compiled($location) {
-  $pathinfo = pathinfo($location);
-  $base_relpath = oaff_join_path(array($pathinfo['dirname'], $pathinfo['filename']));
+  $path_info = pathinfo($location);
+  //getting omdoc location
+  $base_relpath = oaff_join_path(array($path_info['dirname'], $path_info['filename']));
   $out_location = $base_relpath . '.omdoc';
-  $log_location = $base_relpath . '.ltxlog';
-  if (planetary_repo_stat_file($log_location) == null || planetary_repo_stat_file($out_location) == null) { //something failed
+  //getting log location
+  $pathinfo = oaff_get_path_info($location);
+  $base = oaff_join_path(array($pathinfo['group'], $pathinfo['archive']));
+  $rel_parent = $pathinfo['rel_parent'];
+  $basename = $pathinfo['module'];
+  $log_filename = $basename . '.ltxlog';
+  $log_location = oaff_join_path(array($base, "errors", "latexml", $rel_parent, $log_filename));
+  $log_location_bck = $base_relpath . '.ltxlog';
+  if ((planetary_repo_stat_file($log_location) == null && planetary_repo_stat_file($log_location) == null) || planetary_repo_stat_file($out_location) == null) { //something failed
     // TODO add a message to status
     oaff_log("LATEXML", "Could not find .log or .omdoc file for $base_relpath (generation failed)");
     $latexml_status = array("conversion" => 3, "messages" => array()); // conversion failed => fatal error 
     $content = ""; 
   } else {
-    $log = planetary_repo_load_file($log_location);
+    if (planetary_repo_stat_file($log_location)) {
+      $log = planetary_repo_load_file($log_location);
+    } else {
+      $log = planetary_repo_load_file($log_location_bck);
+    }
     $latexml_status = _latexml_produce_status_msg($log);
     $content = planetary_repo_load_file($out_location);  
   }
