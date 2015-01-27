@@ -1,0 +1,14 @@
+name = MathHub Worker Configurations
+core = 7.x
+package = MathHubWorkers
+version = 7.x-1.0
+project = mathhub_worker_configurations
+dependencies[] = features
+dependencies[] = text
+features[features_api][] = api:2
+features[field_base][] = field_worker_password
+features[field_base][] = field_worker_url
+features[field_base][] = field_worker_user
+features[field_instance][] = user-user-field_worker_password
+features[field_instance][] = user-user-field_worker_url
+features[field_instance][] = user-user-field_worker_user
