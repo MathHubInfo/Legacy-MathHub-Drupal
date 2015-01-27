@@ -488,9 +488,9 @@ function mmt_get_presentation($location, $presenter = "planetary") {
 
 function _mmt_produce_status_msg($log) {
   $status = array();
+  $lvlmap = array(0 => "Info", 1 => "Warning", 2 => "Error", 3 => "Fatal");
   try {
     $xmllog = new SimpleXMLElement($log);
-    $lvlmap = array(0 => "Info", 1 => "Warning", 2 => "Error", 3 => "Fatal");
     $errors = array();
     $conversion_status = 0;
     foreach ($xmllog->error as $error) {
