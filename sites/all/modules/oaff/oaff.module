@@ -105,8 +105,8 @@ function oaff_autogenerate_top_doc() {
     if (planetary_repo_is_dir($group) && $group[0] != '.' && $group != "meta" && drupal_lookup_path('source', $group)) {
       $group_info = $oaff_config['groups'][$group];
       $name = $group;
-      if (isset($group_info['name'])) {
-        $name = $group_info['name'];
+      if (isset($group_info['title'])) {
+        $name = $group_info['title'];
       }
       $teaser = "";
       if (isset($group_info['teaser'])) {
@@ -144,8 +144,8 @@ function oaff_autogenerate_group_doc($group) {
       $oaff_config = variable_get('oaff_config');
       $arch_info = $oaff_config['archives'][$arch_path];
       $name = $arch_path; // default
-      if (isset($arch_info['name'])) {
-        $name = $arch_info['name'];
+      if (isset($arch_info['title'])) {
+        $name = $arch_info['title'];
       }
       $teaser = ""; // default    
       if (isset($arch_info['teaser'])) {
@@ -174,7 +174,7 @@ function oaff_autogenerate_archive_doc($group, $archive) {
   }
 
   $html .= $desc;
-  $html .= $resp;
+  $html .= "<p><strong>Responsible: </strong>" . $resp . "</p>";
   $html .= "<ul><li><a href=\"/$group/$archive/source\">Content</a> </li>
                 <li><a href=\"http://gl.mathhub.info/$group/$archive\" target=\"_blank\">Sources</a> </li></ul>";
 
@@ -715,7 +715,8 @@ function _oaff_get_top_info() {
     if (count($pair) == 2) { //ignoring invalid (e.g empty) lines 
       $props[$pair[0]] = $pair[1];
       if ($pair[0] == 'description') {
-        $props[$pair[0]] = planetary_repo_load_file(oaff_join_path(array("meta/inf/",$pair[1])));
+        $desc_file = trim($pair[1]);
+        $props[$pair[0]] = planetary_repo_load_file(oaff_join_path(array("meta/inf/", $desc_file)));
       }
     }
   }
@@ -733,7 +734,8 @@ function _oaff_get_group_info($group) {
     if (count($pair) == 2) { //ignoring invalid (e.g empty) lines 
       $props[$pair[0]] = $pair[1];
       if ($pair[0] == 'description') {
-        $props[$pair[0]] = planetary_repo_load_file(oaff_join_path(array($group, "meta-inf", $pair[1])));
+        $desc_file = trim($pair[1]);
+        $props[$pair[0]] = planetary_repo_load_file(oaff_join_path(array($group, "meta-inf", $desc_file)));
       }
     }
   }
@@ -761,7 +763,8 @@ function _oaff_get_archive_info($group, $archive_path) {
       } elseif (trim($pair[0]) == "id") {
         $archive = trim($pair[1]);
       } elseif ($pair[0] == 'description') {
-        $props[$pair[0]] = planetary_repo_load_file(oaff_join_path(array($group, $archive_path, "META-INF", $pair[1])));
+        $desc_file = trim($pair[1]);
+        $props[$pair[0]] = planetary_repo_load_file(oaff_join_path(array($group, $archive_path, "META-INF", $desc_file)));
       }
     }
   }
