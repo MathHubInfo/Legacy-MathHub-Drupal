@@ -487,39 +487,45 @@ function mmt_get_presentation($location, $presenter = "planetary") {
 }
 
 function _mmt_produce_status_msg($log) {
-  $xmllog = new SimpleXMLElement($log);
-  $lvlmap = array(0 => "Info", 1 => "Warning", 2 => "Error", 3 => "Fatal");
-  $errors = array();
-  $conversion_status = 0;
-  foreach ($xmllog->error as $error) {
-    $current = array();
-    $current['shortMsg'] = $error['shortMsg'];
-    $level = (string) $error['level'];
-    if (!isset($lvlmap[$level])) {
-      $level = 3; //assuming Fatal.
-    }
-    $current['type'] = $lvlmap[$level];
-    $conversion_status = max($conversion_status, $level);
-    $current['longMsg'] = (string) $error;
-    if (isset($error['sref'])) {
-      $positions = explode(":",$error['sref']);
-      if (count($positions) == 2) {
-        $from = explode(".", $positions[0]);
-        $to = explode(".", $positions[1]);
-        $current["srcref"] = array();
-        $current["srcref"]['from'] = array();
-        $current["srcref"]['from']['line'] = $from[1] + 1; // oaff standard is that lines nr starts at 1 not 0
-        $current["srcref"]['from']['col'] = $from[2] + 1; //same for columns
-        $current["srcref"]['to'] = array();
-        $current["srcref"]['to']['line'] = $to[1] + 1; // oaff standard is that lines nr starts at 1 not 0
-        $current["srcref"]['to']['col'] = $to[2] + 1; // same for columns
-      }
-    }
-    $errors[] = $current;
-  }
   $status = array();
-  $status['messages'] = $errors;
-  $status['conversion'] = $conversion_status; 
+  try {
+    $xmllog = new SimpleXMLElement($log);
+    $lvlmap = array(0 => "Info", 1 => "Warning", 2 => "Error", 3 => "Fatal");
+    $errors = array();
+    $conversion_status = 0;
+    foreach ($xmllog->error as $error) {
+      $current = array();
+      $current['shortMsg'] = $error['shortMsg'];
+      $level = (string) $error['level'];
+      if (!isset($lvlmap[$level])) {
+        $level = 3; //assuming Fatal.
+      }
+      $current['type'] = $lvlmap[$level];
+      $conversion_status = max($conversion_status, $level);
+      $current['longMsg'] = (string) $error;
+      if (isset($error['sref'])) {
+        $positions = explode(":",$error['sref']);
+        if (count($positions) == 2) {
+          $from = explode(".", $positions[0]);
+          $to = explode(".", $positions[1]);
+          $current["srcref"] = array();
+          $current["srcref"]['from'] = array();
+          $current["srcref"]['from']['line'] = $from[1] + 1; // oaff standard is that lines nr starts at 1 not 0
+          $current["srcref"]['from']['col'] = $from[2] + 1; //same for columns
+          $current["srcref"]['to'] = array();
+          $current["srcref"]['to']['line'] = $to[1] + 1; // oaff standard is that lines nr starts at 1 not 0
+          $current["srcref"]['to']['col'] = $to[2] + 1; // same for columns
+        }
+      }
+      $errors[] = $current;
+    }
+    $status['messages'] = $errors;
+    $status['conversion'] = $conversion_status; 
+  } catch (Exception $e) { //invalid xml, possibly empty -> no errors
+    $err = array('type' => 3, 'shortMsg' => "Log empty/invalid", "longMsg" => "Log file exists but is invalid xml (possibly empty)");
+    $status['messages'] = array($err);
+    $status['conversion'] = 3;
+  }
   return $status;
 }
 
