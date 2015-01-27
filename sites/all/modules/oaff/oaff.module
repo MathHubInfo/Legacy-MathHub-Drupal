@@ -170,11 +170,10 @@ function oaff_autogenerate_archive_doc($group, $archive) {
   }
   $resp = ""; //default
   if (isset($arch_info['responsible'])) {
-    $resp = $arch_info['responsible'];
+    $resp = "<p><strong>Responsible: </strong>" . $arch_info['responsible'] . "</p>";;
   }
-
   $html .= $desc;
-  $html .= "<p><strong>Responsible: </strong>" . $resp . "</p>";
+  $html .= $resp;
   $html .= "<ul><li><a href=\"/$group/$archive/source\">Content</a> </li>
                 <li><a href=\"http://gl.mathhub.info/$group/$archive\" target=\"_blank\">Sources</a> </li></ul>";
 
