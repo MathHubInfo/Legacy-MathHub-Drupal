@@ -522,7 +522,7 @@ function _mmt_produce_status_msg($log) {
     $status['messages'] = $errors;
     $status['conversion'] = $conversion_status; 
   } catch (Exception $e) { //invalid xml, possibly empty -> no errors
-    $err = array('type' => 3, 'shortMsg' => "Log empty/invalid", "longMsg" => "Log file exists but is invalid xml (possibly empty)");
+    $err = array('type' => $lvlmap[3], 'shortMsg' => "Log empty/invalid", "longMsg" => "Log file exists but is invalid xml (possibly empty)");
     $status['messages'] = array($err);
     $status['conversion'] = 3;
   }
