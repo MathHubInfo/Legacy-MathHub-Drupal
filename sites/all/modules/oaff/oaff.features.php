@@ -98,7 +98,9 @@ function oaff_multi_dictionary() {
 }
     ', "inline");
   
-  $html = "";
+  $html = '<p>The math dictionary on this page is a service based on the <a href="https://mathhub.info/smglom">SMGloM</a> terminology. 
+          To translate mathematical terms, select the source and target languages and enter them in the text window on the left (autocompletion). 
+          The translations are hyperlinked to their respective definitions for convenience.</p>';
   $html .= '<div class="form-group">
     <div class="row"> 
       <div > 
@@ -106,7 +108,7 @@ function oaff_multi_dictionary() {
         <div class="input-group col-md-2">
           <select id="tr_from_lang" onchange="th_auto()" class="form-control">
             <option>de</option>
-            <option>en</option>
+            <option selected>en</option>
             <option>ro</option>
             <option>tr</option>
           </select>
