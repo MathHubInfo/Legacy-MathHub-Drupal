@@ -72,7 +72,7 @@ Drupal.wysiwyg.editor.attach.ace = function(context, params, settings) {
             frames.on("NewDocLevelService", function(msg) {
               toolbar.addItem(msg.id, msg.icon, function() {
                 frames.executeDocLevelService(msg.id);
-              });
+              }, msg.name, msg.type);
             });
 
             frames.on("RemoveDocLevelService", function(msg) {

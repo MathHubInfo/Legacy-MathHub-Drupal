@@ -89,14 +89,15 @@ function wysiwyg_ace_ace_themes($editor, $profile) {
 	//libraries_load("editor_tools");
 
     global $filter_context;
-    $config = array('editor_tools_path' => libraries_get_path("editor_tools", true));
+    $path = libraries_get_path("editor_tools", true);
+    $config = array('editor_tools_path' => $path);
     if (isset($filter_context)) {
     	$config['context'] = $filter_context;
     }
 
-	drupal_add_js(array('editor_tools' => $config), 'setting');
-
-	return array('default');
+ 
+    drupal_add_js(array('editor_tools' => $config), 'setting');
+     return array('default');
 }
 
 /**
@@ -110,6 +111,9 @@ function wysiwyg_ace_ace_themes($editor, $profile) {
 function wysiwyg_ace_ace_load($editor, $library) {
 	drupal_add_css($editor['library path'] . '/lib/ace.css');
 	drupal_add_css($editor['library path'] . '/theme/default.css');
+    	drupal_add_css($path."/editor_tools.css");
+    drupal_add_css("sites/all/libraries/editor_tools/editor_tools.css");
+
 }
 
 /**
