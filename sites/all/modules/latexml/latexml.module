@@ -46,7 +46,7 @@ function latexml_get_compiled($location) {
   $log_filename = $basename . '.ltxlog';
   $log_location = oaff_join_path(array($base, "errors", "latexml", $rel_parent, $log_filename));
   $log_location_bck = $base_relpath . '.ltxlog';
-  if ((planetary_repo_stat_file($log_location) == null && planetary_repo_stat_file($log_location) == null) || planetary_repo_stat_file($out_location) == null) { //something failed
+  if ((planetary_repo_stat_file($log_location) == null && planetary_repo_stat_file($log_location_bck) == null) || planetary_repo_stat_file($out_location) == null) { //something failed
     // TODO add a message to status
     oaff_log("LATEXML", "Could not find .log or .omdoc file for $base_relpath (generation failed)");
     $latexml_status = array("conversion" => 3, "messages" => array()); // conversion failed => fatal error 
