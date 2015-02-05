@@ -41,7 +41,7 @@ function oaff_admin_menu(& $items) {
     'title' => "Update Errors",
     'page callback' => 'oaff_admin_update_errors',
     'access callback' => true, //needs public for providing builder API?
-    'menu_name' => 'navigation',
+    'menu_name' => MENU_CALLBACK,
   );
 
   return $items;
