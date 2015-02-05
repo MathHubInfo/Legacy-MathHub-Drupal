@@ -199,7 +199,25 @@ function oaff_field_formatter_view($entity_type, $entity, $field, $instance, $la
       foreach ($items as $delta => $item) {
         $location = $item['path'];
         if (planetary_repo_stat_file($location)) {
-          $markup = planetary_repo_load_file($location);
+          $content = planetary_repo_load_file($location);
+          try {
+            $content = str_replace('xmlns=', 'ns=', $content); 
+            $xml = new SimpleXMLElement($content, LIBXML_NOERROR);
+            $titles = $xml->title;
+            $frags = $xml->xhtmlfrag;
+            if (count($titles) != 1 || count($frags) != 1) {
+              throw new Exception("Invalid help node format");
+            }
+            $title = (string)$titles[0];
+            $markup = "";
+            foreach($frags[0]->children() as $elem) {
+              $markup .= $elem->asXML();
+            }
+            drupal_set_title($title);
+          } catch (Exception $e) {
+            drupal_set_message("Invalid help node format, treating as plain html fragment", 'warning');
+            $markup = $content;
+          }
         } else {
           $segs = explode("/", $location); //format is "$base" / "help" / "index.html"
           if ($segs[0] == 'meta') { //at top level
@@ -655,6 +673,7 @@ function oaff_create_nodes() {
   $oaff_config = variable_get('oaff_config');
   $oaff_config['latest_nodes'] = 0;
   variable_set('oaff_config', $oaff_config);
+  _oaff_crawler_update_doc_nodes();
   $groups = _oaff_crawler_get_active_archives();
   _oaff_crawler_update_content($groups);
   $oaff_config = variable_get('oaff_config');
@@ -667,6 +686,28 @@ function oaff_create_nodes() {
   $out = '<div> <button class="btn btn-primary " onclick="window.location = \'/mh/initialize-nodes\'"> Continue </button> </div> ';
   return $out;
 }
+
+
+/**
+ * Crawls the filesystem for documentation nodes (typically html files in meta/inf/help)
+ */
+function _oaff_crawler_update_doc_nodes() {
+  $docs_base = "/meta/inf/doc/help/";
+  $files = planetary_repo_list($docs_base);
+  foreach ($files as $filename) {
+    $pathinfo = pathinfo($filename);
+    $name = $pathinfo['filename'];
+    $alias = oaff_join_path(array('help', $filename));
+    $fpath = oaff_join_path(array($docs_base, $filename));
+    $srcpath = drupal_lookup_path('source', $alias);
+    if (!$srcpath) {
+      if (isset($pathinfo['extension']) && $pathinfo['extension'] == "html") {
+        oaff_create_help_node($name, 'help/' . $name, $fpath, false);
+      }
+    }
+  }
+}
+
 
 /**
  * function crawl oaff archives for files to create nodes from (based on extension and OAFF config)
