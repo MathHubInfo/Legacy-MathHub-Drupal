@@ -447,10 +447,10 @@ function mmt_get_compiled($location, $compiler = "stex-omdoc") {
   $log_filename = $basename . '.err';    
 
   $log_location = oaff_join_path(array($base, "errors", $compiler, $rel_parent, $log_filename));
-  if (planetary_repo_stat_file($log_location) == null) { //something failed
+  if (planetary_repo_stat_file($log_location) == null) { //something failed or no errors
     // TODO add a message to status
-    oaff_log("MMT", "Could not find .log file for compiling $location with $compiler (generation failed)");
-    $mmt_status = array("conversion" => 3, "messages" => array()); // conversion failed => fatal error 
+    oaff_log("MMT", "Could not find .log file for compiling $location with $compiler (generation failed or no errors -- assuming no errors)");
+    $mmt_status = array("conversion" => 0, "messages" => array()); // assuming no errors
     $content = ""; 
   } else {
     $log = planetary_repo_load_file($log_location);
