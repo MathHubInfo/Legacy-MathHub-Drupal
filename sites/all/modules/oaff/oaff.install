@@ -26,6 +26,10 @@ function oaff_add_vfs_field($node_type, $formatter = 'mmt_formatter') { // TODO 
         'type' => $formatter, 
         'label' => 'hidden',
       ),
+      'teaser' => array(
+        'type' => $formatter,
+        'label' => 'hidden',
+        )
     ),    
   );
   field_create_instance($instance);
@@ -98,7 +102,7 @@ function oaff_install() {
   $oaff_config['crawl_nodes_offset'] = 0;
   $mlids = array();
   $nids = array();
-  $arch_info = oaff_create_help_node('Libraries', 'mh/libraries', oaff_join_path(array("meta/inf/doc/", "index.html")), true);
+  $arch_info = oaff_create_help_node('Libraries', 'mh/libraries', oaff_join_path(array("meta/inf/doc/", "index.html")), array('show_in_menu' => true));
   $oaff_config['libraries_nid'] = $arch_info['nid'];
   $nids[] = $arch_info['nid'];
   $mlids[] = $arch_info['mlid'];

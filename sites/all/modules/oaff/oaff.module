@@ -213,6 +213,9 @@ function oaff_field_formatter_view($entity_type, $entity, $field, $instance, $la
             foreach($frags[0]->children() as $elem) {
               $markup .= $elem->asXML();
             }
+            //setting title to be later used for teaser
+            $entity->title = $title;
+            node_save($entity);
             drupal_set_title($title);
           } catch (Exception $e) {
             drupal_set_message("Invalid help node format, treating as plain html fragment", 'warning');
@@ -702,7 +705,11 @@ function _oaff_crawler_update_doc_nodes() {
     $srcpath = drupal_lookup_path('source', $alias);
     if (!$srcpath) {
       if (isset($pathinfo['extension']) && $pathinfo['extension'] == "html") {
-        oaff_create_help_node($name, 'help/' . $name, $fpath, false);
+        $options = array();
+        if ($fpath == "/meta/inf/doc/help/main.html") { //main entry point of documentation
+          $options = array("promote" => 1, "sticky" => 1);
+        }
+        oaff_create_help_node($name, 'help/' . $name, $fpath, $options);
       }
     }
   }
@@ -996,7 +1003,20 @@ function oaff_create_static_node($title, $alias, $content, $show_in_menu = false
   }
 }
 
-function oaff_create_help_node($title, $alias, $fpath, $show_in_menu = false) {
+function oaff_create_help_node($title, $alias, $fpath, $options = array()) {
+  $show_in_menu = false;
+  if (isset($options['show_in_menu'])) {
+    $show_in_menu = $options['show_in_menu'];
+  }
+  $promote = 0;
+  if (isset($options['promote'])) {
+    $promote = $options['promote'];
+  }
+  $sticky = 0;
+  if (isset($options['sticky'])) {
+    $sticky = $options['sticky'];
+  }
+
   $help_node = (object) array(
    'type' => 'oaff_helpdoc',
    'uid' => 0,
@@ -1004,9 +1024,9 @@ function oaff_create_help_node($title, $alias, $fpath, $show_in_menu = false) {
    'changed' => strtotime("now"),
    'status' => 1,
    'comment' => 0,
-   'promote' => 0,
+   'promote' => $promote,
    'moderate' => 0,
-   'sticky' => 0,
+   'sticky' => $sticky,
    'language' => 'und'
   );
 
