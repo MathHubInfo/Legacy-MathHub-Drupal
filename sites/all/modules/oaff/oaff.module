@@ -700,6 +700,7 @@ function _oaff_crawler_update_doc_nodes() {
   foreach ($files as $filename) {
     $pathinfo = pathinfo($filename);
     $name = $pathinfo['filename'];
+    $fullname = $pathinfo['basename'];
     $alias = oaff_join_path(array('help', $filename));
     $fpath = oaff_join_path(array($docs_base, $filename));
     $srcpath = drupal_lookup_path('source', $alias);
@@ -709,7 +710,7 @@ function _oaff_crawler_update_doc_nodes() {
         if ($fpath == "/meta/inf/doc/help/main.html") { //main entry point of documentation
           $options = array("promote" => 1, "sticky" => 1);
         }
-        oaff_create_help_node($name, 'help/' . $name, $fpath, $options);
+        oaff_create_help_node($name, 'help/' . $fullname, $fpath, $options);
       }
     }
   }
