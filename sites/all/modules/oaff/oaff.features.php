@@ -294,29 +294,75 @@ function oaff_features_rerun_error() {
 }
 
 function oaff_features_common_errors() {
-  $results = db_select('oaff_errors', 'e')
-             ->fields('e', array('nid', 'type', 'compiler', 'short_msg'))
-             ->execute()
+  $query = db_select('oaff_errors', 'e')
+             ->fields('e', array('nid', 'type', 'compiler', 'mh_group', 'mh_archive', 'short_msg'));
+  
+  $err_checked = array("0" => false,"1" => false,"2" => false,"3" => false);
+  
+  if (isset($_GET['types'])) {
+    $types = explode(",",$_GET['types']);
+  } else { //assuming all errors and fatal errors 
+    $types = array("2", "3");
+  }
+  foreach ($types as $type) {
+    $err_checked[$type] = true;
+  }
+  $query->condition('e.type', $types, "IN");
+
+  function err_lvl_str($type, $err_map, $str_true, $str_false = "") {
+    if ($err_map[$type]) {
+      return $str_true;
+    } else {
+      return $str_false;
+    }
+  }
+  $err_fields = array("compilers" => "", "groups" => "", "archives" => "");
+  if (isset($_GET['compilers'])) {
+    $err_fields['compilers'] = 'value="' . $_GET['compilers'] . '"';
+    $compilers = explode(",",$_GET['compilers']);
+    $query->condition('e.compiler', $compilers, "IN");
+  } 
+  if (isset($_GET['groups'])) {
+    $err_fields['groups'] = 'value="' . $_GET['groups'] . '"';
+    $groups = explode(",",$_GET['groups']);
+    $query->condition('e.mh_group', $groups, "IN");
+  }
+  if (isset($_GET['archives'])) {
+    $err_fields['archives'] = 'value="' . $_GET['archives'] . '"';
+    $archives = explode(",",$_GET['archives']);
+    $query->condition('e.mh_archive', $archives, "IN");
+  }
+
+  $results = $query->execute()
              ->fetchAll();
 
-  if (count($results) == 0) {
-    drupal_set_message("No errors found");
-    return "";
-  }
   $compilers = array();
+  $statistics = array();
   foreach ($results as $result) {
     $msg = $result->short_msg;
     $type = $result->type;
     $compiler = $result->compiler;
+    $group = $result->mh_group;
+    $archive = $result->mh_archive;
+    //initializing
+    if (!isset($statistics[$group])) {
+      $statistics[$group] = array("occurs" => array("0" => 0, "1" => 0, "2" => 0, "3" => 0), 'archives' => array());
+    }
+    if (!isset($statistics[$group]['archives'][$archive])) {
+      $statistics[$group]['archives'][$archive] = array("0" => 0, "1" => 0, "2" => 0, "3" => 0);
+    }
     if (!isset($compilers[$compiler])) {
       $compilers[$compiler] = array();
-    }
-    if (!isset($compilers[$compiler][$type])) {
-      $compilers[$compiler][$type] = array('msgs' => array(), 'occurs' => 0);
+      foreach (array("0","1","2","3") as $tmptype) {
+        $compilers[$compiler][$tmptype] = array('msgs' => array(), 'occurs' => 0);
+      }
     }
     if (!isset($compilers[$compiler][$type]['msgs'][$msg])) {
       $compilers[$compiler][$type]['msgs'][$msg] = array('occurs' => 0, 'nids' => array());
     }
+    $statistics[$group]['occurs'][$type] += 1;
+    $statistics[$group]['archives'][$archive][$type] += 1;
+    
     $compilers[$compiler][$type]['occurs'] += 1;   
     $compilers[$compiler][$type]['msgs'][$msg]['occurs'] += 1; 
     $compilers[$compiler][$type]['msgs'][$msg]['nids'][] = $result->nid; 
@@ -352,18 +398,135 @@ function oaff_features_common_errors() {
   $name_map = array(0 => 'Info', 1 => "Warning", 2 => "Error", 3 =>  "Fatal Error");
   $color_map = array(0 => '#9999FF', 1 => "#BBBB11", 2 => "#FF6666", 3 =>  "#FF2222");
   $class_map = array(0 => 'text-info', 1 => "text-warning", 2 => "text-danger", 3 =>  "text-danger");
-  $out = '<div>';
-  $i = 0;
-  $out .= '<div class="alert alert-info"> <h4><span "> Overview: </span></h4>';     
+  //adding js for error filter
+  drupal_add_js('
+    function reloadErrors() {
+      var types = "";
+      if(jQuery("#mh_error_info").get(0).checked) {
+        types += "0,";
+      }
+      if(jQuery("#mh_error_warning").get(0).checked) {
+        types += "1,";
+      }
+      if(jQuery("#mh_error_error").get(0).checked) {
+        types += "2,";
+      }
+      if(jQuery("#mh_error_fatal").get(0).checked) {
+        types += "3,";
+      }
+
+      types = types.substring(0, types.length - 1);
+      var groups = jQuery("#mh_groups").get(0).value;
+      var archives = jQuery("#mh_archives").get(0).value;
+      var compilers = jQuery("#mh_compilers").get(0).value;
+      var path = "/mh/common-errors?"
+      if (types != "") {
+        path += "types=" + types + "&";
+      }
+      if (compilers != "") {
+        path += "compilers=" + compilers + "&";
+      }
+      if (groups != "") {
+        path += "groups=" + groups + "&";
+      }
+      if (archives != "") {
+        path += "archives=" + archives + "&";
+      } 
+      path = path.substring(0, path.length -1);
+      //console.log(path);
+      window.location = path;
+    }
+    ', 'inline');
+  $out = '<div>'; //main div
+  //adding err filter and statistics accordion
+  $out .= '<div class="panel-group" id="accordion" role="tablist" aria-multiselectable="true">';
+  $out .= '<div class="panel panel-default">
+
+   <div class="panel-heading" role="tab" id="filterHeading">
+      <h4 class="panel-title">
+        <a data-toggle="collapse" data-parent="#accordion" href="#filterBody" aria-expanded="false" aria-controls="filterBody">
+          Filter
+        </a>
+      </h4>
+    </div>
+<div id="filterBody" class="panel-collapse collapse" role="tabpanel" aria-labelledby="filterHeading">
+  <div class="panel-body">
+    <div class="form-group">
+    <label for="mh_levels"> Error Levels </label> 
+    <div>
+      <label class="checkbox-inline"><input type="checkbox" id="mh_error_info" ' .  err_lvl_str(0, $err_checked, "checked") . '> Info </label>
+      <label class="checkbox-inline"><input type="checkbox" id="mh_error_warning" ' .  err_lvl_str(1, $err_checked, "checked") . '> Warning </label>
+      <label class="checkbox-inline"><input type="checkbox" id="mh_error_error" ' .  err_lvl_str(2, $err_checked, "checked") . '> Error </label>
+      <label class="checkbox-inline"><input type="checkbox" id="mh_error_fatal" ' .  err_lvl_str(3, $err_checked, "checked") . '> Fatal Error </label>
+    </div>
+    </div>
+    
+    <div class="form-group">
+      <label for="mh_compilers"> Compilers </label>
+      <input type="text" class="form-control" id="mh_compilers" placeholder="Enter Compilers (comma separated)" ' . $err_fields['compilers'] . '>
+      <p class="help-block">Leave empty to select all compilers </p>
+    </div>
+   <div class="form-group">
+      <label for="mh_groups"> Libraries </label>
+      <input type="text" class="form-control" id="mh_groups" placeholder="Enter Libraries (comma separated)" ' . $err_fields['groups'] . '>
+      <p class="help-block">Leave empty to select all libraries </p>
+    </div>
+    <div class="form-group">
+      <label for="mh_archives"> Archives </label>
+      <input type="text" class="form-control" id="mh_archives" placeholder="Enter Archives (comma separated)" ' . $err_fields['archives'] . '>  
+      <p class="help-block">Leave empty to select all archives </p>
+    </div>
+    <button class="btn btn-danger" onclick="reloadErrors();">Reload</button>
+  </div>
+</div>
+</div>';
+  //statistics
+  if (count($results) == 0) {
+    drupal_set_message("No errors found, perhaps adjust filter settings");
+    return $out . "</div></div>"; //closing accordion and main div
+  }
+  $out .= '<div class="panel panel-default">';
+  $out .= '<div class="panel-heading" role="tab" id="statHeading">
+      <h4 class="panel-title">
+        <a data-toggle="collapse" data-parent="#accordion" href="#statbody" aria-expanded="false" aria-controls="statbody">
+              Statistics 
+        </a>
+      </h4>
+    </div>';  
+  $out .= '<div id = "statbody" class="panel-collapse collapse" role="tabpanel" aria-labelledby="statHeading" >';
+  $out .= '<div class="panel-body">';
+  $out .=  "<h4> <span> Libraries: </span> </h4> <ul> ";
+  foreach ($statistics as $group => $gpdata) {
+    $out .= '<li><ul class="list-inline"><li><span> ' . $group . ': </span></li>';
+    foreach ($gpdata['occurs'] as $type => $occurs) {
+      $out .=  '<li ' . err_lvl_str($type, $err_checked,'', 'class="hidden"') . '><span class="' . $class_map[$type] . '"> ' . $occurs . ' ' . $name_map[$type] . '(s)</span></li>';
+    }
+    $out .= "</ul><ul>";
+    foreach($gpdata['archives'] as $archive => $archdata) {
+      $out .= '<li><ul class="list-inline"><li><span> ' . $archive . ': </span></li>';
+      foreach ($archdata as $type => $occurs) {
+        $out .=  '<li ' . err_lvl_str($type, $err_checked,'', 'class="hidden"') . '><span class="' . $class_map[$type] . '"> ' . $occurs . ' ' . $name_map[$type] . '(s)</span></li>';
+      }
+      $out .= "</ul></li>";
+    }
+    $out .= "</ul></li>";
+  }
+  $out .= "</ul>";
+  $out .= '<h4><span "> Compilers: </span></h4> <ul>';     
   foreach ($compilers as $compiler => $types) {
-    $out .= '<div class="links bg-info"><ul class="list-inline"><span> ' . $compiler . ' compiler: ';
+    $out .= '<li><ul class="list-inline"><li><span> ' . $compiler . ': </span></li> ';
     foreach ($types as $type => $msgs) {
       $occurs = $msgs['occurs'];
-      $out .=  '<span class="' . $class_map[$type] . '"> ' . $occurs . ' ' . $name_map[$type] . '(s)<span>,';
+      $out .=  '<li ' . err_lvl_str($type, $err_checked,'', 'class="hidden"') . '><span class="' . $class_map[$type] . '"> ' . $occurs . ' ' . $name_map[$type] . '(s)</span></li>';
     }
-    $out .= '</span></li><ul></div>';
+    $out .= '</ul></li>';
   }
-  $out .= '</div>';
+  $out .= "</ul></div>";
+  $out .="</div></div>";
+  $out .="</div>";//ending accordion div
+  $out .= "<hr/>";
+  //starting error list
+  $i = 0;
   foreach ($errors as $error) {
     $out .= '<div class="node-teaser">';
     $out .= '<h4><span class="' . $class_map[$error['type']] . '"> ' . $error['msg'] . '  </span></h4>';

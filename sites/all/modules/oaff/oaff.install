@@ -187,7 +187,19 @@ function oaff_schema() {
         'type' => 'varchar',
         'length' => 63,
         'not null' => true,
-        ),
+      ),
+      'mh_group' => array(
+        'description' => 'The group where the node with the error belongs',
+        'type' => 'varchar',
+        'length' => 63,
+        'not null' => true,
+      ),
+      'mh_archive' => array(
+        'description' => 'The archive where the node with the error belongs',
+        'type' => 'varchar',
+        'length' => 63,
+        'not null' => true,
+      ),
       'short_msg' => array(
         'description' => 'The short error message',
         'type' => 'varchar',

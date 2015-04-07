@@ -13,6 +13,7 @@ function mmt_initialize() {
 
     
     drupal_add_css($mmt_path . '/css/mmt.css', array('weight' => PHP_INT_MAX, 'every_page' => false));
+    drupal_add_css($mmt_path . '/css/latexml.css', array('weight' => PHP_INT_MAX, 'every_page' => false));
     
     /* JavaScript */
     drupal_add_js('var mmtUrl = "' . $mmt_url . '";', 'inline');
@@ -302,7 +303,7 @@ function mmt_filter_presentation_process($text, $filter, $format, $langcode, $ca
     return $text;
   }
   $filter_context['status']['mmt_pres'] = $response['status'];
-  if ($response['status']['conversion'] != 0) { // compilation failed
+  if ($response['status']['conversion'] >= 2) { // compilation failed
     $filter_context['failed'] = true;
     oaff_log("MMT", "presentation filter failed");
   } else {
@@ -347,7 +348,7 @@ function mmt_filter_compilation_process($text, $filter, $format, $langcode, $cac
   }
   //$result = json_decode($response, true);
   $filter_context['status']['mmt_comp'] = $response['status'];
-  if ($response['status']['conversion'] != 0) {
+  if ($response['status']['conversion'] >= 2) {
     oaff_log("MMT", "compilation filter failed");
     $filter_context['failed'] = true;
   } else {
@@ -444,7 +445,12 @@ function mmt_get_compiled($location, $compiler = "stex-omdoc") {
   $base = oaff_join_path(array($pathinfo['group'], $pathinfo['archive']));
   $rel_parent = $pathinfo['rel_parent'];
   $basename = $pathinfo['module'];
-  $log_filename = $basename . '.err';    
+  $mmt_input_ext = $pathinfo['extension']; //default
+  if ($compiler == 'stex-omdoc') {
+    $mmt_input_ext = 'omdoc';
+  }
+
+  $log_filename = $basename . '.' . $mmt_input_ext . '.err';    
 
   $log_location = oaff_join_path(array($base, "errors", $compiler, $rel_parent, $log_filename));
   if (planetary_repo_stat_file($log_location) == null) { //something failed or no errors
@@ -502,7 +508,13 @@ function _mmt_produce_status_msg($log) {
       }
       $current['type'] = $lvlmap[$level];
       $conversion_status = max($conversion_status, $level);
-      $current['longMsg'] = (string) $error;
+      $xmlstacktrace = $error->stacktrace;
+      $stacktrace = '';
+      foreach ($xmlstacktrace->element as $elem) {
+        $stacktrace .= (string) $elem;
+        $stacktrace .= "\n";      
+      }
+      $current['longMsg'] = $stacktrace;
       if (isset($error['sref'])) {
         $positions = explode(":",$error['sref']);
         if (count($positions) == 2) {
