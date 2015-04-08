@@ -423,7 +423,7 @@ function oaff_node_view($node, $view_mode, $langcode) {
     
     /* JavaScript */
     drupal_add_js('var mmtUrl = "' . $mmt_url . '";', 'inline');
-    jobad_add_module($mmt_path . '/jobad/planetary-navigation.js', "kwarc.mmt.planetary.navigation");
+    jobad_add_module($mmt_path . '/jobad/planetary-navigation-glossary.js', "kwarc.mmt.planetary.navigation.glossary");
     jobad_add_module($mmt_path . '/jobad/hovering.js', "kwarc.mmt.hovering");
     jobad_add_module("/sites/all/libraries/jobad/modules/core/mathjax.mathjax.js", "mathjax.mathjax");
 
