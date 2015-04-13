@@ -390,8 +390,11 @@ function oaff_contextual_info($form, &$form_state, $key) {
 function oaff_initialize() {
     libraries_load("jobad");
     // modules are loaded in specific oaff extensions (e.g. MMT)
+    jobad_add_module("/sites/all/libraries/jobad/modules/core/mathjax.mathjax.js", "mathjax.mathjax");
+    
     $inst_name = jobad_initialize();
-    mmt_initialize(); //TODO find out why this is needed for glossary
+    //mmt_initialize(); //should be before -- currently called from mmt_node_view hook instead
+    
     return $inst_name; 
 }
 
