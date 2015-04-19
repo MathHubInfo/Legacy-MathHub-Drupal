@@ -82,7 +82,6 @@ function oaff_field_formatter_info() {
   );
 }
 
-
 function oaff_autogenerate_top_doc() {
   $html = "";
   $oaff_config= variable_get('oaff_config');
@@ -410,11 +409,10 @@ function oaff_node_view($node, $view_mode, $langcode) {
  
   $oaff_config = variable_get('oaff_config');
   //handling node rendering
-  global $filter_context;
   $compiled_node_types = $oaff_config['compiled_node_types'];
   $all_node_types = $oaff_config['all_node_types'];
   
-  if (drupal_get_path_alias("node/" . $node->nid) == 'mh/glossary') {
+  if (drupal_get_path_alias("node/" . $node->nid) == 'mh/glossary') { //special handling for the glossary node
     $markup = file_get_contents("/var/data/localmh/MathHub/glossary.html");
     /* CSS */
     $mmt_path = drupal_get_path('module', 'mmt');
@@ -442,44 +440,45 @@ function oaff_node_view($node, $view_mode, $langcode) {
     $inst_id = oaff_initialize();
     $node->content['body'][0]['#markup'] = '<div id="' . $inst_id . '" class="bootstrap" >' . $markup . '</div>';
   }
-
+  // case for normal nodes
+  // settings breadcrumb
   if (in_array($node->type, $all_node_types)) {
     oaff_set_breadcrumb($node->nid);
   }
+  // actually presenting
   if (in_array($node->type, $compiled_node_types)) {
+    //getting node data
     $location = $node->field_external['und']['0']['path'];
     $pathinfo = oaff_get_path_info($location);
     $archive = $pathinfo['archive'];
     $group = $pathinfo['group'];
     $rel_path = $pathinfo['rel_path'];
+    $status = oaff_get_errors($node->nid);
+    //adding data as js variables (used by JS/JOBAD modules)
     drupal_add_js("var oaff_node_group = '$group';", "inline");
     drupal_add_js("var oaff_node_archive = '$archive';", "inline");
     drupal_add_js("var oaff_node_rel_path = '$rel_path';", "inline");
-  	if (isset($filter_context['failed']) && $filter_context['failed']) { // time to report errors
-      
-      $omdoc_location = $pathinfo['alias'];
-      $omdoc = ""; //default
-      if (planetary_repo_stat_file($omdoc_location)) { //omdoc exists
-        $omdoc = planetary_repo_load_file($omdoc_location);
-      }
-      $inst_id = oaff_initialize();
-      $source = $filter_context['source'];
-      $output = oaff_mark_source_errors(check_plain($source), $filter_context['status'],$node->nid, $omdoc);
 
+    $fatals = oaff_get_errors($node->nid, array(3));
+    $omdoc_location = $pathinfo['alias'];
+    $omdoc = ""; //default
+    if (planetary_repo_stat_file($omdoc_location)) { //omdoc exists
+      $omdoc = planetary_repo_load_file($omdoc_location);
+    }
+    $inst_id = oaff_initialize();
+      
+  	if ($fatals) { // fatals exists for this node => time to report errors  
+      $source = planetary_repo_load_file($location);
+      $output = oaff_mark_source_errors(check_plain($source), $node->nid, $status);
+      $output .= oaff_get_log_html($status, $omdoc);
       $node->content['field_external'][0]['content']['#markup'] =  
          '<div id="' . $inst_id . '" class="bootstrap" >' . $output . '</div>';      
-      oaff_save_error_status($node->nid, $filter_context['status']);// mark this node as having an error
     } else {
-    	if (oaff_has_errors($node->nid)) {// must mark this as fixed
-        db_delete('oaff_errors')
-  			  ->condition('nid', $node->nid)
-  		    ->execute();
-      }
-	    $inst_id = oaff_initialize();
-	    $content = $node->content['field_external'][0]['content']['#markup'];
+    	$content = $node->content['field_external'][0]['content']['#markup'];
 	    $node->content['field_external'][0]['content']['#markup'] = 
-      '<div id="' . $inst_id . '" class="bootstrap" >' . $content . '</div>' . 
-      oaff_svg_html($pathinfo) . '<div id="dynamic_modal" class="modal fade bs-example-modal-lg" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+        '<div id="' . $inst_id . '" class="bootstrap" >' . $content . '</div>' . 
+        oaff_get_log_html($status, $omdoc) .
+        oaff_svg_html($pathinfo) . '<div id="dynamic_modal" class="modal fade bs-example-modal-lg" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg" style="max-width:80%">
       <div id="dynamic_modal_content" class="modal-content">    
       </div>
@@ -523,39 +522,35 @@ function oaff_svg_html($pathinfo) {
 }
 
 
-/**
- * function to check if an OAFF node has an error (during compilation)
- * @param $nid the id of the node that is being checked
- * @return true if node compilation has failed last time, false otherwise
- */
-function oaff_has_errors($nid) {
-  $result =  $result = db_select('oaff_errors', 'e')
-    ->fields('e')
-    ->condition('nid', $nid, '=')
-    ->execute()
-    ->fetchAll();
-  return (count($result) > 0);
-}
-
-
-function oaff_save_error_status($nid, $status) {
-  if (oaff_has_errors($nid)) { // delete any pre-existing status
-     db_delete('oaff_errors')
-          ->condition('nid', $nid)
-          ->execute();
-  }
+function oaff_save_error_status($nid, $compiler, $status) {
   $path = drupal_get_path_alias('node/' . $nid);
   $pathinfo = oaff_get_path_info($path);
   $group = $pathinfo['group'];
   $archive = $pathinfo['archive'];
-
   $type_map = array("Info" => 0, "Warning" => 1, "Error" => 2, "Fatal" => 3);
-  foreach ($status as $compiler => $compiler_state) {
-    foreach ($compiler_state['messages'] as $msg) {
+  if ($status['conversion'] != -1 ) { // -1 means log not re-read
+    //delete old errors -- if any
+    db_delete('oaff_errors')
+        ->condition(db_and()->condition('nid', $nid)->condition('compiler', $compiler))         
+        ->execute();
+    //add new ones
+    foreach ($status['messages'] as $msg) {
       $short_msg = $msg['shortMsg'];
       if (strlen($short_msg) > 1000) {// limiting size to under 1023 to fit in db
         $short_msg = substr($short_msg, 0, 1000) . " ...";
       }
+      $long_msg = $msg['longMsg'];
+      if (strlen($long_msg) > 2000) {// limiting size to under 2047 to fit in db
+        $long_msg = substr($long_msg, 0, 2000) . " ...";
+      }
+
+      $type = $type_map[$msg['type']]; // converting string to integer err format
+      $srcref = ""; // default
+      if (isset($msg['srcref'])) {
+        $srcref .= $msg['srcref']['from']['line'] . "." . $msg['srcref']['from']['col'] . "-" ;
+        $srcref .= $msg['srcref']['to']['line'] . "." . $msg['srcref']['to']['col'];
+      }
+
       $query = db_insert('oaff_errors')
       ->fields(array(
         'nid' => $nid,
@@ -563,44 +558,61 @@ function oaff_save_error_status($nid, $status) {
         'compiler' => $compiler,
         'mh_group' => $group,
         'mh_archive' => $archive,
-        'short_msg' => $short_msg))
+        'short_msg' => $short_msg,
+        'long_msg' => $long_msg,
+        'srcref' => $srcref))
       ->execute();
     }
   }
 }
+  
+function oaff_get_errors($nid, $levels = array(0,1,2,3)) { // by default get all error levels
+  $result = db_select('oaff_errors', 'e')
+    ->fields('e')
+    ->condition(db_and()->condition('nid', $nid, '=')->condition('type', $levels, 'IN'))
+    ->execute()
+    ->fetchAll();
+  return $result;
+}
 
-/**
- * function to mark errors, annotates source string with error information
- * @param $source the source string
- * @param $status the compilation status (containing error information)
- * @param $nid the node id
- * @param $omdoc optionally, the content of the omdoc file (empty string otherwise)
- * @return the processed string (with errors marked)
- */
-function oaff_mark_source_errors($source, $status, $nid, $omdoc) {
 
-  $color_catalog = array("Error" => "#FF8888", "Warning" => "#BBBB00", "Fatal" => "#FF3333", "Info" => "#9999FF");
+
+function oaff_get_log_html($status, $omdoc) {
+  $color_catalog = array(0 => "#9999FF", 1 => "#BBBB00", 2 => "#FF6666", 3 => "#FF2222");
+  $error_catalog = array(0 => "Info", 1 => "Warning", 2 => "Error", 3 => "Fatal");
+  $conv_status_catalog = array(0 => "<span style='color:#9999FF'>Conversion Succeeded<span>", 
+                               1 => "<span style='color:#BBBB00'>Conversion Succeeded (with warnings)<span>", 
+                               2 => "<span style='color:#FF6666'>Conversion Succeeded (with errors)<span>", 
+                               3 => "<span style='color:#FF2222'>Conversion Failed<span>");
+
+
+  $conversion_status = 0; //assuming success
+  $errors = array(0 => array(), 1 => array(), 2 => array(), 3 => array());
+
+  foreach ($status as $msg) {
+    $errors[3 - $msg->type][] = $msg; //reversing things to show more severe errors first
+    $conversion_status = max($conversion_status, $msg->type);
+  }
+
   // creating log
-  $log = '<div> <p style="color:red"> Conversion Failed <a style="cursor:pointer;" onclick="if ($(this).html() == \'Show Log\') {$(this).html(\'Hide Log\')} else {$(this).html(\'Show Log\')}; $(\'#oaff_error_log\' ).toggle( \'fold\' );" >Show Log</a> ';
+  $log = '<hr/> <div> <p> ' . $conv_status_catalog[$conversion_status] . ' <a style="cursor:pointer;" onclick="if ($(this).html() == \'Show Log\') {$(this).html(\'Hide Log\')} else {$(this).html(\'Show Log\')}; $(\'#oaff_error_log\' ).toggle( \'fold\' );" >Show Log</a> ';
   if ($omdoc != "") {
     $log .= ' <a style="cursor:pointer;" onclick="if ($(this).html() == \'Show OMDoc\') {$(this).html(\'Hide OMDoc\')} else {$(this).html(\'Show OMDoc\')}; $(\'#oaff_omdoc_log\' ).toggle( \'fold\' );" >Show OMDoc</a> ';
   }
   $log .= '</p> </div>';
   $log .= '<div id="oaff_error_log" style="display: none;"><ul>';
-  foreach ($status as $filter_name => $filter_status) {
-    foreach ($filter_status['messages'] as $msg) {
+  foreach ($errors as $err_level) {
+    foreach($err_level as $msg) {
       $log .= "<li>";
       $srcref_msg = '';
-      if (isset($msg['srcref'])) {
-        $srcref_msg .= 'at ';
-        $srcref_msg .= $msg['srcref']['from']['line'] . "." . $msg['srcref']['from']['col'] . "-" ;
-        $srcref_msg .= $msg['srcref']['to']['line'] . "." . $msg['srcref']['to']['col'];
+      if ($msg->srcref) {
+        $srcref_msg .= 'at ' . $msg->srcref;
       }
 
-      $short_msg = check_plain($msg['shortMsg']);
-      $long_msg = check_plain($msg['longMsg']);
-      $color = $color_catalog[$msg['type']];
-      $log .= "<p><u style=\"color:{$color}\"> {$msg['type']} $srcref_msg </u> : $short_msg </p>";
+      $short_msg = check_plain($msg->short_msg);
+      $long_msg = check_plain($msg->long_msg);
+      $color = $color_catalog[$msg->type];
+      $log .= "<p><u style=\"color:{$color}\"> {$error_catalog[$msg->type]} $srcref_msg </u> : $short_msg </p>";
       $log .= "<pre> $long_msg </pre>";
       $log .= "</li>"; 
     }
@@ -610,6 +622,21 @@ function oaff_mark_source_errors($source, $status, $nid, $omdoc) {
   if ($omdoc != "") {
       $log .= '<div id="oaff_omdoc_log" style="display: none;"><pre>' . check_plain($omdoc) . "</pre></div>";
   }
+  return $log;
+}
+
+
+
+/**
+ * function to mark errors, annotates source string with error information
+ * @param $source the source string
+ * @param $nid the node id
+ * @param $omdoc optionally, the content of the omdoc file (empty string otherwise)
+ * @return the processed string (with errors marked)
+ */
+function oaff_mark_source_errors($source, $nid, $status) {
+  $error_catalog = array(0 => "Info", 1 => "Warning", 2 => "Error", 3 => "Fatal");
+ 
   //wrapping lines with ids for later referencing
   $lines = explode("\n", $source);
   $new_lines = array();
@@ -622,29 +649,31 @@ function oaff_mark_source_errors($source, $status, $nid, $omdoc) {
   }
   $source = implode("\n", $new_lines);
 
-  foreach ($status as $filter_name =>$filter_status) {
-    foreach ($filter_status['messages'] as $msg) {
-      if (isset($msg['srcref'])) {
-        $from_line = $msg['srcref']['from']['line']; 
-        $from_col = $msg['srcref']['from']['col'];
-        $from = $line_offsets[$from_line - 1] + $from_col; //-1 since arrays start at 0, line numbers at 1
-        $to_line = $msg['srcref']['to']['line'];
-        $to_col = $msg['srcref']['to']['col'];
-        $to = $line_offsets[$to_line - 1] + $to_col; //-1 since arrays start at 0, line numbers at 1
-        $selector="#src_line_$from_line";
+  foreach ($status as $msg) {
+    if ($msg->srcref) {
+      $parts = explode("-",$msg->srcref);
+      $from_parts = explode(".",$parts[0]);
+      $to_parts = explode(".", $parts[1]);
 
-        drupal_add_js('
-          jQuery(function(){
-            JOBAD1.Sidebar.registerNotification($("' . $selector . '"), 
-              { 
-                "class": "' . strtolower($msg['type']) .'",
-                "text": "' .  $msg['shortMsg'] . '", 
-                "click": function() {
-                  window.open("/node/'.$nid.'/edit?start=' . $from . '&end=' . $to . '");
-                }
-            });
-          });', array('type' => 'inline', 'weight' => 100));
-      }
+      $from_line = $from_parts[0]; 
+      $from_col = $from_parts[1];
+      $from = $line_offsets[$from_line - 1] + $from_col; //-1 since arrays start at 0, line numbers at 1
+      $to_line = $to_parts[0];
+      $to_col = $to_parts[1];
+      $to = $line_offsets[$to_line - 1] + $to_col; //-1 since arrays start at 0, line numbers at 1
+      $selector="#src_line_$from_line";
+
+      drupal_add_js('
+        jQuery(function(){
+          JOBAD1.Sidebar.registerNotification($("' . $selector . '"), 
+            { 
+              "class": "' . strtolower($error_catalog[$msg->type]) .'",
+              "text": "' .  $msg->short_msg . '", 
+              "click": function() {
+                window.open("/node/'.$nid.'/edit?start=' . $from . '&end=' . $to . '");
+              }
+          });
+        });', array('type' => 'inline', 'weight' => 100));
     }
   }
   
@@ -673,7 +702,7 @@ function oaff_mark_source_errors($source, $status, $nid, $omdoc) {
   	}
   }
   */
-  return "<pre>\n" . $source . "\n</pre>" . $log;
+  return "<pre>\n" . $source . "\n</pre>";
 }
 
 
@@ -1189,13 +1218,14 @@ function oaff_set_children($pid, $cids) {
   }
 }
 
-function oaff_set_mtime($nid, $mtime) {
-  $old = oaff_get_mtime($nid);
+function oaff_set_mtime($nid, $mtime, $file) {
+  $old = oaff_get_mtime($nid, $file);
   if ($old == "") { //not set
     db_insert('oaff_node_mtime')
       ->fields(array(
         'nid' => $nid,
         'mtime' => $mtime,
+        'logfile' => $file,
       ))
       ->execute();
   } else { //updating
@@ -1204,17 +1234,28 @@ function oaff_set_mtime($nid, $mtime) {
         'mtime' => $mtime,
       ))
       ->condition('nid', $nid, '=')
+      ->condition('logfile', $file, '=')
       ->execute();
   }
 }
 
-function oaff_get_mtime($nid) {
+function oaff_get_mtime($nid, $file) {
   $result = db_select('oaff_node_mtime', 'm')
       ->fields('m', array("mtime"))
       ->condition('nid', $nid, '=')
+      ->condition('logfile', $file, '=')
       ->execute()
       ->fetchAssoc();
   return $result['mtime'];
+}
+
+function oaff_get_mtimes($nid) {
+  $results = db_select('oaff_node_mtime', 'm')
+      ->fields('m', array("mtime", 'logfile'))
+      ->condition('nid', $nid, '=')
+      ->execute()
+      ->fetchAll();
+  return $results;
 }
 
 function oaff_set_lang_groups($groups) {

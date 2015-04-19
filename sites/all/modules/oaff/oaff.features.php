@@ -278,15 +278,20 @@ function oaff_features_rerun_error() {
   if (isset($_GET['nids'])) {
     $rerun_nidsS = $_GET['nids'];
     $rerun_nids = explode(",", $rerun_nidsS);
+    $paths = array();
     foreach ($rerun_nids as $nid) {
         $node = node_load($nid);
         $rel_path = $node->field_external['und'][0]['path'];
         $location = planetary_repo_access_rel_path($rel_path);
-        shell_exec("touch $location"); //marked for rerun
-        node_view($node);
+        $paths[] = $location;
+        //shell_exec("touch $location"); //marked for rerun
+        //node_view($node);
     }
+    oaff_admin_nodes_rebuild($paths);
+    //$queue = DrupalQueue::get('oaff_crawl_nodes');
+    //$queue->createItem($rerun_nids);
     $count = count($rerun_nids);
-    drupal_set_message("Re-crawled $count nodes and marked them for re-run. See developer log below (page bottom)");    
+    drupal_set_message("Re-crawled $count nodes and marked them for re-run. See <a href='/mh/rebuild-libs'> latest/current build log </a> for more details");    
     drupal_goto('mh/common-errors');
   } else {
     drupal_set_message("No error given (to rerun)", "warning");

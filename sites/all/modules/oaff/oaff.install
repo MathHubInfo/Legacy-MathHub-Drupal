@@ -206,6 +206,18 @@ function oaff_schema() {
         'length' => 1023,
         'not null' => true,
       ),
+      'long_msg' => array(
+        'description' => 'The long error message or (part of) stack trace',
+        'type' => 'varchar',
+        'length' => 2047,
+        'not null' => true,
+      ),
+      'srcref' => array(
+        'description' => 'The source ref, of format <from line>.<from col>-<to line>.<to col>',
+        'type' => 'varchar',
+        'length' => 63,
+        'not null' => true,
+      ),
     ),
     'primary key' => array('eid'),	
   );
@@ -266,7 +278,7 @@ function oaff_schema() {
     'primary key' => array('gid'),  
   );
   $schema['oaff_node_mtime'] = array(
-    'description' => ' last modified time of mathhub nodes according to planetary system ',
+    'description' => ' last modified time of a logfile for a compiler as known to the mathhub system',
     'fields' => array(
     'mid' => array(
       'description' => 'The primary identifier of a language group relation',
@@ -278,6 +290,12 @@ function oaff_schema() {
       'description' => 'The node id',
         'type' => 'int', 
         'unsigned' => true,
+        'not null' => true,
+      ),
+    'logfile' => array(
+        'description' => 'The logfile that has this mtime',
+        'type' => 'varchar',
+        'length' => 511,
         'not null' => true,
       ),
     'mtime' => array(

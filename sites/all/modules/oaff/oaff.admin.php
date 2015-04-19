@@ -31,6 +31,12 @@ function oaff_admin_menu(& $items) {
     'access callback' => 'oaff_admin_access',
     'type' => MENU_CALLBACK,
   );
+  $items['mh/rebuild-libs'] = array(
+    'title' => "Rebuild Libraries",
+    'page callback' => 'oaff_admin_rebuild_libs',
+    'access callback' => 'oaff_admin_access',
+    'type' => MENU_CALLBACK,
+  );
   $items['mh/administrate_mathhub'] = array(
   	'title' => "Administer MathHub",
   	'page callback' => 'oaff_admin_administrate',
@@ -99,7 +105,7 @@ function oaff_cron() {
   $queue->createItem($data);
 }
 
-function oaff_admin_node_crawler($arg = array()) {
+function oaff_admin_node_crawler($nids = array()) {
   $oaff_config = variable_get('oaff_config');
   $offset = $oaff_config['crawl_nodes_offset'];
   $compiled_nodes = 0;
@@ -107,19 +113,40 @@ function oaff_admin_node_crawler($arg = array()) {
   $done = false;
   $needs_restart = false;
   while (!$done) {
-    $results = db_select('node', 'n')
-            ->fields('n', array('nid'))
+    $query = db_select('node', 'n');
+    $query->join('field_data_field_external', 'p', 'n.nid = p.entity_id');
+    $results = $query->fields('n', array('nid'))
+            ->fields('p', array('field_external_path'))
             ->condition('n.type', 'oaff_doc', '=')
             ->range($offset + $crawled, 5)
             ->execute()
             ->fetchAll();
     foreach ($results as $result) {
-      $node = node_load($result->nid);
-      $location = $node->field_external['und']['0']['path'];
+      // $node = node_load($result->nid);
+      // $location = $node->field_external['und']['0']['path'];
+      $location = $result->field_external_path;
+      $pathinfo = oaff_get_path_info($location);
       $mtime = planetary_repo_stat_file($location)['mtime'];
-      if (oaff_get_mtime($result->nid) != $mtime || oaff_has_errors($result->nid)) { //file changed or file had errors last time => trying recompiling
-        node_view($node);
-        oaff_set_mtime($result->nid, $mtime);
+      $to_rerun = false;
+      $mtimes = oaff_get_mtimes($result->nid);
+      if (count($mtimes) == 0) { // node not yet ran
+        $to_rerun = true;
+      }
+      foreach ($mtimes as $mtime_entry) {
+        $log_file = $mtime_entry->logfile;
+        $time = $mtime_entry->mtime;
+        $stat = planetary_repo_stat_file($log_file);
+        if ($stat) {
+          if ($time != $stat['mtime']) { //log changed
+            $to_rerun = true; // mark for rerun
+          }
+        } else {
+          drupal_set_message("Could not find log file for " + $log_file, 'warning');
+        }
+      }
+
+      if ($to_rerun) {
+        node_view(node_load($result->nid)); //this re-reads the logs where needed
         $compiled_nodes += 1;
       }
     }
@@ -180,10 +207,103 @@ function oaff_admin_administrate() {
   $out .= '<li> Crawl Loaded Nodes (normally handled by cron, run manually if needed) ';
   $out .= '<button onclick="window.location = \'/mh/crawl-nodes\'" class="btn btn-primary btn-xs"> Crawl Nodes </button> </li> ';
   $out .= '<li> Regenerate Glossary ';
-  $out .= '<button onclick="window.location = \'/mh/generate-glossary\'" class="btn btn-primary btn-xs"> Regenerate </button> </li> </ul>';
+  $out .= '<button onclick="window.location = \'/mh/generate-glossary\'" class="btn btn-primary btn-xs"> Regenerate </button> </li>';
+  $out .= '<li> Rebuild Everything ';
+  $lock = oaff_admin_get_build_lock_path();
+  if (!$lock) {
+    $out .= '<span class="warning">(Currently running) </span>';
+  }  
+  $out .= '<button onclick="window.location = \'/mh/rebuild-libs\'" class="btn btn-primary btn-xs"> See Build Log </button> ';
+  $out .= '<button onclick="window.location = \'/mh/rebuild-libs&action=update-build\'" class="btn btn-warning btn-xs"> Update Build </button> ';
+  $out .= '<button onclick="window.location = \'/mh/rebuild-libs&action=clean-build\'" class="btn btn-warning btn-xs"> Clean Build </button> </li> </ul>';
+
   //$out .= ' <button class="btn btn-primary " onclick="window.location = \'/mh/crawl-nodes\'"> Continue </button> </div> ';
   return $out;
 }
+
+//rebuilds everything
+function oaff_admin_rebuild_libs() {
+  $out = '';
+  $action = ''; //default
+  if (isset($_GET['action'])) {
+    $action = $_GET['action'];
+  }
+  $mh_base = "/var/data/localmh/MathHub";
+  $lock = oaff_admin_get_build_lock_path();
+  $base = '/var/data/localmh/MathHub/meta/inf/config/MathHub/';
+  if ($action == "") {
+    if (!$lock) {
+      drupal_set_message("Currently a build is running");
+    }
+  } else if ($action == "clean-build") {
+    if ($lock) {
+      exec($base . 'clean-build.sh & ');
+      drupal_set_message("Started (clean) build process");
+    } else {
+      drupal_set_message("Did not start rebuild, a build process is already running (lock is set)", "warning");
+    }
+  } else if ($action == "update-build") {
+    if ($lock) {
+      exec($base . 'clean-build.sh & ');
+      drupal_set_message("Started (clean) build process");
+    } else {
+      drupal_set_message("Did not start rebuild, a build process is already running (lock is set)", "warning");
+    }    
+  } else {
+    drupal_set_message("Unknown action $action", "warning");
+  }
+$rel_log_file = "meta/inf/config/MathHub/build.log";
+  if (planetary_repo_stat_file($rel_log_file)) {// log exists
+    $log = planetary_repo_load_file($rel_log_file);
+    $out .= "<h4> See current build log below: </h4>";
+    $out .= '<pre >' . $log . '</pre>';
+  } else {
+    drupal_set_message("No log exists, perhaps no build happened", "error");
+  }
+  return $out;
+}
+
+//rebuilds only given paths, used by various features
+function oaff_admin_nodes_rebuild($paths) {
+  $lock = oaff_admin_get_build_lock_path();
+  if ($lock) {
+    $script  = "#!/bin/bash\n";
+    $script .= "dir=`dirname $0`\n";
+    $script .= "touch \$dir/build.lock\n";
+    $script .= "echo 'getting lock' > \$dir/build.log\n";
+    $script .= "lmh gen --sms --localpaths --all >> \$dir/build.log\n";
+    foreach ($paths as $path) {
+      $script .= "lmh gen --omdoc -f " . $path . " >> \$dir/build.log\n";
+    }
+    $script .= "\$dir/mmt-mh.sh update-build.msl >> \$dir/build.log\n";
+    $script .= "rm -rf \$dir/build.lock\n";
+    $script .= "echo 'finished, removing lock' >> \$dir/build.log\n";
+    $rel_script_file = '"/meta/inf/config/MathHub/build.tmp.sh"';
+    $script_file = planetary_repo_access_rel_path($rel_script_file);
+    planetary_repo_save_file("/meta/inf/config/MathHub/build.tmp.sh", $script);
+    exec("chmod +x " . $script_file);
+    exec($script_file);
+    exec("rm -rf " . $script_file);
+    return true;
+  } else {
+    drupal_set_message("Did not start rebuild, a build process is already running (lock is set)", "error");
+    return false;
+  }
+}
+
+function oaff_admin_get_build_lock_path() {
+  $rel_lock = "meta/inf/config/MathHub/build.lock";
+  $lock = planetary_repo_access_rel_path($rel_lock);
+
+  if (planetary_repo_stat_file($rel_lock)) {
+    return false;
+  } else {
+    return $lock;
+  }
+}
+
+
+
 
 function oaff_admin_lmh_update() {
 	$lmh_status = shell_exec('lmh update --all 2>&1');

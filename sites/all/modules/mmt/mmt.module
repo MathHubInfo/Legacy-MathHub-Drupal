@@ -281,35 +281,15 @@ function mmt_filter_info() {
  * @return the presentation result
  */
 function mmt_filter_presentation_process($text, $filter, $format, $langcode, $cache, $cache_id) {
-  global $filter_context;
   global $filter_debug;
-  
-  if (isset($filter_context['failed']) && $filter_context['failed'] == "true") { // failed already
-    return $text;
-  }
-
-  if (!isset($filter_context['source'])) { // this is the first filter
-    $filter_context['source'] = $text;
-  }
-  
-  $fpath = $filter_context['mmt']['location'];
+  $args = explode(" ", $text);
+  $nid = $args[0];
+  $fpath = $args[1];
   $dpath = oaff_get_path_info($fpath)['dpath'];
   $style = $filter->settings['mmt_style'];  
   //$response = mmt_present($dpath, $text, $style);
-  $response = mmt_get_presentation($fpath, $style);
-  if ($response == "") {
-    drupal_set_message('Cannot connect to MMT instance, is MMT running?', 'error');
-    $filter_context['failed'] = true;    
-    return $text;
-  }
-  $filter_context['status']['mmt_pres'] = $response['status'];
-  if ($response['status']['conversion'] >= 2) { // compilation failed
-    $filter_context['failed'] = true;
-    oaff_log("MMT", "presentation filter failed");
-  } else {
-    oaff_log("MMT", "presentation filter succeeded");
-  }
-  return $response['content'];
+  $result = mmt_get_presentation($nid, $fpath, $style);
+  return $result;
 }
 
 /**
@@ -324,37 +304,14 @@ function mmt_filter_presentation_process($text, $filter, $format, $langcode, $ca
  */
 function mmt_filter_compilation_process($text, $filter, $format, $langcode, $cache, $cache_id) {
   global $filter_debug;
-  global $filter_context;
-
-  if (isset($filter_context['failed']) && $filter_context['failed'] == "true") { // failed already
-    return $text;
-  }
-
-  if (!isset($filter_context['source'])) { // this is the first filter
-    $filter_context['source'] = $text;
-  }
-
-  $fpath = $filter_context['mmt']['location'];
+  $args = explode(" ", $text);
+  $nid = $args[0];
+  $fpath = $args[1];
   $dpath = oaff_get_path_info($fpath)['dpath'];
-  $format = $filter->settings['mmt_format'];
-  //$response = mmt_compile($text, $dpath, $format);
-  //todo $format -> $compiler translation
-  $response = mmt_get_compiled($fpath);
-
-  if ($response == "") {
-    drupal_set_message('Cannot connect to MMT instance, is MMT running?', 'error');
-    $filter_context['failed'] = true;    
-    return $text;
-  }
-  //$result = json_decode($response, true);
-  $filter_context['status']['mmt_comp'] = $response['status'];
-  if ($response['status']['conversion'] >= 2) {
-    oaff_log("MMT", "compilation filter failed");
-    $filter_context['failed'] = true;
-  } else {
-    oaff_log("MMT", "compilation filter succeeded");
-  }
-  return $response['content'];
+  $mmt_format = $filter->settings['mmt_format'];
+  //TODO make mmt_format be $compiler or smth along those lines
+  mmt_get_compiled($nid, $fpath);
+  return $text;
 }
 
 /**
@@ -440,7 +397,8 @@ function mmt_field_formatter_info() {
 }
 
 
-function mmt_get_compiled($location, $compiler = "stex-omdoc") {
+function mmt_get_compiled($nid, $location, $compiler = "stex-omdoc") {
+  //finding log filename
   $pathinfo = oaff_get_path_info($location);
   $base = oaff_join_path(array($pathinfo['group'], $pathinfo['archive']));
   $rel_parent = $pathinfo['rel_parent'];
@@ -449,47 +407,78 @@ function mmt_get_compiled($location, $compiler = "stex-omdoc") {
   if ($compiler == 'stex-omdoc') {
     $mmt_input_ext = 'omdoc';
   }
-
   $log_filename = $basename . '.' . $mmt_input_ext . '.err';    
-
   $log_location = oaff_join_path(array($base, "errors", $compiler, $rel_parent, $log_filename));
-  if (planetary_repo_stat_file($log_location) == null) { //something failed or no errors
-    // TODO add a message to status
-    oaff_log("MMT", "Could not find .log file for compiling $location with $compiler (generation failed or no errors -- assuming no errors)");
-    $mmt_status = array("conversion" => 0, "messages" => array()); // assuming no errors
-    $content = ""; 
+  if (planetary_repo_stat_file($log_location)) { //log exists
+    $mtime = planetary_repo_stat_file($log_location)['mtime'];
+    $last_ran_time = oaff_get_mtime($nid, $log_location);
+    if ($last_ran_time == $mtime) { //no change
+      $mmt_status = array("conversion" => -1, "messages" => array()); // -1 means log not changed  
+      oaff_log("OAFF(MMT)", "No change for compiler $compiler, no need to re-process errors");
+    } else {
+      $log = planetary_repo_load_file($log_location);
+      $mmt_status = _mmt_produce_status_msg($log);
+      oaff_set_mtime($nid, $mtime, $log_location);
+      oaff_log("OAFF(MMT)", "Re-read errors for compiler $compiler");
+    }
   } else {
-    $log = planetary_repo_load_file($log_location);
-    $mmt_status = _mmt_produce_status_msg($log);
-    $content = "TODO"; //Content Empty for MMT index  
+    oaff_log("MMT", "Could not find .log file for compiling $location with $compiler (assuming generation failed)");
+    $mmt_status = array("conversion" => 3, "messages" => array(array('shortMsg' => "fatal error, conversion failed (no $compiler log)", 
+                        'longMsg' => "expected log to be at $log_location" ,'type' => "Fatal")));
   }
-  $result = array("content" => $content, "status" => $mmt_status);
-  return $result;
+  oaff_save_error_status($nid, $compiler, $mmt_status);
+  return $mmt_status;
 }
 
-function mmt_get_presentation($location, $presenter = "planetary") {
+function mmt_get_presentation($nid, $location, $presenter = "planetary") {
   $pathinfo = oaff_get_path_info($location);
   $base = oaff_join_path(array($pathinfo['group'], $pathinfo['archive']));
   $rel_parent = $pathinfo['rel_parent'];
   $rel_path = $pathinfo['rel_path'];
   $basename = $pathinfo['module'];
-  if (planetary_repo_is_dir($location)) {
+  if (planetary_repo_is_dir($location)) { //folder
     $out_location = oaff_join_path(array($base, "export", $presenter, "narration", $rel_path, ".html"));
-  } else {
+    $log_location = oaff_join_path(array($base, "errors", $presenter . "_narration", $rel_path, ".err"));
+  } else { //file
+    $mmt_input_ext = $pathinfo['extension']; //default
+    if ($presenter == 'planetary') {
+      $mmt_input_ext = 'omdoc';
+    }
+    $log_filename = $basename . '.' . $mmt_input_ext . '.err'; 
+  
     $out_filename = $basename . '.html';  
     $out_location = oaff_join_path(array($base, "export", $presenter, "narration", $rel_parent, $out_filename));
+    $log_location = oaff_join_path(array($base, "errors", $presenter . "_narration", $rel_parent, $log_filename));
   }
   if (planetary_repo_stat_file($out_location) == null) { //something failed
-    // TODO add a message to status
     oaff_log("MMT", "Could not find .html file for presenting $location with $presenter (generation failed)");
-    $mmt_status = array("conversion" => 3, "messages" => array()); // conversion failed => fatal error 
+    $mmt_status = array("conversion" => 3, "messages" => array(array('shortMsg' => "fatal error, conversion failed (no $presenter output)", 
+                        'longMsg' => "expected output to be at $out_location", 'type' => "Fatal"))); 
     $content = ""; 
-  } else {
-    $mmt_status = array("conversion" => 0, "messages" => array()); // conversion succeeded, no log for presentation yet 
+  } else { //conversion succeded getting log info
+    $mmt_status = array("conversion" => 0, "messages" => array());
+    if (planetary_repo_stat_file($log_location)) { //log exists
+      $mtime = planetary_repo_stat_file($log_location)['mtime'];
+      $last_ran_time = oaff_get_mtime($nid, $log_location);
+      if ($last_ran_time == $mtime) { //no change
+        $mmt_status = array("conversion" => -1, "messages" => array()); // -1 means log not changed  
+        oaff_log("OAFF(MMT)", "No change for presenter $presenter, no need to re-process errors");
+      } else {
+        $log = planetary_repo_load_file($log_location);
+        $mmt_status = _mmt_produce_status_msg($log);
+        oaff_set_mtime($nid, $mtime, $log_location);
+        oaff_log("OAFF(MMT)", "Re-read errors for presenter $presenter");
+      }
+    } else {
+      oaff_log("MMT", "Could not find .log file for presenting $location with $presenter (assuming generation failed)");
+      $mmt_status = array("conversion" => 3, "messages" => array(array('shortMsg' => "fatal error, conversion failed (no $presenter log)", 
+                          'longMsg' => "expected log to be at $log_location", 'type' => "Fatal")));
+    }
     $content = planetary_repo_load_file($out_location); 
   }
-  $result = array("content" => $content, "status" => $mmt_status);
-  return $result;
+
+  oaff_save_error_status($nid, $presenter, $mmt_status);
+  return $content;
 }
 
 function _mmt_produce_status_msg($log) {
@@ -510,8 +499,9 @@ function _mmt_produce_status_msg($log) {
       $conversion_status = max($conversion_status, $level);
       $xmlstacktrace = $error->stacktrace;
       $stacktrace = '';
-      foreach ($xmlstacktrace->element as $elem) {
-        $stacktrace .= (string) $elem;
+      $stack_count = min(5, count($xmlstacktrace->element));
+      for($i = 0; $i < $stack_count; $i++ ) {
+        $stacktrace .= (string) $xmlstacktrace->element[$i];
         $stacktrace .= "\n";      
       }
       $current['longMsg'] = $stacktrace;
@@ -558,23 +548,14 @@ function mmt_field_formatter_view($entity_type, $entity, $field, $instance, $lan
       $lang = $entity->language;
       foreach ($items as $delta => $item) {
         $location = $item['path'];
-        global $filter_context;
-        $filter_context = array();
-        $filter_context['mmt']['location'] = $location;
-        $pathinfo = oaff_get_path_info($location);
+        
         global $filter_debug;
         $filter_debug = array();
-        $mtime = planetary_repo_stat_file($location)['mtime'];
-        $last_ran_time = oaff_get_mtime($entity->nid);
-        if ($last_ran_time == $mtime) {
-          oaff_log("OAFF(MMT)", "No change, no need to re-process errors");
-          $filter_context['mmt']['modified'] = false;
-        } 
-        $content = planetary_repo_load_file($location);//passing content to show source if compilers fail
-        $markup = check_markup($content, $item['filter'], $lang);
-        if (!isset($filter_context['failed']) || !$filter_context['failed']) {
-          oaff_set_mtime($entity->nid, $mtime);   
-        }
+        
+        //$content = planetary_repo_load_file($location);//passing content to show source if compilers fail
+        $filter_config = "$entity->nid $location";
+        $markup = check_markup($filter_config, $item['filter'], $lang);
+        
         $element[$delta] = array(
           "#type" => "container",
           '#attributes' => array(
