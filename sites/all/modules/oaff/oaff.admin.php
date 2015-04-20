@@ -237,14 +237,14 @@ function oaff_admin_rebuild_libs() {
     }
   } else if ($action == "clean-build") {
     if ($lock) {
-      exec($base . 'clean-build.sh & ');
+      exec($base . 'clean-build.sh > /dev/null 2>&1 &');
       drupal_set_message("Started (clean) build process");
     } else {
       drupal_set_message("Did not start rebuild, a build process is already running (lock is set)", "warning");
     }
   } else if ($action == "update-build") {
     if ($lock) {
-      exec($base . 'update-build.sh & ');
+      exec($base . 'update-build.sh > /dev/null 2>&1 &');
       drupal_set_message("Started (update) build process");
     } else {
       drupal_set_message("Did not start rebuild, a build process is already running (lock is set)", "warning");
@@ -252,7 +252,7 @@ function oaff_admin_rebuild_libs() {
   } else {
     drupal_set_message("Unknown action $action", "warning");
   }
-$rel_log_file = "meta/inf/config/MathHub/build.log";
+  $rel_log_file = "meta/inf/config/MathHub/build.log";
   if (planetary_repo_stat_file($rel_log_file)) {// log exists
     $log = planetary_repo_load_file($rel_log_file);
     $out .= "<h4> See current build log below: </h4>";
