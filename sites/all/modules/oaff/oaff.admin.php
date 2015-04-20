@@ -211,11 +211,11 @@ function oaff_admin_administrate() {
   $out .= '<li> Rebuild Everything ';
   $lock = oaff_admin_get_build_lock_path();
   if (!$lock) {
-    $out .= '<span class="warning">(Currently running) </span>';
+    $out .= '<span class="alert-danger">(Currently running) </span>';
   }  
   $out .= '<button onclick="window.location = \'/mh/rebuild-libs\'" class="btn btn-primary btn-xs"> See Build Log </button> ';
-  $out .= '<button onclick="window.location = \'/mh/rebuild-libs&action=update-build\'" class="btn btn-warning btn-xs"> Update Build </button> ';
-  $out .= '<button onclick="window.location = \'/mh/rebuild-libs&action=clean-build\'" class="btn btn-warning btn-xs"> Clean Build </button> </li> </ul>';
+  $out .= '<button onclick="window.location = \'/mh/rebuild-libs?action=update-build\'" class="btn btn-warning btn-xs"> Update Build </button> ';
+  $out .= '<button onclick="window.location = \'/mh/rebuild-libs?action=clean-build\'" class="btn btn-warning btn-xs"> Clean Build </button> </li> </ul>';
 
   //$out .= ' <button class="btn btn-primary " onclick="window.location = \'/mh/crawl-nodes\'"> Continue </button> </div> ';
   return $out;
@@ -244,8 +244,8 @@ function oaff_admin_rebuild_libs() {
     }
   } else if ($action == "update-build") {
     if ($lock) {
-      exec($base . 'clean-build.sh & ');
-      drupal_set_message("Started (clean) build process");
+      exec($base . 'update-build.sh & ');
+      drupal_set_message("Started (update) build process");
     } else {
       drupal_set_message("Did not start rebuild, a build process is already running (lock is set)", "warning");
     }    
@@ -256,7 +256,7 @@ $rel_log_file = "meta/inf/config/MathHub/build.log";
   if (planetary_repo_stat_file($rel_log_file)) {// log exists
     $log = planetary_repo_load_file($rel_log_file);
     $out .= "<h4> See current build log below: </h4>";
-    $out .= '<pre >' . $log . '</pre>';
+    $out .= '<pre >' . check_plain($log) . '</pre>';
   } else {
     drupal_set_message("No log exists, perhaps no build happened", "error");
   }
