@@ -14,15 +14,15 @@ function oaff_admin_menu(& $items) {
     'menu_name' => MENU_CALLBACK,
   );
   $items['mh/lmh-update'] = array(
-  	'title' => "Lmh Update",
-  	'page callback' => 'oaff_admin_lmh_update',
-  	'access callback' => 'oaff_admin_access',
+    'title' => "Lmh Update",
+    'page callback' => 'oaff_admin_lmh_update',
+    'access callback' => 'oaff_admin_access',
     'type' => MENU_CALLBACK,
   );
   $items['mh/libs-update'] = array(
-  	'title' => "Update Libraries",
-  	'page callback' => 'oaff_admin_libs_update',
-  	'access callback' => 'oaff_admin_access',
+    'title' => "Update Libraries",
+    'page callback' => 'oaff_admin_libs_update',
+    'access callback' => 'oaff_admin_access',
     'type' => MENU_CALLBACK,
   );
   $items['mh/generate-glossary'] = array(
@@ -38,10 +38,10 @@ function oaff_admin_menu(& $items) {
     'type' => MENU_CALLBACK,
   );
   $items['mh/administrate_mathhub'] = array(
-  	'title' => "Administer MathHub",
-  	'page callback' => 'oaff_admin_administrate',
-  	'access callback' => 'oaff_admin_access',
-  	'menu_name' => 'navigation',
+    'title' => "Administer MathHub",
+    'page callback' => 'oaff_admin_administrate',
+    'access callback' => 'oaff_admin_access',
+    'menu_name' => 'navigation',
   );  
   $items['mh/update_errors'] = array(
     'title' => "Update Errors",
@@ -69,54 +69,86 @@ function oaff_admin_update_errors() {
   }
 }
 
-//function oaff_admin_touch_files() {
-//  shell_exec("find /var/data/localmh/MathHub/*/*/source/* | xargs touch");
-//  drupal_set_message("Success");
-//  return "";
-//}
-
 // touch one file or all files in the group
 function oaff_admin_touch_files() {
-  if (!isset($_GET['group'])) {
+  $html="";
+  if (!isset($_GET['act'])) {
     $html = '
-    <form name="input" action="touch-files"
     <div class="row">
       <div class="col-lg-6">
         <label> Group </label>
-        <input type="text" class="form-control" name="group" placeholder="Enter group name">
+        <input id="mh_group" type="text" class="form-control" name="group" placeholder="Enter group name">
         <p class="help-block">Leave this field empty to touch all files.</p>
-        <label> File </label>   
-        <input type="text" class="form-control" name="fname" placeholder="Enter file name">
-        <p class="help-block">Leave this field empty to touch all files in the group.</p>
-        <button type="submit" class="btn btn-default" action>Submit</button>
+        <label> Archive </label>
+        <input id="mh_archive" type="text" class="form-control" name="archive" placeholder="Enter archive name">
+        <p class="help-block">Leave this field empty to touch all files in all archives.</p>
+        <label> File </label>
+        <input id="mh_fname" type="text" class="form-control" name="fname" placeholder="Enter file name">
+        <p class="help-block">Leave this field empty to touch all files in the archive.</p>
+        <label> Regular expression </label>
+        <input id="mh_regex" type="text" class="form-control" name="regex" placeholder="Enter regular expression">
+        <p class="help-block">Leave this field empty in case of not using</p>
+        <label> Path to file </label>
+        <input id="mh_pfile" type="text" class="form-control" name="regex" placeholder="Enter path to file">
+        <p class="help-block">Leave this field empty in case of not using</p>
+        <button onclick="touchFiles()" type="button" class="btn btn-danger" action>Submit</button>
       </div><!-- /.col-lg-6 -->
-    </div><!-- /.row -->';
+    </div><!-- /.row -->' ;
+    drupal_add_js('
+    function touchFiles() {
+      var path = "/mh/touch-files?";
+      var group = jQuery("#mh_group").get(0).value;
+      var archive = jQuery("#mh_archive").get(0).value;
+      var fname = jQuery("#mh_fname").get(0).value;
+      var regex = encodeURI(jQuery("#mh_regex").get(0).value);
+      var pfile = encodeURI(jQuery("#mh_pfile").get(0).value);
+      path += "group=" + group + "&";
+      path += "archive=" + archive + "&";
+      path += "fname=" + fname + "&";
+      path += "regex=" + regex + "&";
+      path += "pfile=" + pfile + "&"
+      path += "act=true";
+      path = path.substring(0, path.length -1);
+      window.location = path;
+    }
+      ', 'inline');
+
   } else {
     $group = $_GET['group'];
-    $fname = $_GET['fname'];
     if ($group == "") {
-      //touch all files
-      $command = "find /var/data/localmh/MathHub/*/*/source/* | xargs touch";
+      $group = "*"; //default
+    }
+
+    $archive = $_GET['archive'];
+    if ($archive == "") {
+      $archive = "*"; //default
+    }
+
+    $fname = $_GET['fname']; 
+    if ($fname == "") {
+      $fname = "*"; //default
+    }
+
+    $regex = rawurldecode($_GET['regex']);
+    $pfile = rawurldecode($_GET['pfile']);
+    
+    if ($pfile != "") {
+      $command = "touch $pfile";
       shell_exec($command);
       drupal_set_message("Success");
       oaff_log("OAFF.ADMIN", "Ran $command");
-      $html="";
+    } else if ($regex == "") {
+      //touch all files
+      $command = "find /var/data/localmh/MathHub/$group/$archive/source/$fname | xargs touch";
+      shell_exec($command);
+      drupal_set_message("Success");
+      oaff_log("OAFF.ADMIN", "Ran $command");
     } else {
-      if ($fname == "") {
-        //touch all files in the group
-        $command = "find /var/data/localmh/MathHub/*/$group/source/* | xargs touch";
-        shell_exec($command);
-        drupal_set_message("Success");
-        oaff_log("OAFF.ADMIN", "Ran $command");
-      } else {
-        //touch particular file
-        $command = "find /var/data/localmh/MathHub/*/$group/source/$fname | xargs touch";
-        shell_exec($command);
-        drupal_set_message("Success");
-        oaff_log("OAFF.ADMIN", "Ran $command");
-      }
+      $command = "grep -H -R $pfile *.tex | cut -d: -f1 | xargs touch";
+      shell_exec($command);
+      drupal_set_message("Success");
+      oaff_log("OAFF.ADMIN", "Ran $command");
     }
-    $html="";
   }
   return $html;
 }
@@ -352,17 +384,17 @@ function oaff_admin_get_build_lock_path() {
 
 
 function oaff_admin_lmh_update() {
-	$lmh_status = shell_exec('lmh update --all 2>&1');
+  $lmh_status = shell_exec('lmh update --all 2>&1');
   oaff_log("OAFF.ADMIN", "`lmh update --all` returned: <pre>$lmh_status</pre>");
   drupal_set_message('Success');
   return '';
 }
 
 function oaff_admin_libs_update() {
-	$git_log = shell_exec('cd /var/data/localmh/ext/sTeX/ && git pull 2>&1 && cd /var/data/localmh/ext/MMT/ && svn up 2>&1');
-	oaff_log("OAFF.ADMIN", "`git pull` returned: <pre>$git_log</pre>");
-	drupal_set_message('Success');
-	return '';
+  $git_log = shell_exec('cd /var/data/localmh/ext/sTeX/ && git pull 2>&1 && cd /var/data/localmh/ext/MMT/ && svn up 2>&1');
+  oaff_log("OAFF.ADMIN", "`git pull` returned: <pre>$git_log</pre>");
+  drupal_set_message('Success');
+  return '';
 }
 
 function oaff_admin_generate_glossary() {
