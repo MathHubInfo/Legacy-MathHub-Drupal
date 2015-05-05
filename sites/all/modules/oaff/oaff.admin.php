@@ -8,7 +8,7 @@ function oaff_admin_menu(& $items) {
     'menu_name' => MENU_CALLBACK,
   );
   $items['mh/touch-files'] = array(
-    'title' => "Touch Source Files",
+    'title' => "Touch Source File",
     'page callback' => 'oaff_admin_touch_files',
     'access callback' => 'oaff_admin_access',
     'menu_name' => MENU_CALLBACK,
@@ -69,12 +69,58 @@ function oaff_admin_update_errors() {
   }
 }
 
+//function oaff_admin_touch_files() {
+//  shell_exec("find /var/data/localmh/MathHub/*/*/source/* | xargs touch");
+//  drupal_set_message("Success");
+//  return "";
+//}
 
+// touch one file or all files in the group
 function oaff_admin_touch_files() {
-  shell_exec("find /var/data/localmh/MathHub/*/*/source/* | xargs touch");
-  drupal_set_message("Success");
-  return "";
+  if (!isset($_GET['group'])) {
+    $html = '
+    <form name="input" action="touch-files"
+    <div class="row">
+      <div class="col-lg-6">
+        <label> Group </label>
+        <input type="text" class="form-control" name="group" placeholder="Enter group name">
+        <p class="help-block">Leave this field empty to touch all files.</p>
+        <label> File </label>   
+        <input type="text" class="form-control" name="fname" placeholder="Enter file name">
+        <p class="help-block">Leave this field empty to touch all files in the group.</p>
+        <button type="submit" class="btn btn-default" action>Submit</button>
+      </div><!-- /.col-lg-6 -->
+    </div><!-- /.row -->';
+  } else {
+    $group = $_GET['group'];
+    $fname = $_GET['fname'];
+    if ($group == "") {
+      //touch all files
+      $command = "find /var/data/localmh/MathHub/*/*/source/* | xargs touch";
+      shell_exec($command);
+      drupal_set_message("Success");
+      oaff_log("OAFF.ADMIN", "Ran $command");
+      $html="";
+    } else {
+      if ($fname == "") {
+        //touch all files in the group
+        $command = "find /var/data/localmh/MathHub/*/$group/source/* | xargs touch";
+        shell_exec($command);
+        drupal_set_message("Success");
+        oaff_log("OAFF.ADMIN", "Ran $command");
+      } else {
+        //touch particular file
+        $command = "find /var/data/localmh/MathHub/*/$group/source/$fname | xargs touch";
+        shell_exec($command);
+        drupal_set_message("Success");
+        oaff_log("OAFF.ADMIN", "Ran $command");
+      }
+    }
+    $html="";
+  }
+  return $html;
 }
+
 
 /**
  * Implements access callback for OAFF auto-load feature
