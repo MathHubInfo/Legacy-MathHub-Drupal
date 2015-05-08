@@ -75,23 +75,56 @@ function oaff_admin_touch_files() {
   if (!isset($_GET['act'])) {
     $html = '
     <div class="row">
-      <div class="col-lg-6">
-        <label> Group </label>
-        <input id="mh_group" type="text" class="form-control" name="group" placeholder="Enter group name">
-        <p class="help-block">Leave this field empty to touch all files.</p>
-        <label> Archive </label>
-        <input id="mh_archive" type="text" class="form-control" name="archive" placeholder="Enter archive name">
-        <p class="help-block">Leave this field empty to touch all files in all archives.</p>
-        <label> File </label>
-        <input id="mh_fname" type="text" class="form-control" name="fname" placeholder="Enter file name">
-        <p class="help-block">Leave this field empty to touch all files in the archive.</p>
-        <label> Regular expression </label>
-        <input id="mh_regex" type="text" class="form-control" name="regex" placeholder="Enter regular expression">
-        <p class="help-block">Leave this field empty in case of not using</p>
-        <label> Path to file </label>
-        <input id="mh_pfile" type="text" class="form-control" name="regex" placeholder="Enter path to file">
-        <p class="help-block">Leave this field empty in case of not using</p>
-        <button onclick="touchFiles()" type="button" class="btn btn-danger" action>Submit</button>
+      <div class="col-lg-12">
+        <div class="panel panel-default" id="fileHeading">
+           <div class="panel-heading" role="tab">
+              <h4 class="panel-title">
+                <a data-toggle="collapse" data-parent="#accordion" href="#fileBody" aria-expanded="false" aria-controls="filterBody" class="">
+                  Files
+                </a>
+              </h4>
+            </div>
+        <div id="fileBody" class="panel-collapse in" role="tabpanel" aria-labelledby="fileHeading" style="height: auto;">
+          <div class="panel-body">
+            <div class="form-group">
+              <label> Group </label>
+              <input id="mh_group" type="text" class="form-control" name="group" placeholder="Enter group name">
+              <p class="help-block">Leave this field empty to touch all files.</p>
+            </div>
+            <div class="form-group">
+              <label> Archive </label>
+              <input id="mh_archive" type="text" class="form-control" name="archive" placeholder="Enter archive name">
+              <p class="help-block">Leave this field empty to touch all files in all archives.</p>
+            </div>
+            <div class="form-group">
+              <label> File </label>
+              <input id="mh_fname" type="text" class="form-control" name="fname" placeholder="Enter file name">
+              <p class="help-block">Leave this field empty to touch all files in the archive.</p>
+            </div>
+            <button onclick="touchFiles()" type="button" class="btn btn-danger" action>Submit</button>  
+          </div>
+        </div>
+        </div>
+
+        <div class="panel panel-default" id="regexHeading">
+           <div class="panel-heading" role="tab">
+              <h4 class="panel-title">
+                <a data-toggle="collapse" data-parent="#accordion" href="#regexBody" aria-expanded="false" aria-controls="regexBody" class="">
+                  Regular expression
+                </a>
+              </h4>
+            </div>
+        <div id="regexBody" class="panel-collapse in" role="tabpanel" aria-labelledby="regexHeading" style="height: auto;">
+          <div class="panel-body">
+            <div class="form-group">
+              <label> Regular expression </label>
+              <input id="mh_regex" type="text" class="form-control" name="regex" placeholder="Enter regular expression">
+              <p class="help-block">Leave this field empty in case of not using</p>
+            </div>
+            <button onclick="touchFilesRegex()" type="button" class="btn btn-danger" action>Submit</button>  
+          </div>
+        </div>
+        </div>
       </div><!-- /.col-lg-6 -->
     </div><!-- /.row -->' ;
     drupal_add_js('
@@ -100,20 +133,26 @@ function oaff_admin_touch_files() {
       var group = jQuery("#mh_group").get(0).value;
       var archive = jQuery("#mh_archive").get(0).value;
       var fname = jQuery("#mh_fname").get(0).value;
-      var regex = encodeURI(jQuery("#mh_regex").get(0).value);
-      var pfile = encodeURI(jQuery("#mh_pfile").get(0).value);
       path += "group=" + group + "&";
       path += "archive=" + archive + "&";
       path += "fname=" + fname + "&";
+      path += "act=true";
+      path = path.substring(0, path.length -1);
+      window.location = path;
+    }
+
+    function touchFilesRegex() {
+      var path = "/mh/touch-files?";
+      var regex = encodeURI(jQuery("#mh_regex").get(0).value);
       path += "regex=" + regex + "&";
-      path += "pfile=" + pfile + "&"
       path += "act=true";
       path = path.substring(0, path.length -1);
       window.location = path;
     }
       ', 'inline');
 
-  } else {
+    //group, archive, filename
+  } else if (!isset($_GET['regex'])){
     $group = $_GET['group'];
     if ($group == "") {
       $group = "*"; //default
@@ -125,30 +164,21 @@ function oaff_admin_touch_files() {
     }
 
     $fname = $_GET['fname']; 
-    if ($fname == "") {
+    if ($fname == "") { 
       $fname = "*"; //default
     }
-
-    $regex = rawurldecode($_GET['regex']);
-    $pfile = rawurldecode($_GET['pfile']);
     
-    if ($pfile != "") {
-      $command = "touch $pfile";
+    $command = "find /var/data/localmh/MathHub/$group/$archive/source/$fname | xargs touch";
+    shell_exec($command);
+    drupal_set_message("Success");
+    oaff_log("OAFF.ADMIN", "Ran $command");
+    //regex
+  } else {
+      $regex = rawurldecode($_GET['regex']);
+      $command = "cd /var/data/localmh/MathHub/; grep -H -R '$regex' * | cut -d: -f1 | xargs touch";
       shell_exec($command);
       drupal_set_message("Success");
       oaff_log("OAFF.ADMIN", "Ran $command");
-    } else if ($regex == "") {
-      //touch all files
-      $command = "find /var/data/localmh/MathHub/$group/$archive/source/$fname | xargs touch";
-      shell_exec($command);
-      drupal_set_message("Success");
-      oaff_log("OAFF.ADMIN", "Ran $command");
-    } else {
-      $command = "grep -H -R $pfile *.tex | cut -d: -f1 | xargs touch";
-      shell_exec($command);
-      drupal_set_message("Success");
-      oaff_log("OAFF.ADMIN", "Ran $command");
-    }
   }
   return $html;
 }
