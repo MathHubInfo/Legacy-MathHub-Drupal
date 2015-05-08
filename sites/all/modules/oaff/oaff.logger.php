@@ -29,7 +29,7 @@ function oaff_log($component, $msg) {
 }
 
 function oaff_log_produce_html($log) {
-    $html = '<div style="z-index:1000;position:fixed;bottom:0;width:50%;left:25%;max-height:75%;overflow:auto;" class="panel-group" id="mh_dev_log_accordion">
+    $html = '<div style="z-index:1000;position:fixed;bottom:0;width:50%;left:25%;max-height:75%;" class="panel-group" id="mh_dev_log_accordion">
   <div class="panel panel-default">
     <div class="panel-heading">
       <h4 class="panel-title">
@@ -41,7 +41,7 @@ function oaff_log_produce_html($log) {
         <span> MathHub.info developer log </span>
       </h4>
     </div>
-    <div id="mh_dev_log_collapse" style="display: none;">
+    <div id="mh_dev_log_collapse" style="overflow:auto; max-height:70vh; display: none;">
       <div class="panel-body" style="background:lightgoldenrodyellow;" >';
 
 	$html .=  '<div id="oaff_log">';
