@@ -298,20 +298,27 @@ function oaff_features_rerun_error() {
   }
 }
 
+//show common errors
 function oaff_features_common_errors() {
+  // query for database
   $query = db_select('oaff_errors', 'e')
              ->fields('e', array('nid', 'type', 'compiler', 'mh_group', 'mh_archive', 'short_msg'));
   
+  // initialize array for filtering different types of errors
   $err_checked = array("0" => false,"1" => false,"2" => false,"3" => false);
   
+  // get array with types of error to filter
   if (isset($_GET['types'])) {
     $types = explode(",",$_GET['types']);
   } else { //assuming all errors and fatal errors 
-    $types = array("2", "3");
+    $types = array("2", "3"); //default
   }
+
+  // initialize array of types of errors with values from the client
   foreach ($types as $type) {
     $err_checked[$type] = true;
   }
+
   $query->condition('e.type', $types, "IN");
 
   function err_lvl_str($type, $err_map, $str_true, $str_false = "") {
@@ -321,7 +328,10 @@ function oaff_features_common_errors() {
       return $str_false;
     }
   }
+
   $err_fields = array("compilers" => "", "groups" => "", "archives" => "");
+  // get values for the fields from the client, fetch them to the query
+  // and initialize values of these fields to received values
   if (isset($_GET['compilers'])) {
     $err_fields['compilers'] = 'value="' . $_GET['compilers'] . '"';
     $compilers = explode(",",$_GET['compilers']);
@@ -338,6 +348,7 @@ function oaff_features_common_errors() {
     $query->condition('e.mh_archive', $archives, "IN");
   }
 
+  // execute query
   $results = $query->execute()
              ->fetchAll();
 
@@ -402,7 +413,8 @@ function oaff_features_common_errors() {
 
   $name_map = array(0 => 'Info', 1 => "Warning", 2 => "Error", 3 =>  "Fatal Error");
   $color_map = array(0 => '#9999FF', 1 => "#BBBB11", 2 => "#FF6666", 3 =>  "#FF2222");
-  $class_map = array(0 => 'text-info', 1 => "text-warning", 2 => "text-danger", 3 =>  "text-danger");
+  //$class_map = array(0 => 'text-info', 1 => "text-warning", 2 => "text-danger", 3 =>  "text-danger");
+  
   //adding js for error filter
   drupal_add_js('
     function reloadErrors() {
@@ -504,13 +516,13 @@ function oaff_features_common_errors() {
   foreach ($statistics as $group => $gpdata) {
     $out .= '<li><ul class="list-inline"><li><span> ' . $group . ': </span></li>';
     foreach ($gpdata['occurs'] as $type => $occurs) {
-      $out .=  '<li ' . err_lvl_str($type, $err_checked,'', 'class="hidden"') . '><span class="' . $class_map[$type] . '"> ' . $occurs . ' ' . $name_map[$type] . '(s)</span></li>';
+      $out .=  '<li ' . err_lvl_str($type, $err_checked,'', 'class="hidden"') . '><span style="color:' . $color_map[$type] . '"> ' . $occurs . ' ' . $name_map[$type] . '(s)</span></li>';
     }
     $out .= "</ul><ul>";
     foreach($gpdata['archives'] as $archive => $archdata) {
       $out .= '<li><ul class="list-inline"><li><span> ' . $archive . ': </span></li>';
       foreach ($archdata as $type => $occurs) {
-        $out .=  '<li ' . err_lvl_str($type, $err_checked,'', 'class="hidden"') . '><span class="' . $class_map[$type] . '"> ' . $occurs . ' ' . $name_map[$type] . '(s)</span></li>';
+        $out .=  '<li ' . err_lvl_str($type, $err_checked,'', 'class="hidden"') . '><span style="color:' . $color_map[$type] . '"> ' . $occurs . ' ' . $name_map[$type] . '(s)</span></li>';
       }
       $out .= "</ul></li>";
     }
@@ -522,7 +534,7 @@ function oaff_features_common_errors() {
     $out .= '<li><ul class="list-inline"><li><span> ' . $compiler . ': </span></li> ';
     foreach ($types as $type => $msgs) {
       $occurs = $msgs['occurs'];
-      $out .=  '<li ' . err_lvl_str($type, $err_checked,'', 'class="hidden"') . '><span class="' . $class_map[$type] . '"> ' . $occurs . ' ' . $name_map[$type] . '(s)</span></li>';
+      $out .=  '<li ' . err_lvl_str($type, $err_checked,'', 'class="hidden"') . '><span style="color:' . $color_map[$type] . '"> ' . $occurs . ' ' . $name_map[$type] . '(s)</span></li>';
     }
     $out .= '</ul></li>';
   }
@@ -534,7 +546,7 @@ function oaff_features_common_errors() {
   $i = 0;
   foreach ($errors as $error) {
     $out .= '<div class="node-teaser">';
-    $out .= '<h4><span class="' . $class_map[$error['type']] . '"> ' . $error['msg'] . '  </span></h4>';
+    $out .= '<h4><span style="color:' . $color_map[$error['type']] . '"> ' . $error['msg'] . '  </span></h4>';
     $out .= '<div class="links"><ul class="list-inline">';
     $out .= '<li><span > ' . $error['compiler'] . ' compiler,</span></li>';
     $out .= '<li><span > ' . $error['occurs'] . ' occurrences, </span></li>';
