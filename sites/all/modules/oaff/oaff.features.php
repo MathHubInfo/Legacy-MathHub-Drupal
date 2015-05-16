@@ -306,10 +306,13 @@ function oaff_features_common_errors() {
   
   // initialize array for filtering different types of errors
   $err_checked = array("0" => false,"1" => false,"2" => false,"3" => false);
+  // link to generate links to different cairo_pattern_get_surface(pattern)
+  $pagelink = 'common-errors?';
   
-  // get array with types of error to filter
+  // get array with types of error to filtering
   if (isset($_GET['types'])) {
     $types = explode(",",$_GET['types']);
+    $pagelink .= 'types='.$_GET['types'].'&';
   } else { //assuming all errors and fatal errors 
     $types = array("2", "3"); //default
   }
@@ -336,16 +339,20 @@ function oaff_features_common_errors() {
     $err_fields['compilers'] = 'value="' . $_GET['compilers'] . '"';
     $compilers = explode(",",$_GET['compilers']);
     $query->condition('e.compiler', $compilers, "IN");
+    $pagelink .= 'compilers='.$_GET['compilers'].'&';
+
   } 
   if (isset($_GET['groups'])) {
     $err_fields['groups'] = 'value="' . $_GET['groups'] . '"';
     $groups = explode(",",$_GET['groups']);
     $query->condition('e.mh_group', $groups, "IN");
+    $pagelink .= 'groups='.$_GET['groups'].'&';
   }
   if (isset($_GET['archives'])) {
     $err_fields['archives'] = 'value="' . $_GET['archives'] . '"';
     $archives = explode(",",$_GET['archives']);
     $query->condition('e.mh_archive', $archives, "IN");
+    $pagelink .= 'archives='.$_GET['archives'].'&';
   }
 
   // execute query
@@ -448,7 +455,7 @@ function oaff_features_common_errors() {
       }
       if (archives != "") {
         path += "archives=" + archives + "&";
-      } 
+      }
       path = path.substring(0, path.length -1);
       //console.log(path);
       window.location = path;
@@ -542,9 +549,25 @@ function oaff_features_common_errors() {
   $out .="</div></div>";
   $out .="</div>";//ending accordion div
   $out .= "<hr/>";
+  $pagen = 1; // default page number
+  if (!isset($_GET['page']) == "") {
+    $pagen = (int)$_GET['page'];  
+  }
+  $nerrors = count($errors);
+  $errperpage = 10; // number of error per page
+  $start = ($pagen - 1) * $errperpage;
+  $finish = $nerrors;
+  if ($finish - $start > $errperpage) {
+    $finish = $start + $errperpage;
+  }
+  $npage = floor($nerrors / $errperpage);
+  if ($nerrors % $errperpage != 0) {
+    $npage++;
+  }
   //starting error list
   $i = 0;
-  foreach ($errors as $error) {
+  for ($j = $start; $j < $finish; $j++) {
+    $error = $errors[$j];
     $out .= '<div class="node-teaser">';
     $out .= '<h4><span style="color:' . $color_map[$error['type']] . '"> ' . $error['msg'] . '  </span></h4>';
     $out .= '<div class="links"><ul class="list-inline">';
@@ -579,7 +602,33 @@ function oaff_features_common_errors() {
     $out .= '<hr/>';
     $i += 1;
   }
-  $out .= '</div>';
+  // pagination links
+  $out .= '
+  <nav style="display: table;margin: 0 auto;">
+  <ul class="pagination">';
+  $pagelink .= 'page=';
+  if ($pagen - 1 > 0) {
+    $out .= '<li><a href="'.$pagelink.($pagen - 1).'" aria-label="Previous"><span aria-hidden="false">&laquo;</span></a></li>';
+  } else {
+    $out .= '<li class="disabled"><a href="#" aria-label="Previous"><span aria-hidden="false">&laquo;</span></a></li>';
+  }
+
+  for ($j = 1; $j <= $npage; $j++) {
+    if ($j == $pagen) {
+      $out .= '<li class="active"><a href="'.$pagelink.$j.'">'.$j.'<span class="sr-only">(current)</span></a></li>';
+    } else {
+      $out .= '<li><a href="'.$pagelink.$j.'">'.$j.'<span class="sr-only">(current)</span></a></li>';
+    }
+  }
+
+  if ($pagen < $npage) {
+    $out .= '<li><a href="'.$pagelink.($pagen + 1).'" aria-label="Previous"><span aria-hidden="true">&raquo;</span></a></li>';
+  } else {
+    $out .= '<li class="disabled"><a href="#" aria-label="Previous"><span aria-hidden="true">&raquo;</span></a></li>';
+  }
+  $out .= '</ul>
+  </nav>';
+  $out .= '</div>'; 
 
   return $out;
 }
