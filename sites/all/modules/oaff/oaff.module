@@ -470,14 +470,15 @@ function oaff_node_view($node, $view_mode, $langcode) {
   	if ($fatals) { // fatals exists for this node => time to report errors  
       $source = planetary_repo_load_file($location);
       $output = oaff_mark_source_errors(check_plain($source), $node->nid, $status);
-      $output .= oaff_get_log_html($status, $omdoc);
+      $output .= oaff_get_log_html($status, $omdoc, "");
       $node->content['field_external'][0]['content']['#markup'] =  
-         '<div id="' . $inst_id . '" class="bootstrap" >' . $output . '</div>';      
+         '<div id="' . $inst_id . '" class="bootstrap" >' . $output;      
     } else {
+      $source = planetary_repo_load_file($location);
     	$content = $node->content['field_external'][0]['content']['#markup'];
-	    $node->content['field_external'][0]['content']['#markup'] = 
+      $node->content['field_external'][0]['content']['#markup'] = 
         '<div id="' . $inst_id . '" class="bootstrap" >' . $content . '</div>' . 
-        oaff_get_log_html($status, $omdoc) .
+        oaff_get_log_html($status, $omdoc, $source) .
         oaff_svg_html($pathinfo) . '<div id="dynamic_modal" class="modal fade bs-example-modal-lg" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg" style="max-width:80%">
       <div id="dynamic_modal_content" class="modal-content">    
@@ -549,7 +550,7 @@ function oaff_save_error_status($nid, $compiler, $status) {
       if (isset($msg['srcref'])) {
         $srcref .= $msg['srcref']['from']['line'] . "." . $msg['srcref']['from']['col'] . "-" ;
         $srcref .= $msg['srcref']['to']['line'] . "." . $msg['srcref']['to']['col'];
-      }
+      } 
 
       $query = db_insert('oaff_errors')
       ->fields(array(
@@ -577,7 +578,7 @@ function oaff_get_errors($nid, $levels = array(0,1,2,3)) { // by default get all
 
 
 
-function oaff_get_log_html($status, $omdoc) {
+function oaff_get_log_html($status, $omdoc, $source) {
   $color_catalog = array(0 => "#9999FF", 1 => "#BBBB00", 2 => "#FF6666", 3 => "#FF2222");
   $error_catalog = array(0 => "Info", 1 => "Warning", 2 => "Error", 3 => "Fatal");
   $conv_status_catalog = array(0 => "<span style='color:#9999FF'>Conversion Succeeded<span>", 
@@ -597,7 +598,10 @@ function oaff_get_log_html($status, $omdoc) {
   // creating log
   $log = '<hr/> <div> <p> ' . $conv_status_catalog[$conversion_status] . ' <a style="cursor:pointer;" onclick="if ($(this).html() == \'Show Log\') {$(this).html(\'Hide Log\')} else {$(this).html(\'Show Log\')}; $(\'#oaff_error_log\' ).toggle( \'fold\' );" >Show Log</a> ';
   if ($omdoc != "") {
-    $log .= ' <a style="cursor:pointer;" onclick="if ($(this).html() == \'Show OMDoc\') {$(this).html(\'Hide OMDoc\')} else {$(this).html(\'Show OMDoc\')}; $(\'#oaff_omdoc_log\' ).toggle( \'fold\' );" >Show OMDoc</a> ';
+    $log .= ' | <a style="cursor:pointer;" onclick="if ($(this).html() == \'Show OMDoc\') {$(this).html(\'Hide OMDoc\')} else {$(this).html(\'Show OMDoc\')}; $(\'#oaff_omdoc_log\' ).toggle( \'fold\' );" >Show OMDoc</a> ';
+  }
+  if ($source != "") {
+    $log .= ' | <a style="cursor:pointer;" onclick="if ($(this).html() == \'Show Source\') {$(this).html(\'Hide Source\')} else {$(this).html(\'Show Source\')}; $(\'#oaff_source\' ).toggle( \'fold\' );" >Show Source</a> ';
   }
   $log .= '</p> </div>';
   $log .= '<div id="oaff_error_log" style="display: none;"><ul>';
@@ -621,6 +625,10 @@ function oaff_get_log_html($status, $omdoc) {
 
   if ($omdoc != "") {
       $log .= '<div id="oaff_omdoc_log" style="display: none;"><pre>' . check_plain($omdoc) . "</pre></div>";
+  }
+
+  if ($source != "") {
+      $log .= '<div id="oaff_source" style="display: none;"><pre>' . $source . '</pre></div>';
   }
   return $log;
 }
