@@ -616,7 +616,7 @@ function oaff_get_log_html($status, $omdoc, $source) {
       $short_msg = check_plain($msg->short_msg);
       $long_msg = check_plain($msg->long_msg);
       $color = $color_catalog[$msg->type];
-      $log .= "<p><u style=\"color:{$color}\"> {$error_catalog[$msg->type]} $srcref_msg </u> : $short_msg </p>";
+      $log .= "<p><b>$msg->compiler</b> <u style=\"color:{$color}\">{$error_catalog[$msg->type]} $srcref_msg </u> : $short_msg </p>";
       $log .= "<pre> $long_msg </pre>";
       $log .= "</li>"; 
     }
