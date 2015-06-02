@@ -2,6 +2,7 @@
 require_once 'oaff.logger.php';
 require_once 'oaff.features.php';
 require_once 'oaff.admin.php';
+require_once 'oaff.html_utils.php';
 
 /**
  * Implements hook_menu
@@ -589,6 +590,7 @@ function oaff_get_log_html($status, $omdoc, $source) {
 
   $conversion_status = 0; //assuming success
   $errors = array(0 => array(), 1 => array(), 2 => array(), 3 => array());
+  $data_title_content = array(); // store (title, content) dictionaries
 
   foreach ($status as $msg) {
     $errors[3 - $msg->type][] = $msg; //reversing things to show more severe errors first
@@ -596,40 +598,36 @@ function oaff_get_log_html($status, $omdoc, $source) {
   }
 
   // creating log
-  $log = '<hr/> <div> <p> ' . $conv_status_catalog[$conversion_status] . ' <a style="cursor:pointer;" onclick="if ($(this).html() == \'Show Log\') {$(this).html(\'Hide Log\')} else {$(this).html(\'Show Log\')}; $(\'#oaff_error_log\' ).toggle( \'fold\' );" >Show Log</a> ';
-  if ($omdoc != "") {
-    $log .= ' | <a style="cursor:pointer;" onclick="if ($(this).html() == \'Show OMDoc\') {$(this).html(\'Hide OMDoc\')} else {$(this).html(\'Show OMDoc\')}; $(\'#oaff_omdoc_log\' ).toggle( \'fold\' );" >Show OMDoc</a> ';
-  }
-  if ($source != "") {
-    $log .= ' | <a style="cursor:pointer;" onclick="if ($(this).html() == \'Show Source\') {$(this).html(\'Hide Source\')} else {$(this).html(\'Show Source\')}; $(\'#oaff_source\' ).toggle( \'fold\' );" >Show Source</a> ';
-  }
+  $log = '<hr/> <div> <p> ' . $conv_status_catalog[$conversion_status];
   $log .= '</p> </div>';
-  $log .= '<div id="oaff_error_log" style="display: none;"><ul>';
+  $err_log = '<ul>';
   foreach ($errors as $err_level) {
     foreach($err_level as $msg) {
-      $log .= "<li>";
+      $err_log .= "<li>";
       $srcref_msg = '';
       if ($msg->srcref) {
         $srcref_msg .= 'at ' . $msg->srcref;
       }
-
       $short_msg = check_plain($msg->short_msg);
       $long_msg = check_plain($msg->long_msg);
       $color = $color_catalog[$msg->type];
-      $log .= "<p><b>$msg->compiler</b> <u style=\"color:{$color}\">{$error_catalog[$msg->type]} $srcref_msg </u> : $short_msg </p>";
-      $log .= "<pre> $long_msg </pre>";
-      $log .= "</li>"; 
+      $err_log .= "<p><b>$msg->compiler</b> <u style=\"color:{$color}\">{$error_catalog[$msg->type]} $srcref_msg </u> : $short_msg </p>";
+      $err_log .= "<pre> $long_msg </pre>";
+      $err_log .= "</li>"; 
     }
   }
-  $log .= "</ul></div>";
+  $err_log .= "</ul>";
+
+  $data_title_content[] = array('title' => 'Show log', 'content' => $err_log);
 
   if ($omdoc != "") {
-      $log .= '<div id="oaff_omdoc_log" style="display: none;"><pre>' . check_plain($omdoc) . "</pre></div>";
+      $data_title_content[] = array('title' => 'Show OMDoc', 'content' => '<pre>' . check_plain($omdoc) . "</pre>");
   }
 
   if ($source != "") {
-      $log .= '<div id="oaff_source" style="display: none;"><pre>' . $source . '</pre></div>';
+      $data_title_content[] = array('title'=>'Show source', 'content' => '<pre>' . $source . '</pre>');
   }
+  $log .= oaff_generate_tabs($data_title_content, -1);
   return $log;
 }
 
