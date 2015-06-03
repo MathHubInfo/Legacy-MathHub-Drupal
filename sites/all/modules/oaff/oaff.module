@@ -36,12 +36,21 @@ function oaff_menu() {
     'access callback' => true,
     'type' => MENU_CALLBACK,
   );
-
+  //
+  $items['node/%node/svg'] = array(
+    'title' => 'svg',
+    'page callback' => 'oaff_node_svg',
+    'page arguments' => array(1),
+    'access arguments' => array('update', 1),
+    'weight' => 0,
+    'type' => MENU_LOCAL_TASK,
+    'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
+  );
+  //
   oaff_features_menu($items);
   oaff_admin_menu($items);
   return $items;
 }
-
 
 function oaff_dynamic_content_page() {
   $uri = $_GET["uri"];
@@ -490,7 +499,8 @@ function oaff_node_view($node, $view_mode, $langcode) {
   }
 }
 
-function oaff_svg_html($pathinfo) {
+// if option set to 0 returns raw svg content
+function oaff_svg_html($pathinfo, $option = 1) {
   $relpath = $pathinfo['rel_path'];
   $args = explode(".", $relpath);
   if (count($args) == 1) {
@@ -501,19 +511,24 @@ function oaff_svg_html($pathinfo) {
   }
   $svg_path = planetary_repo_access_rel_path(oaff_join_path(array($pathinfo['group'], $pathinfo['archive'], "export/svg/narration", $svgname)));
   $svg_content = file_get_contents($svg_path);
-  $out = '<div id="svg_modal" class="modal fade bs-example-modal-lg" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg" style="max-width:80%">
-      <div class="modal-content">    
-        <div class="modal-header">
-          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-          <h4 class="modal-title" id="myModalLabel">' . $pathinfo['filename'] . '</h4>
-         </div>
-        <div class="modal-body" style="overflow:auto"> ' .
-          $svg_content .
-       '</div>
-      </div>
-    </div>  
-  </div>';
+  if ($option == 1) {
+    $out = 
+    '<div id="svg_modal" class="modal fade bs-example-modal-lg" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg" style="max-width:80%">
+        <div class="modal-content">    
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            <h4 class="modal-title" id="myModalLabel">' . $pathinfo['filename'] . '</h4>
+           </div>
+          <div class="modal-body" style="overflow:auto"> ' .
+            $svg_content .
+         '</div>
+        </div>
+      </div>  
+    </div>';
+  } else {
+    $out = $svg_content;
+  }
   /*
          <div class="modal-footer">
           <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
@@ -1418,15 +1433,22 @@ function oaff_node_insert($node) {
  * @param $nid the node id
  * @param $path the alias to be saved (the MMT URI of the node)
  */ 
-function oaff_save_path($nid, $path) {
+function oaff_save_path($nid, $path, $aspect = '') {
   // saving path
   if (substr($path, -1) == '/') {
     $path = substr($path, 0, -1);
   }
-  $path_opt = array(
-    'source' => 'node/' . $nid,
-    'alias' => $path,
-  );
+  if ($aspect == '') {
+    $path_opt = array(
+      'source' => 'node/' . $nid,
+      'alias' => $path,
+    );  
+  } else {
+    $path_opt = array(
+      'source' => 'node/' . $nid . '/' . $aspect,
+      'alias' => $path . '!' . $aspect,
+    );
+  }
   path_save($path_opt);
 }
 
@@ -1512,6 +1534,22 @@ function oaff_get_path_info($location) {
   $oaff_path_info['dpath'] = $dpath;
   
   return $oaff_path_info;
+}
+
+// returns SVG of the current node
+function oaff_node_svg($node) {
+  oaff_set_breadcrumb($node->nid);
+  $nid = $node->nid;
+  $location = $node->field_external['und']['0']['path'];
+  $alias = oaff_get_path_info($location)['alias'];
+  oaff_save_path($nid, $alias,'svg');
+
+  $pathinfo = oaff_get_path_info($location);
+  $out =
+  '<div class="modal-body" style="overflow:auto; margin: auto"> ' .
+    oaff_svg_html($pathinfo, 0) .
+  '</div>';
+  return $out;
 }
 
 
