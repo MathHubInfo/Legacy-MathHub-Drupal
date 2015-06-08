@@ -46,7 +46,17 @@ function oaff_menu() {
     'type' => MENU_LOCAL_TASK,
     'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
   );
-  
+  $items['node/%node/omdoc'] = array(
+    'title' => 'OMDoc',
+    'page callback' => 'oaff_node_omdoc',
+    'page arguments' => array(1),
+    'access callback' => 'oaff_access_by_node_type',
+    'access arguments' => array(1, array(1=>'oaff_doc')),
+    'weight' => 0,
+    'type' => MENU_LOCAL_TASK,
+    'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
+  );
+
   oaff_features_menu($items);
   oaff_admin_menu($items);
   return $items;
@@ -1614,10 +1624,28 @@ function oaff_svg_clean($svg) {
   return $out;
 }
 
+// returns true if the current type of node allowed access
 function oaff_access_by_node_type($node, $node_types) {
   if (array_search($node->type, $node_types) != false) 
     return true;
   return false;
+}
+
+// returns omdoc of the node, if exists
+function oaff_node_omdoc($node) {
+  $nid = $node->nid;
+  $location = $node->field_external['und']['0']['path'];
+  $pathinfo = oaff_get_path_info($location);
+  $alias = oaff_get_path_info($location)['alias'];
+  oaff_save_path($nid, $alias,'omdoc');
+  oaff_set_breadcrumb($nid);
+  $omdoc_location = $pathinfo['alias'];
+  $omdoc = ""; //default
+  if (planetary_repo_stat_file($omdoc_location)) { //omdoc exists
+    $omdoc = planetary_repo_load_file($omdoc_location);
+  }
+  $out = "<pre>\n" . check_plain($omdoc) . "\n</pre>";
+  return $out;
 }
 
 // -------------------------- OAFF Configuration ------------------------- \\
