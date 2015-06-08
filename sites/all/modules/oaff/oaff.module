@@ -1538,20 +1538,81 @@ function oaff_get_path_info($location) {
 
 // returns SVG of the current node
 function oaff_node_svg($node) {
-  oaff_set_breadcrumb($node->nid);
   $nid = $node->nid;
   $location = $node->field_external['und']['0']['path'];
+  
   $alias = oaff_get_path_info($location)['alias'];
   oaff_save_path($nid, $alias,'svg');
 
+  //drupal_add_js('scripts/svg-pan-zoom.js', 'file');
+  oaff_set_breadcrumb($nid);
+
+  // can cause problems due to path !!!
+  // script for zoom and pan
+  $jscript = file_get_contents('/var/www/MathHub/sites/all/modules/oaff/scripts/svg-pan-zoom.js');
+
+  // activate zoom and pan of SVG
+  $activate_pan_zoom = 
+    '// Don\'t use window.onLoad like this in production, because it can only listen to one function.
+      window.onload = function() {
+        // Expose to window namespase for testing purposes
+        window.zoomTiger = svgPanZoom(\'#node-svg\', {
+          zoomEnabled: true,
+          controlIconsEnabled: true,
+          fit: true,
+          center: true,
+          viewportSelector: document.getElementById(\'node-svg\').querySelector(\'#wrapper\')
+        });
+      };';
+
   $pathinfo = oaff_get_path_info($location);
-  $out =
-  '<div class="modal-body" style="overflow:auto; margin: auto"> ' .
-    oaff_svg_html($pathinfo, 0) .
-  '</div>';
-  return $out;
+  $out = oaff_svg_html($pathinfo, 0);
+  if (isset($_GET['view'])) {
+    $out = 
+'<!DOCTYPE html>
+<html>
+  <head>
+    <script>' . $jscript . '</script>
+  </head>
+  <body>
+    <div style="border:3px solid #5DBCD2; border-radius: 5px;">
+      ' . oaff_svg_clean($out) . '
+    </div>
+    <script>
+      ' . $activate_pan_zoom . '    
+    </script>
+
+  </body>
+
+</html>';
+
+    print($out);
+  } else {
+    $out = 
+    '<script>' . $jscript . '</script>
+    <div class="modal-body" style="overflow:auto; margin: auto"> 
+      <div style="border:3px solid #5DBCD2; border-radius: 5px;">
+        <a class="btn btn-default btn-sm" target="_blank" href="/' . $alias . '%21svg?view=full' . '" role="button">Full screen</a>' . 
+        oaff_svg_clean($out) .
+    ' </div>
+    </div>
+    <script>
+      ' . $activate_pan_zoom . '    
+    </script>'; 
+    return $out;
+  }
 }
 
+// cleans header of SVG and replaces it to allow pan and zoom
+function oaff_svg_clean($svg) {
+  $out = substr($svg, strpos($svg, '<svg'));
+  $out = substr($out, strpos($out, '>')+1);
+  $out = substr($out, 0, strpos($out, '</svg>'));
+  $out = 
+      "\n<svg id=\"node-svg\" xmlns=\"http://www.w3.org/2000/svg\" height=\"720px\" width=\"100%\">" .
+      "\n<g id=\"wrapper\">" . $out . "\n</g></svg>";
+  return $out;
+}
 
 // -------------------------- OAFF Configuration ------------------------- \\
 
