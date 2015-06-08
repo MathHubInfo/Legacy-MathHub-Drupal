@@ -36,17 +36,17 @@ function oaff_menu() {
     'access callback' => true,
     'type' => MENU_CALLBACK,
   );
-  //
   $items['node/%node/svg'] = array(
-    'title' => 'svg',
+    'title' => 'SVG',
     'page callback' => 'oaff_node_svg',
     'page arguments' => array(1),
-    'access arguments' => array('update', 1),
+    'access callback' => 'oaff_access_by_node_type',
+    'access arguments' => array(1, array(1=>'oaff_doc', 2=>'oaff_virtdoc')),
     'weight' => 0,
     'type' => MENU_LOCAL_TASK,
     'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
   );
-  //
+  
   oaff_features_menu($items);
   oaff_admin_menu($items);
   return $items;
@@ -1612,6 +1612,12 @@ function oaff_svg_clean($svg) {
       "\n<svg id=\"node-svg\" xmlns=\"http://www.w3.org/2000/svg\" height=\"720px\" width=\"100%\">" .
       "\n<g id=\"wrapper\">" . $out . "\n</g></svg>";
   return $out;
+}
+
+function oaff_access_by_node_type($node, $node_types) {
+  if (array_search($node->type, $node_types) != false) 
+    return true;
+  return false;
 }
 
 // -------------------------- OAFF Configuration ------------------------- \\
