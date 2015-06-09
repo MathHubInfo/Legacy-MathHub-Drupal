@@ -56,6 +56,16 @@ function oaff_menu() {
     'type' => MENU_LOCAL_TASK,
     'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
   );
+  $items['node/%node/source'] = array(
+    'title' => 'Source',
+    'page callback' => 'oaff_node_source',
+    'page arguments' => array(1),
+    'access callback' => 'oaff_access_by_node_type',
+    'access arguments' => array(1, array(1=>'oaff_doc')),
+    'weight' => 0,
+    'type' => MENU_LOCAL_TASK,
+    'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
+  );
 
   oaff_features_menu($items);
   oaff_admin_menu($items);
@@ -1644,8 +1654,18 @@ function oaff_node_omdoc($node) {
   if (planetary_repo_stat_file($omdoc_location)) { //omdoc exists
     $omdoc = planetary_repo_load_file($omdoc_location);
   }
-  $out = "<pre>\n" . check_plain($omdoc) . "\n</pre>";
-  return $out;
+  return "<pre>\n" . check_plain($omdoc) . "\n</pre>";
+}
+
+function oaff_node_source($node) {
+  $nid = $node->nid;
+  $location = $node->field_external['und']['0']['path'];
+  $pathinfo = oaff_get_path_info($location);
+  $alias = oaff_get_path_info($location)['alias'];
+  oaff_save_path($nid, $alias,'source');
+  oaff_set_breadcrumb($nid);
+  $source = planetary_repo_load_file($location);
+  return "<pre>\n" . $source . "\n</pre>";
 }
 
 // -------------------------- OAFF Configuration ------------------------- \\
