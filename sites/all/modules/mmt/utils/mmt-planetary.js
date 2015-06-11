@@ -18,7 +18,6 @@ var planetary = {
   URIToURL: function(uri) {
 	var matches = uri.match(/^(http[s]?:\/\/)?([^:\/\s]+)(.*)$/);
 	var comps = matches[3].split("/");
-	comps.splice(3,0,"source");
 	var path = comps.join("/");
 	return path;
   },

@@ -203,9 +203,12 @@ function oaff_autogenerate_archive_doc($group, $archive) {
   }
   $html .= $desc;
   $html .= $resp;
-  $html .= "<ul><li><a href=\"/$group/$archive/source\">Content</a> </li>
-                <li><a href=\"http://gl.mathhub.info/$group/$archive\" target=\"_blank\">Sources</a> </li>
-                <li><a href=\"/mh/common-errors?&groups=$group&archives=$archive\">Errors</a> </li></ul>";
+  $content_path = oaff_join_path(array($group, $archive, 'export/planetary/narration', '.html'));
+  $html .= "<div>" . planetary_repo_load_file($content_path) . "</div>";
+ 
+  //$html .= "<ul><li><a href=\"/$group/$archive/source\">Content</a> </li>
+  //             <li><a href=\"http://gl.mathhub.info/$group/$archive\" target=\"_blank\">Sources</a> </li>
+  //              <li><a href=\"/mh/common-errors?&groups=$group&archives=$archive\">Errors</a> </li></ul>";
   return $html;
 }
 
@@ -470,11 +473,7 @@ function oaff_node_view($node, $view_mode, $langcode) {
     $inst_id = oaff_initialize();
     $node->content['body'][0]['#markup'] = '<div id="' . $inst_id . '" class="bootstrap" >' . $markup . '</div>';
   }
-  // case for normal nodes
-  // settings breadcrumb
-  if (in_array($node->type, $all_node_types)) {
-    oaff_set_breadcrumb($node->nid);
-  }
+
   // actually presenting
   if (in_array($node->type, $compiled_node_types)) {
     //getting node data
@@ -495,32 +494,33 @@ function oaff_node_view($node, $view_mode, $langcode) {
     if (planetary_repo_stat_file($omdoc_location)) { //omdoc exists
       $omdoc = planetary_repo_load_file($omdoc_location);
     }
-    $inst_id = oaff_initialize();
       
   	if ($fatals) { // fatals exists for this node => time to report errors  
       $source = planetary_repo_load_file($location);
       $output = oaff_mark_source_errors(check_plain($source), $node->nid, $status);
       $output .= oaff_get_log_html($status, $omdoc, "");
-      $node->content['field_external'][0]['content']['#markup'] =  
-         '<div id="' . $inst_id . '" class="bootstrap" >' . $output;      
+      $node->content['field_external'][0]['content']['#markup'] = $output;      
     } else {
       $source = planetary_repo_load_file($location);
     	$content = $node->content['field_external'][0]['content']['#markup'];
-      $node->content['field_external'][0]['content']['#markup'] = 
-        '<div id="' . $inst_id . '" class="bootstrap" >' . $content . '</div>' . 
-        oaff_get_log_html($status, $omdoc, $source) .
-        oaff_svg_html($pathinfo) . '<div id="dynamic_modal" class="modal fade bs-example-modal-lg" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg" style="max-width:80%">
-      <div id="dynamic_modal_content" class="modal-content">    
-      </div>
-    </div>  
-  </div>';
+      $node->content['field_external'][0]['content']['#markup'] = $content . oaff_get_log_html($status, $omdoc, $source);
 	  }
   }
+
+  // case for normal nodes
+  // settings breadcrumb
+  if (in_array($node->type, $all_node_types)) {
+    oaff_set_breadcrumb($node->nid);
+    $inst_id = oaff_initialize();
+    $content = $node->content['field_external'][0]['content']['#markup'];
+    $node->content['field_external'][0]['content']['#markup'] = 
+        '<div id="' . $inst_id . '" class="bootstrap" >' . $content . '</div>';
+  }
+
 }
 
 // if option set to 0 returns raw svg content
-function oaff_svg_html($pathinfo, $option = 1) {
+function oaff_svg_html($pathinfo) {
   $relpath = $pathinfo['rel_path'];
   $args = explode(".", $relpath);
   if (count($args) == 1) {
@@ -529,33 +529,8 @@ function oaff_svg_html($pathinfo, $option = 1) {
     array_pop($args);
     $svgname = implode(".",$args) . ".svg";
   }
-  $svg_path = planetary_repo_access_rel_path(oaff_join_path(array($pathinfo['group'], $pathinfo['archive'], "export/svg/narration", $svgname)));
-  $svg_content = file_get_contents($svg_path);
-  if ($option == 1) {
-    $out = 
-    '<div id="svg_modal" class="modal fade bs-example-modal-lg" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-lg" style="max-width:80%">
-        <div class="modal-content">    
-          <div class="modal-header">
-            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-            <h4 class="modal-title" id="myModalLabel">' . $pathinfo['filename'] . '</h4>
-           </div>
-          <div class="modal-body" style="overflow:auto"> ' .
-            $svg_content .
-         '</div>
-        </div>
-      </div>  
-    </div>';
-  } else {
-    $out = $svg_content;
-  }
-  /*
-         <div class="modal-footer">
-          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-          <button type="button" class="btn btn-primary">Save changes</button>
-        </div>
-  */
-  return $out; 
+  $svg_content = planetary_repo_load_file(oaff_join_path(array($pathinfo['group'], $pathinfo['archive'], "export/svg/narration", $svgname)));
+  return $svg_content; 
 }
 
 
@@ -816,6 +791,7 @@ function _oaff_crawler_get_active_archives() {
       foreach ($archives as $archive) {
         if (planetary_repo_is_dir(oaff_join_path(array($group, $archive))) && $archive[0] != '.' && $archive != 'meta-inf') {
           $active = _oaff_crawl_archive($group, $archive);
+
           if ($active) {
             $oaff_config = variable_get("oaff_config");
             $oaff_config['groups'][$group] = _oaff_get_group_info($group);
@@ -963,14 +939,14 @@ function _oaff_crawler_update_content($groups) {
       $archive_help_fpath = oaff_join_path(array($group, $archive, 'META-INF', 'index.html'));
       $srcpath = drupal_lookup_path('source', $archive_path);
       if (!$srcpath) {
-        $aid = oaff_create_help_node($archive, $archive_path, $archive_help_fpath);
+        $aid =     oaff_create_help_node($archive, $archive_path, $archive_help_fpath);
       } else {
         $aid = explode("/", $srcpath)[1];
       }
       $aids[] = $aid;
       $archive_id = $oaff_config['archive_id'][$group][$archive];
-      $srcid = oaff_crawler_update_dimension_folder($group, $archive, $archive_id, 'source', "");
-      oaff_set_children($aid, array($srcid));
+      $srcids = oaff_crawler_update_source_folder($group, $archive, $archive_id, "");
+      oaff_set_children($aid, $srcids);
       if ($oaff_config['latest_nodes'] >= 1000) {
         break 2;
       }
@@ -1005,12 +981,11 @@ function oaff_join_path($arguments) {
   return $path;
 }
 
-function oaff_crawler_update_dimension_folder($group, $archive_path, $archive_id, $dimension, $rel_path) {
+function oaff_crawler_update_source_folder($group, $archive_path, $archive_id, $rel_path) {
+  $dimension = "source";
   $extension = "omdoc";
-  if ($dimension == "source") { // getting source extension from config
-    $oaff_config = variable_get('oaff_config');
-    $extension = $oaff_config['extensions'][$oaff_config['formats'][$archive_id]];
-  }
+  $oaff_config = variable_get('oaff_config');
+  $extension = $oaff_config['extensions'][$oaff_config['formats'][$archive_id]];
   $folder_path = oaff_join_path(array($group, $archive_path, $dimension, $rel_path));
   $cids = array();
   $lang_groups = array();
@@ -1021,12 +996,17 @@ function oaff_crawler_update_dimension_folder($group, $archive_path, $archive_id
                                                                               // also lmh/stex specific ones  
       $item_path = oaff_join_path(array($folder_path, $item));
       if (planetary_repo_is_dir($item_path)) {
-        $cids[] = oaff_crawler_update_dimension_folder($group, $archive_path, $archive_id, $dimension, oaff_join_path(array($rel_path, $item)));
+        $frel_path = oaff_join_path(array($rel_path, $item));
+        $fcids = oaff_crawler_update_source_folder($group, $archive_path, $archive_id, $dimension, $frel_path);
+        $fid = oaff_make_folder_node($group, $archive_path, $archive_id, $dimension, $frel_path); 
+        oaff_set_children($fid, $fcids);                
+        $cids[] = $fid;
       } else {
         $pathinfo = oaff_get_path_info($item_path);
         if (isset($pathinfo['extension']) && $pathinfo['extension'] == $extension) {
           $nid = oaff_make_file_node($group, $archive_path, $archive_id, $dimension, $rel_path, $item);
           $cids[] = $nid;
+          //language groups -- consider removing
           $base_module = $pathinfo['base_module'];
           if ($pathinfo['lang'] == 'und') { 
             $lang_groups[$base_module]['base'] = $nid;
@@ -1040,10 +1020,8 @@ function oaff_crawler_update_dimension_folder($group, $archive_path, $archive_id
       break;
     }
   }
-  $nid = oaff_make_folder_node($group, $archive_path, $archive_id, $dimension, $rel_path);  
-  oaff_set_children($nid, $cids);   
   oaff_set_lang_groups($lang_groups);
-  return $nid;
+  return $cids;
 }
 
 
@@ -1526,6 +1504,7 @@ function oaff_get_path_info($location) {
   $oaff_path_info['group'] = $loc_segs[0];
   $oaff_path_info['archive'] = $loc_segs[1];
   $oaff_path_info['dimension'] = $loc_segs[2];
+  $oaff_path_info['rel_parent'] = oaff_join_path(array_slice($loc_segs, 3, -1));
 
   $alias = $location; //default
   $omdocName = $module; //default
@@ -1534,13 +1513,10 @@ function oaff_get_path_info($location) {
   }
 
   if (isset($pathinfo['extension'])) {
-    $alias = $parent . '/' . $omdocName; // just changing the extension to .omdoc
+    // removing 'source' and changing extension to .omdoc
+    $alias = oaff_join_path(array($oaff_path_info['group'], $oaff_path_info['archive'], $oaff_path_info['rel_parent'], $omdocName)); 
   }
-
   $oaff_path_info['alias'] = $alias;
-  
-  $oaff_path_info['rel_parent'] = oaff_join_path(array_slice($loc_segs, 3, -1));
-
   $frag_segs = array_slice($loc_segs, 3);
   if (count($frag_segs) > 0) {
     $frag_segs[count($frag_segs) - 1] = $omdocName;
@@ -1569,7 +1545,23 @@ function oaff_node_svg($node) {
 
   // can cause problems due to path !!!
   // script for zoom and pan
-  $jscript = file_get_contents('/var/www/MathHub/sites/all/modules/oaff/scripts/svg-pan-zoom.js');
+  $oaff_path = drupal_get_path('module', 'oaff');
+  $jscript = file_get_contents($oaff_path . '/scripts/svg-pan-zoom.js');
+  
+  $mmt_path = drupal_get_path('module', 'mmt');
+
+  // JOBAD js
+  jobad_add_module($mmt_path . '/jobad/planetary-navigation-glossary.js', "kwarc.mmt.planetary.navigation.glossary");
+  jobad_add_module($mmt_path . '/jobad/hovering.js', "kwarc.mmt.hovering");
+  jobad_add_module("/sites/all/libraries/jobad/modules/core/mathjax.mathjax.js", "mathjax.mathjax");
+
+  // mmt js libs
+  drupal_add_js($mmt_path . '/utils/mmt-html.js', 'file', array('cache' => false));
+  drupal_add_js($mmt_path . '/utils/mmt-planetary.js', 'file', array('cache' => false));
+  drupal_add_js($mmt_path . '/utils/mathml.js', 'file', array('cache' => false));
+
+  // modules
+  $inst_id = oaff_initialize();
 
   // activate zoom and pan of SVG
   $activate_pan_zoom = 
@@ -1586,7 +1578,7 @@ function oaff_node_svg($node) {
       };';
 
   $pathinfo = oaff_get_path_info($location);
-  $out = oaff_svg_html($pathinfo, 0);
+  $out = oaff_svg_html($pathinfo);
   if (isset($_GET['view'])) {
     $out = 
 '<!DOCTYPE html>
@@ -1611,9 +1603,9 @@ function oaff_node_svg($node) {
     $out = 
     '<script>' . $jscript . '</script>
     <div class="modal-body" style="overflow:auto; margin: auto"> 
-      <div style="border:3px solid #5DBCD2; border-radius: 5px;">
+      <div id="' . $inst_id . '" style="border:3px solid #5DBCD2; border-radius: 5px;">
         <a class="btn btn-default btn-sm" target="_blank" href="/' . $alias . '%21svg?view=full' . '" role="button">Full screen</a>' . 
-        oaff_svg_clean($out) .
+          oaff_svg_clean($out) .
     ' </div>
     </div>
     <script>
