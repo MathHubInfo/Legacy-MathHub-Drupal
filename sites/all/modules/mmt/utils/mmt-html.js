@@ -1,13 +1,11 @@
-/* Utility functions and state provided for MMT/OMDoc-based html documents */
+   /* Utility functions and state provided for MMT/OMDoc-based html documents */
 
 // the following functions $.fn.f add functionality to jQuery and can be used as $(...).f
 
+
 // contrary to the built-in jQuery analogues, these work for 'pref:name' attributes and math elements
 // do not replace calls to these function with the jQuery analogues!
-
-$ = jQuery;
-
-$.fn.hasAttribute = function(name) {  
+$.fn.hasAttribute = function(name) {
 	return (typeof this.attr(name) !== 'undefined' && this.attr(name) !== false);
 };
 
@@ -15,7 +13,7 @@ $.fn.hasAttribute = function(name) {
 function getClassArray(elem) {
    var classes = (elem.hasAttribute('class')) ? elem.getAttribute('class') : "";
    return classes.split(/\s+/);
-}
+};
 
 /* add a class cl to all matched elements */
 $.fn.addMClass = function(cl){
@@ -26,7 +24,7 @@ $.fn.addMClass = function(cl){
          this.setAttribute('class', cl);
    });
    return this;
-}
+};
 /* remove a class cl from all matched elements */
 $.fn.removeMClass = function(cl){
    this.each(function(){
@@ -39,7 +37,7 @@ $.fn.removeMClass = function(cl){
          this.setAttribute('class', newclassesAttr);
    });
    return this;
-}
+};
 /* toggle class cl in all matched elements */
 $.fn.toggleMClass = function(cl){
    this.each(function(){
@@ -57,19 +55,34 @@ $.fn.filterMClass = function(cl){
       var classes = getClassArray(this);
       return (classes.indexOf(cl) !== -1)
    });
-}
+};
 // end $.fn.f functions
-
 
 /* some common URIs */
 var uris = {
    lf : "http://cds.omdoc.org/urtheories?LF",
-   mathmlstyle : "http://cds.omdoc.org/styles/omdoc/mathml.omdoc?html5",
 };
 
+/* special attribute names, must be in sync with info.kwarc.mmt.api.presentation.HTMLAttributes */
+var mmtattr = function(){
+   var prefix = "data-mmt-";
+   return {
+	   symref: prefix + "symref",
+	   varref: prefix + "varref",
+	   source: prefix + "source",
+	   owner: prefix + "owner",
+	   component: prefix + "component",
+	   position: prefix + "position"
+   }
+}();
+
 var mmt = {
-	/* these are auxiliary variables used to communicate information about the current focus from the context menu entries to the methods; they are not passed as an argument to avoid encoding problems */
-  	// focus: holds a reference to the object that was clicked by the user
+	/* these are auxiliary variables used to communicate information about the 
+	 * current focus from the context menu entries to the methods; they are not 
+	 * passed as an argument to avoid encoding problems */
+    // holds a reference to the clicked object
+	target: null,
+  	// focus: holds a reference to the selected object that was clicked by the user
 	focus : null,
 	// focus: true if focus is within a math object
 	focusIsMath : false,    
@@ -84,32 +97,33 @@ var mmt = {
 	
 	/* set focus, focusIsMath, currentURI, currentElement, currentComponent, currentPosition according to elem */
 	setCurrentPosition : function(elem){
-	   var math = $(elem).closest('math')
+		this.target = target;
+	    var math = $(elem).closest('math')
 		this.focusIsMath = (math.length !== 0);
 		if (this.focusIsMath) {
 		   this.focus = this.getSelectedParent(elem);
-	   	this.currentElement = math.attr('jobad:owner');
-		   this.currentComponent = math.attr('jobad:component');
-		   this.currentPosition = this.focus.getAttribute('jobad:mmtref');
+	   	this.currentElement = math.attr(mmtattr.owner);
+		   this.currentComponent = math.attr(mmtattr.component);
+		   this.currentPosition = this.focus.getAttribute(mmtattr.position);
 		} else {
 		   this.focus = elem
 	   	this.currentElement = null;
 		   this.currentComponent = null;
 		   this.currentPosition = null;
 		}
-		if (elem.hasAttribute("jobad:href")) {
-			mmt.currentURI = elem.getAttribute('jobad:href');
+		if (elem.hasAttribute(mmtattr.symref)) {
+			mmt.currentURI = elem.getAttribute(mmtattr.symref);
+		} else if ($(elem).parent().hasAttribute("xlink:href")) {
+			// in SVG graphs, the parent carries the link, attribute currently for legacy SVG
+			mmt.currentURI = $(elem).parent().attr("xlink:href");
 		} else {
-		   mmt.currentURI = null;
+			mmt.currentURI = null;
 		}
 	},
 	
-	/* the notation style is used for operations that must be executed relative to a sytle, e.g., presentation */
-	notstyle : uris.mathmlstyle,
-
 	/* the active theory is used for operations that must be executed relative to a theory, e.g., parsing */
 	getActiveTheory : function() {
-	   return $('#inputtheory').val();
+	   return $('#parseForm #activetheory').val();
 	},
 	/* sets the active theory
 	  @param uri any MMT URI (symbol part is ignored if present; no action if document URI)
@@ -119,8 +133,10 @@ var mmt = {
       if (arr[1] != "") {
          var thy = arr[0] + '?' + arr[1]
          this.activeTheory = thy;
-         $('#inputtheory').val(thy);
-      }
+         $('#parseForm #activetheory').val(thy);
+		  $('#searchForm #theory').val(thy);
+
+	  }
    },
    
    /*
@@ -153,18 +169,47 @@ var mmt = {
 	 */
 	adaptMMTURI : function (uri, act, present) {
 		var arr = this.splitMMTURI(uri);
-		if (present && this.notstyle !== null)
-			var pres = " present " + this.notstyle;
+		if (present) {
+		   var pres = " present html";
+		}
 		else
 			var pres = '';
 		var relativeURL = '/:mmt?get ' + arr[0] + '?' + arr[1] + '?' + arr[2] + ' ' + act + pres + " respond";
 		return this.makeURL(relativeURL);
 	},
-
+	
+	/**
+	    * @param url the URL to load from
+	    * @param targetid the XML id of the element, where it appends
+	    */
+	ajaxAppendBox : function (url, targetnode, async) {
+			   function cont(data) {
+				   var serializer = new XMLSerializer();
+				   var xmlString = serializer.serializeToString(data);
+				   $(targetnode).append(xmlString);
+				}
+				if (async == null) async = true;
+				$.ajax({  'type': "GET",
+					      'url': url,      
+						  'dataType': 'xml',
+						  'async': async,
+						  'success': cont,						  
+					   });
+			},
+			
+   /**
+    * @param url the URL to load from
+    * @param targetid the XML id of the element, whose child to replace with the loaded node
+    */
    ajaxReplaceIn : function (url, targetid, async) {
 		function cont(data) {
 			var targetnode = $('#' + targetid).children();
-			targetnode.replaceWith(data.firstChild);
+			
+			// adapt code to ignore the graph 
+			var cont = data.firstChild;
+			$(cont).find(".graph").remove();
+			targetnode.replaceWith(cont);
+
 		}
 		if (async == null) async = true;
 		$.ajax({ 'url': url,
@@ -173,6 +218,7 @@ var mmt = {
 				 'success': cont
 			   });
 	},
+	
 	
 	load : function (elem) {
 	   if (elem.hasAttribute('jobad:load')) {
@@ -206,10 +252,12 @@ var mmt = {
 	sideBarClick : function(event,p) {
 	      if (event.detail == 1) navigation.navigate(p);
 	      else if (event.detail == 2) {
-	         if (graphWindow == null)
-	            openGraph(p);
-	         else
-	            graphWindow.navigateGraph(p);
+	         if (graphWindow == null) {
+	        	 openGraph(p);
+	         }
+	         else{
+	        	 graphWindow.navigateGraph(p); 
+	         }
 	      }
 	},
 
@@ -226,6 +274,145 @@ var mmt = {
 		dia[0].replaceChild(content, dia[0].firstChild);
 		dia.dialog('open');
 	},
+	/**
+	 * Creates and inserts an empty inline box after some ancestror of origin.
+	 * The ancestor is the closest inlineBoxSibling or #main if none.
+	 * The created box can be dragged and resized.
+	 * 
+	 * @param origin the node to which the inline box belongs
+	 * @param title the title of the box
+	 * @param width optional string parameter setting the width of the box
+	 * @returns the body of the inline box, to which further content can/should be added 
+	 */
+	createInlineBox: function(origin, title, width) {
+	    var tmp = $(origin).closest(".inlineBoxSibling");
+	    var container = document.createElement('div');
+	    var outerDiv = document.createElement('div');
+	    var innerDiv = document.createElement('div');
+	    $(container).addClass("container-fluid")
+	    $(outerDiv).addClass("container-fluid")
+	    $(container).append(outerDiv)
+	    $(outerDiv).append(innerDiv)
+	    var heightParent;
+	    var targetParent;
+	    if (tmp.length === 0) {
+	    	
+	        var list = $("#main").children();
+	        if (list.length === 0) {
+	        	targetParent = $("#main");
+	            $(container).insertAfter("#main");            
+	        }
+	        else {
+	        	$(container).insertBefore(list[0]);
+	        }        
+	    }
+	    else {
+	    	targetParent = tmp;
+	        $(targetParent).append(container);
+	    }
+	    var heightParent = $(targetParent).height();
+	    if (typeof width == 'string') {
+	        $(innerDiv).width(width)
+	    }
+	    
+	    var btnDiv = document.createElement('div');
+	    var titleDiv = document.createElement('div');
+	    var contentDiv = document.createElement('div');
+	    var button_hide = document.createElement('button');
+	    var button_close = document.createElement('button');
+	    $(innerDiv).addClass("panel panel-default");
+	    $(innerDiv).addClass("bigDiv");
+	    $(titleDiv).addClass("bg-primary")
+	    $(btnDiv).addClass("panel-heading");
+	    $(contentDiv).addClass("contDiv");
+	    $(titleDiv).append(btnDiv);
+	    $(innerDiv).append(titleDiv);
+	    $(innerDiv).append(contentDiv);
+	    $(btnDiv).append("<b>" + title + "</b");
+	    $(btnDiv).append(button_close);
+	    $(btnDiv).append(button_hide);
+	    $(button_hide).addClass("btn btn-info btn-xs pull-right")
+	    $(button_close).addClass("btn btn-info btn-xs pull-right")
+	    $(button_hide).append(
+	        "<span class=\" minus glyphicon glyphicon-minus-sign\" aria-hidden=\"true\"></span>"
+	    );
+	    $(button_close).append(
+	        "<span class=\"glyphicon glyphicon-remove-sign\" aria-hidden=\"true\"></span>"
+	    )
+	    //TODO use snap options to improve dragging behavior
+	    $(outerDiv).draggable({
+	        handle: titleDiv,
+	        cursor: "move"
+	    });
+	    $(innerDiv).resizable({
+	        minHeight: 50,
+	        minWidth: 250
+	    })
+	    var h = $(titleDiv).height();
+	    var H = $(innerDiv).height();
+	   
+	    $(button_close).click(function() {
+	        var temp = $(button_close).closest(".panel")[0];
+	        $(temp).remove();
+	    });
+	    
+	    var minus = true
+	    var newH = 0
+	    $(button_hide).click(function() {
+	    	var H ;
+	        if (minus) {
+	        	H = $(innerDiv).height();
+		    	newH = H
+	        	var h = $(titleDiv).height();
+	    	    $(contentDiv).hide();
+		    	$(innerDiv).height(h)		        
+	            $(".minus").switchClass("glyphicon-minus-sign",
+	                "glyphicon-plus-sign");
+	            minus = false
+	        }
+	        else {
+	        	$(innerDiv).height(newH)
+	        	$(contentDiv).show();	        
+	            $(".minus").switchClass("glyphicon-plus-sign",
+	                "glyphicon-minus-sign");
+	            minus = true
+	        }
+	    });
+	    // detect if element is dragged
+	    var isDragging = false;
+	    $(titleDiv)
+	    .mousedown(function() {
+	        $(window).mousemove(function() {
+	            isDragging = true;
+		    	$(container).height(0);
+	            $(window).unbind("mousemove");
+	        });
+	    })
+	    .mouseup(function() {
+	        var wasDragging = isDragging;
+	        isDragging = false;
+	        $(window).unbind("mousemove");
+	    });
+	    
+	    // scroll to the new inline box
+	    var el = $(contentDiv);
+	    var elOffset = el.offset().top;
+	    var elHeight = el.height();
+	    var windowHeight = $(window).height();
+	    var offset;
+	    if (elHeight < windowHeight) {
+	        offset = elOffset - ((windowHeight / 2) - (elHeight / 2));
+	    }
+	    else {
+	        offset = elOffset;
+	    }
+	    var speed = 400;
+	    $('html, body').animate({
+	        scrollTop: offset
+	    }, speed);
+	    return contentDiv;
+	},
+	
 	
 	getSelectedParent : function (elem){
 		var s = $(elem).parents().andSelf().filterMClass('math-selected');
@@ -293,7 +480,7 @@ var XML = {
 	elem : function (tag, content, key1, value1, key2, value2) {
 		var att1 = (key1 == null) ? "" : this.attr(key1,value1);
 		var att2 = (key2 == null) ? "" : this.attr(key2,value2);
-		var atts = att1 + att2
+		var atts = att1 + att2;
 		var begin = '<' + tag + atts;
 		if (content == null) {
 			return begin + '/>';
@@ -317,50 +504,69 @@ var qmtAux = {
 
 // functions to build and run QMT queries
 var qmt = {
-    // helper functions to build queries (as XML strings)
-	// Query
+   // helper functions to build queries (as XML strings)
 	literalPath : function (p) {return XML.elem('literal', null, 'uri', p);},
 	literalString : function (p) {return XML.elem('literal', p);},
 	bound      : function(i) {return XML.elem('bound', null, 'index', i);},
 	component  : function (o, c) {return XML.elem('component', o, 'index', c);},
 	subobject  : function (o, p) {return XML.elem('subobject', o, 'position', p);},
-	related	   : function(to, by) {return XML.elem('related', to + by);},
 	tuple       : function(os) {return XML.elem('tuple', os);},
 	projection  : function(o, i) {return XML.elem('projection', o, 'index', i);},
 	let         : function(v, i) {return XML.elem('let', v + i);},
-    // RelationExp
-    toobject    : function(rel) {return XML.elem('toobject', null, 'relation', rel);},
-    tosubject    : function(rel) {return XML.elem('tosubject', null, 'relation', rel);},
-
-    //other
 	parse       : qmtAux.extensionFunction('parse'),
 	infer       : qmtAux.extensionFunction('infer'),
 	simplify    : qmtAux.extensionFunction('simplify'),
 	analyze     : qmtAux.extensionFunction('analyze'),
-	present     : qmtAux.extensionFunction('present', function(){return mmt.notstyle;}),
-	presentDecl : qmtAux.extensionFunction('presentDecl', function(){return mmt.notstyle;}),
+	present     : qmtAux.extensionFunction('present', function(){return "html";}),
+	presentDecl : qmtAux.extensionFunction('presentDecl', function(){return "html";}),
 
 	/* executes a QMT query (as constructed by helper functions) via ajax and runs a continuation on the result */
-    exec : function (q, cont, aSync) {
- 	   if (aSync == null) {
- 	   	aSync = true;
- 	   }
-
+    exec : function (q, cont) {
 	   var qUrl = mmt.makeURL('/:query');
 		$.ajax({
-            'crossDomain': true,
-			'url' : qUrl, 
-			'type' : 'POST',
-			'data' :q,
-		    'dataType' : 'xml',
-			'processData' :false,
-			'contentType' : 'text/plain',
-			'success' : cont,
-			'error' : function( reqObj, status, error ){
-				console.log( "ERROR:", error, "\n ",status );
- 
-			},
-			'async' : aSync,
+			url:qUrl, 
+			type:'POST',
+			data:q,
+		    dataType : 'xml',
+			processData:false,
+			contentType:'text/plain',
+			success:cont,
 		});
 	},
+	
+	
 };
+
+//functions to build and run MMT actions
+var action = {
+	// helper functions to build actions (as strings)
+    build: function(a,t,p) {return "build " + a + " " + t + (p == null? "" : " " + p);},
+	exit: "exit",
+
+	/* executes an action (as constructed by helper functions) via ajax and runs a continuation on the result */
+	exec : function(a, cont) {
+		$.ajax({
+			url: mmt.makeURL('/:action') + "?" + a,
+            dataType : 'text',
+			success:cont,
+		});
+	},
+
+ };
+
+$(function(){$('#latin-dialog').dialog({ autoOpen: false})});
+
+/** function called by generated interaction elements */
+var interaction = {
+   /** click on a togglable element */
+   toggleClick: function(elem,label){
+      var cls = label != null ? label : 'toggleTarget';
+      $(elem).parent().closest('div').find('.' + cls).toggle();
+   },
+   /** click on a search result */
+   resultClick: function(p){
+      navigation.navigate(p);
+   },
+}
+
+
