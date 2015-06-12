@@ -498,12 +498,12 @@ function oaff_node_view($node, $view_mode, $langcode) {
   	if ($fatals) { // fatals exists for this node => time to report errors  
       $source = planetary_repo_load_file($location);
       $output = oaff_mark_source_errors(check_plain($source), $node->nid, $status);
-      $output .= oaff_get_log_html($status, $omdoc, "");
+      $output .= oaff_get_log_html($status);
       $node->content['field_external'][0]['content']['#markup'] = $output;      
     } else {
       $source = planetary_repo_load_file($location);
     	$content = $node->content['field_external'][0]['content']['#markup'];
-      $node->content['field_external'][0]['content']['#markup'] = $content . oaff_get_log_html($status, $omdoc, $source);
+      $node->content['field_external'][0]['content']['#markup'] = $content . oaff_get_log_html($status);
 	  }
   }
 
@@ -589,7 +589,7 @@ function oaff_get_errors($nid, $levels = array(0,1,2,3)) { // by default get all
 
 
 
-function oaff_get_log_html($status, $omdoc, $source) {
+function oaff_get_log_html($status) {
   $color_catalog = array(0 => "#9999FF", 1 => "#BBBB00", 2 => "#FF6666", 3 => "#FF2222");
   $error_catalog = array(0 => "Info", 1 => "Warning", 2 => "Error", 3 => "Fatal");
   $conv_status_catalog = array(0 => "<span style='color:#9999FF'>Conversion Succeeded<span>", 
@@ -608,36 +608,26 @@ function oaff_get_log_html($status, $omdoc, $source) {
   }
 
   // creating log
-  $log = '<hr/> <div> <p> ' . $conv_status_catalog[$conversion_status];
+  $log = '<hr/> <div> <p> ' . $conv_status_catalog[$conversion_status] . ' <a style="cursor:pointer;" onclick="if ($(this).html() == \'Show Log\') {$(this).html(\'Hide Log\')} else {$(this).html(\'Show Log\')}; $(\'#oaff_error_log\' ).toggle( \'fold\' );" >Show Log</a> ';
   $log .= '</p> </div>';
-  $err_log = '<ul>';
+  $log .= '<div id="oaff_error_log" style="display: none;"><ul>';
   foreach ($errors as $err_level) {
     foreach($err_level as $msg) {
-      $err_log .= "<li>";
+      $log .= "<li>";
       $srcref_msg = '';
       if ($msg->srcref) {
         $srcref_msg .= 'at ' . $msg->srcref;
       }
+
       $short_msg = check_plain($msg->short_msg);
       $long_msg = check_plain($msg->long_msg);
       $color = $color_catalog[$msg->type];
-      $err_log .= "<p><b>$msg->compiler</b> <u style=\"color:{$color}\">{$error_catalog[$msg->type]} $srcref_msg </u> : $short_msg </p>";
-      $err_log .= "<pre> $long_msg </pre>";
-      $err_log .= "</li>"; 
+      $log .= "<p><b>$msg->compiler</b> <u style=\"color:{$color}\"> {$error_catalog[$msg->type]} $srcref_msg </u> : $short_msg </p>";
+      $log .= "<pre> $long_msg </pre>";
+      $log .= "</li>"; 
     }
   }
-  $err_log .= "</ul>";
-
-  $data_title_content[] = array('title' => 'Show log', 'content' => $err_log);
-
-  if ($omdoc != "") {
-      $data_title_content[] = array('title' => 'Show OMDoc', 'content' => '<pre>' . check_plain($omdoc) . "</pre>");
-  }
-
-  if ($source != "") {
-      $data_title_content[] = array('title'=>'Show source', 'content' => '<pre>' . $source . '</pre>');
-  }
-  $log .= oaff_generate_tabs($data_title_content, -1);
+  $log .= "</ul></div>";
   return $log;
 }
 
