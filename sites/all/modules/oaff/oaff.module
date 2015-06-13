@@ -41,7 +41,7 @@ function oaff_menu() {
     'page callback' => 'oaff_node_svg',
     'page arguments' => array(1),
     'access callback' => 'oaff_access_by_node_type',
-    'access arguments' => array(1, array(1=>'oaff_doc', 2=>'oaff_virtdoc')),
+    'access arguments' => array(1, array(1=>'oaff_doc')),
     'weight' => 0,
     'type' => MENU_LOCAL_TASK,
     'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
@@ -1413,6 +1413,9 @@ function oaff_node_insert($node) {
     $location = $node->field_external['und']['0']['path'];
     $alias = oaff_get_path_info($location)['alias'];
     oaff_save_path($nid, $alias);
+    oaff_save_path($nid, $alias, 'omdoc');
+    oaff_save_path($nid, $alias, 'svg');
+    oaff_save_path($nid, $alias, 'source');
   }
 }
 
@@ -1426,17 +1429,15 @@ function oaff_save_path($nid, $path, $aspect = '') {
   if (substr($path, -1) == '/') {
     $path = substr($path, 0, -1);
   }
-  if ($aspect == '') {
-    $path_opt = array(
-      'source' => 'node/' . $nid,
-      'alias' => $path,
-    );  
-  } else {
-    $path_opt = array(
-      'source' => 'node/' . $nid . '/' . $aspect,
-      'alias' => $path . '!' . $aspect,
-    );
+  $source = 'node/' . $nid;
+  if ($aspect != '') {
+    $source = $source . '/' . $aspect;
+    $path = $path . '!' . $aspect; 
   }
+  $path_opt = array(
+    'source' => $source,
+    'alias' => $path,
+  );
   path_save($path_opt);
 }
 
@@ -1526,14 +1527,8 @@ function oaff_get_path_info($location) {
 function oaff_node_svg($node) {
   $nid = $node->nid;
   $location = $node->field_external['und']['0']['path'];
-  
   $alias = oaff_get_path_info($location)['alias'];
-  oaff_save_path($nid, $alias,'svg');
-
-  //drupal_add_js('scripts/svg-pan-zoom.js', 'file');
   oaff_set_breadcrumb($nid);
-
-  // can cause problems due to path !!!
   // script for zoom and pan
   $oaff_path = drupal_get_path('module', 'oaff');
   $jscript = file_get_contents($oaff_path . '/scripts/svg-pan-zoom.js');
@@ -1627,11 +1622,10 @@ function oaff_access_by_node_type($node, $node_types) {
 function oaff_node_omdoc($node) {
   $nid = $node->nid;
   $location = $node->field_external['und']['0']['path'];
-  $pathinfo = oaff_get_path_info($location);
-  $alias = oaff_get_path_info($location)['alias'];
-  oaff_save_path($nid, $alias,'omdoc');
   oaff_set_breadcrumb($nid);
-  $omdoc_location = $pathinfo['alias'];
+  // change path extension of file from .* to .omdoc
+  $slices = explode('.', strrev($location),2);
+  $omdoc_location = strrev($slices[1]) . '.omdoc';
   $omdoc = ""; //default
   if (planetary_repo_stat_file($omdoc_location)) { //omdoc exists
     $omdoc = planetary_repo_load_file($omdoc_location);
@@ -1642,9 +1636,6 @@ function oaff_node_omdoc($node) {
 function oaff_node_source($node) {
   $nid = $node->nid;
   $location = $node->field_external['und']['0']['path'];
-  $pathinfo = oaff_get_path_info($location);
-  $alias = oaff_get_path_info($location)['alias'];
-  oaff_save_path($nid, $alias,'source');
   oaff_set_breadcrumb($nid);
   $source = planetary_repo_load_file($location);
   return "<pre>\n" . $source . "\n</pre>";
