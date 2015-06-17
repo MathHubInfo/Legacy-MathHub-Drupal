@@ -13,8 +13,8 @@ var planetaryNavigationGlossary = {
   
 
     leftClick: function(target, JOBADInstance) {
-		if(target.hasAttribute('jobad:href') && target.hasAttribute('data-relative')) {
-			var uri = target.attr("jobad:href");
+		if(target.hasAttribute(mmtattr.symref) && target.hasAttribute('data-relative')) {
+			var uri = target.attr(mmtattr.symref);
 			var uriEnc = planetary.relNavigate(uri);
 		}
 		return false;
@@ -24,11 +24,11 @@ var planetaryNavigationGlossary = {
     contextMenuEntries: function(target, JOBADInstance) {
     	var res = {};
 
-		if (target.hasAttribute('jobad:href')) {			
+		if (target.hasAttribute(mmtattr.symref)) {			
 			var mr = $(target).closest('mrow');
 			var select = (mr.length === 0) ? target : mr[0];
 			mmt.setSelected(select);
-			var uri = target.attr('jobad:href');
+			var uri = target.attr(mmtattr.symref);
 			var matches = uri.match(/^(http[s]?:\/\/)?([^:\/\s]+)(.*)$/);
 			var comps = matches[3].split("/");
 			var group = comps[1]; //0 is empty string since matches[3] starts with '/'

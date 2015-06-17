@@ -14,8 +14,8 @@ var ontologyNavigation = {
     contextMenuEntries: function(target, JOBADInstance) {
     	var me = this;
     	var menu_entries = {};
-    	if (target.hasAttribute('jobad:href')) {
-			var uri = target.attr('jobad:href');
+    	if (target.hasAttribute(mmtattr.symref)) {
+			var uri = target.attr(mmtattr.symref);
 			menu_entries['Used In'] = me.getRelated(uri, qmt.tosubject("Includes"));
 			menu_entries['Uses'] = me.getRelated(uri, qmt.toobject("Includes"));
 		}

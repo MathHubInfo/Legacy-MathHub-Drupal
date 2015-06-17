@@ -15,11 +15,11 @@ var hovering = {
 
 	hoverText: function(target, JOBADInstance) {
 		//hover on OMS: show jobad:href and select the smallest proper superexpression
-		if (target.hasAttribute('jobad:href')) {			
+		if (target.hasAttribute(mmtattr.symref)) {			
 			var mr = $(target).closest('mrow');
 			var select = (mr.length == 0) ? target : mr[0];
 			mmt.setSelected(select);
-			return target.attr('jobad:href');
+			return target.attr(mmtattr.symref);
 		}
 		// hover on bracketed expression: select expression
 		if (mmt.getTagName(target) == 'mfenced') {
@@ -27,9 +27,9 @@ var hovering = {
 			return true;
 		}
 		// hover on variable: select declaration
-		if (target.hasAttribute('jobad:varref')) {
+		if (target.hasAttribute(mmtattr.varref)) {
 			var v = $(target).parents('mrow').children().filter(function() {
-                return $(this).attr('jobad:mmtref') == target.attr('jobad:varref');
+                return $(this).attr(mmtattr.position) == target.attr(mmtattr.varref);
 			})
 			mmt.setSelected(v[0]);
 			return true;

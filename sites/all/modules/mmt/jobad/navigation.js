@@ -48,7 +48,7 @@ var navigation = {
 		if(target.hasAttribute('foldable')) {
 			var content = $(target).parent().find('table').toggle();				
 		}
-		if (target.hasAttribute('jobad:href')) {
+		if (target.hasAttribute(mmtattr.symref)) {
 			var mr = $(target).closest('mrow');
 			var select = (mr.length == 0) ? target[0] : mr[0];
 			mmt.setSelected(select);
@@ -60,8 +60,8 @@ var navigation = {
 			return true;
 		}
 		// highlight variable declaration
-		if (target.hasAttribute('jobad:varref')) {
-			/* var v = $(target).parents('mrow').children().filter('[jobad:mmtref=' +  target.attr('jobad:varref') + ']');
+		if (target.hasAttribute(mmtattr.varref)) {
+			/* var v = $(target).parents('mrow').children().filter('[jobad:mmtref=' +  target.attr(mmtattr.varref) + ']');
 			   this.setSelected(v[0]);*/
 			alert("Unsupported");
 			return true;

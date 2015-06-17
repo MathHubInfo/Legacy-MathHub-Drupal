@@ -24,13 +24,13 @@ var interactiveViewing = {
 				res["open in new window"] = function() {mmt.openCurrent();};
 				//res["get OMDoc"] = mmt.openCurrentOMDoc();
 			}
-			var folded = $(mmt.focus).closest('.math-folded');
+			var folded = jQuery(mmt.focus).closest('.math-folded');
 			if (folded.length !== 0)
 				res.unfold = function(){folded.removeMClass('math-folded');};
 			else
-				res.fold = function(){$(mmt.focus).addMClass('math-folded');};
+				res.fold = function(){jQuery(mmt.focus).addMClass('math-folded');};
 			return res;
-		} else if ($(target).hasClass('folder')) {
+		} else if (jQuery(target).hasClass('folder')) {
 			return res;
 		} else {
 			return res;
@@ -41,8 +41,8 @@ var interactiveViewing = {
 	
 	/* highlights all occurrences of the current URI */
 	showOccurs : function (){
-		$('mo').filter(function(index){
-			return this.getAttribute('jobad:href') == mmt.currentURI;
+		jQuery('mo').filter(function(index){
+			return this.getAttribute(mmtattr.symref) == mmt.currentURI;
 		}).toggleMClass('math-occurrence');
 	},
 	
@@ -79,9 +79,9 @@ var interactiveViewing = {
 	setVisib : function(prop, val){
 		var root = mmt.focusIsMath ? mmt.focus : mmt.focus.parentNode;
 		if (val)
-			$(root).find('.' + prop).removeMClass(prop + '-hidden');
+			jQuery(root).find('.' + prop).removeMClass(prop + '-hidden');
 		if (!val)
-			$(root).find('.' + prop).addMClass(prop + '-hidden');
+			jQuery(root).find('.' + prop).addMClass(prop + '-hidden');
 	},
 	
 	visibSubmenu : function(prop){

@@ -34,8 +34,8 @@ var edit = {
 	edit : function(target) {
 		console.log("calling edit");
 		var math = this.findClosest(target);
-		var path = math.attr('jobad:owner');
-		var comp = math.attr('jobad:component');
+		var path = math.attr(mmtattr.owner);
+		var comp = math.attr(mmtattr.component);
 		var arr = path.split('?');
 		if (arr.length >= 2) {
     		url = "/:mmt?" + arr[0] + "?" + arr[1] + "?" ;
@@ -51,7 +51,7 @@ var edit = {
     			console.log(comp);
     			var math = null;
     			$("math").each(function(i,v) {
-    				if($(v).attr("jobad:owner") == path && $(v).attr("jobad:component") == comp) {
+    				if($(v).attr(mmtattr.owner) == path && $(v).attr(mmtattr.component) == comp) {
     					math = $(v).parent();
     				} 
     			});

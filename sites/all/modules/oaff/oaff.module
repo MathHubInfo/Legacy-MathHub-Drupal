@@ -608,7 +608,7 @@ function oaff_get_log_html($status) {
   }
 
   // creating log
-  $log = '<hr/> <div> <p> ' . $conv_status_catalog[$conversion_status] . ' <a style="cursor:pointer;" onclick="if ($(this).html() == \'Show Log\') {$(this).html(\'Hide Log\')} else {$(this).html(\'Show Log\')}; $(\'#oaff_error_log\' ).toggle( \'fold\' );" >Show Log</a> ';
+  $log = '<hr/> <div> <p> ' . $conv_status_catalog[$conversion_status] . ' <a style="cursor:pointer;" onclick="if (jQuery(this).html() == \'Show Log\') {jQuery(this).html(\'Hide Log\')} else {jQuery(this).html(\'Show Log\')}; jQuery(\'#oaff_error_log\' ).toggle( \'fold\' );" >Show Log</a> ';
   $log .= '</p> </div>';
   $log .= '<div id="oaff_error_log" style="display: none;"><ul>';
   foreach ($errors as $err_level) {

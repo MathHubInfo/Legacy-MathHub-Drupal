@@ -1,11 +1,11 @@
    /* Utility functions and state provided for MMT/OMDoc-based html documents */
 
-// the following functions $.fn.f add functionality to jQuery and can be used as $(...).f
+// the following functions jQuery.fn.f add functionality to jQuery and can be used as jQuery(...).f
 
 
 // contrary to the built-in jQuery analogues, these work for 'pref:name' attributes and math elements
 // do not replace calls to these function with the jQuery analogues!
-$.fn.hasAttribute = function(name) {
+jQuery.fn.hasAttribute = function(name) {
 	return (typeof this.attr(name) !== 'undefined' && this.attr(name) !== false);
 };
 
@@ -16,47 +16,47 @@ function getClassArray(elem) {
 };
 
 /* add a class cl to all matched elements */
-$.fn.addMClass = function(cl){
+jQuery.fn.addMClass = function(cl){
    this.each(function(){
       if (this.hasAttribute('class'))
-         $(this).attr('class', $(this).attr('class') + ' ' + cl);   
+         jQuery(this).attr('class', jQuery(this).attr('class') + ' ' + cl);   
       else
          this.setAttribute('class', cl);
    });
    return this;
 };
 /* remove a class cl from all matched elements */
-$.fn.removeMClass = function(cl){
+jQuery.fn.removeMClass = function(cl){
    this.each(function(){
       var classes = getClassArray(this);
       var newclasses = classes.filter(function(elem){return (elem !== cl) && (elem !== "")});
       var newclassesAttr = newclasses.join(' ');
       if (newclassesAttr == "")
-         $(this).removeAttr('class');
+         jQuery(this).removeAttr('class');
       else
          this.setAttribute('class', newclassesAttr);
    });
    return this;
 };
 /* toggle class cl in all matched elements */
-$.fn.toggleMClass = function(cl){
+jQuery.fn.toggleMClass = function(cl){
    this.each(function(){
       var classes = getClassArray(this);
       if (classes.indexOf(cl) == -1)
-         $(this).addMClass(cl);
+         jQuery(this).addMClass(cl);
       else
-         $(this).removeMClass(cl);
+         jQuery(this).removeMClass(cl);
    });
    return this;
 }
 /* keep elements that have class cl */
-$.fn.filterMClass = function(cl){
+jQuery.fn.filterMClass = function(cl){
    return this.filter(function(){
       var classes = getClassArray(this);
       return (classes.indexOf(cl) !== -1)
    });
 };
-// end $.fn.f functions
+// end jQuery.fn.f functions
 
 /* some common URIs */
 var uris = {
@@ -97,8 +97,8 @@ var mmt = {
 	
 	/* set focus, focusIsMath, currentURI, currentElement, currentComponent, currentPosition according to elem */
 	setCurrentPosition : function(elem){
-		this.target = target;
-	    var math = $(elem).closest('math')
+		// this.target = target;
+	    var math = jQuery(elem).closest('math')
 		this.focusIsMath = (math.length !== 0);
 		if (this.focusIsMath) {
 		   this.focus = this.getSelectedParent(elem);
@@ -113,9 +113,9 @@ var mmt = {
 		}
 		if (elem.hasAttribute(mmtattr.symref)) {
 			mmt.currentURI = elem.getAttribute(mmtattr.symref);
-		} else if ($(elem).parent().hasAttribute("xlink:href")) {
+		} else if (jQuery(elem).parent().hasAttribute("xlink:href")) {
 			// in SVG graphs, the parent carries the link, attribute currently for legacy SVG
-			mmt.currentURI = $(elem).parent().attr("xlink:href");
+			mmt.currentURI = jQuery(elem).parent().attr("xlink:href");
 		} else {
 			mmt.currentURI = null;
 		}
@@ -123,7 +123,7 @@ var mmt = {
 	
 	/* the active theory is used for operations that must be executed relative to a theory, e.g., parsing */
 	getActiveTheory : function() {
-	   return $('#parseForm #activetheory').val();
+	   return jQuery('#parseForm #activetheory').val();
 	},
 	/* sets the active theory
 	  @param uri any MMT URI (symbol part is ignored if present; no action if document URI)
@@ -133,8 +133,8 @@ var mmt = {
       if (arr[1] != "") {
          var thy = arr[0] + '?' + arr[1]
          this.activeTheory = thy;
-         $('#parseForm #activetheory').val(thy);
-		  $('#searchForm #theory').val(thy);
+         jQuery('#parseForm #activetheory').val(thy);
+		  jQuery('#searchForm #theory').val(thy);
 
 	  }
    },
@@ -186,10 +186,10 @@ var mmt = {
 			   function cont(data) {
 				   var serializer = new XMLSerializer();
 				   var xmlString = serializer.serializeToString(data);
-				   $(targetnode).append(xmlString);
+				   jQuery(targetnode).append(xmlString);
 				}
 				if (async == null) async = true;
-				$.ajax({  'type': "GET",
+				jQuery.ajax({  'type': "GET",
 					      'url': url,      
 						  'dataType': 'xml',
 						  'async': async,
@@ -203,16 +203,16 @@ var mmt = {
     */
    ajaxReplaceIn : function (url, targetid, async) {
 		function cont(data) {
-			var targetnode = $('#' + targetid).children();
+			var targetnode = jQuery('#' + targetid).children();
 			
 			// adapt code to ignore the graph 
 			var cont = data.firstChild;
-			$(cont).find(".graph").remove();
+			jQuery(cont).find(".graph").remove();
 			targetnode.replaceWith(cont);
 
 		}
 		if (async == null) async = true;
-		$.ajax({ 'url': url,
+		jQuery.ajax({ 'url': url,
 				 'dataType': 'xml',
 				 'async': async,
 				 'success': cont
@@ -224,7 +224,7 @@ var mmt = {
 	   if (elem.hasAttribute('jobad:load')) {
          var url = this.adaptMMTURI(elem.getAttribute('jobad:load'), '', true);
          var res = null;
-         $.ajax({ 'url': url,
+         jQuery.ajax({ 'url': url,
                 'dataType': 'xml',
                 'async': false,
                 'success': function cont(data) {res = data;}
@@ -269,7 +269,7 @@ var mmt = {
 	  - title bar should only show the cd and name component, but not the cdbase of the symbol href (full href should be shown as @title)
 	*/
 	setLatinDialog : function (content, title){
-		var dia = $("#latin-dialog");
+		var dia = jQuery("#latin-dialog");
 		dia.dialog('option', 'title', title);
 		dia[0].replaceChild(content, dia[0].firstChild);
 		dia.dialog('open');
@@ -285,34 +285,34 @@ var mmt = {
 	 * @returns the body of the inline box, to which further content can/should be added 
 	 */
 	createInlineBox: function(origin, title, width) {
-	    var tmp = $(origin).closest(".inlineBoxSibling");
+	    var tmp = jQuery(origin).closest(".inlineBoxSibling");
 	    var container = document.createElement('div');
 	    var outerDiv = document.createElement('div');
 	    var innerDiv = document.createElement('div');
-	    $(container).addClass("container-fluid")
-	    $(outerDiv).addClass("container-fluid")
-	    $(container).append(outerDiv)
-	    $(outerDiv).append(innerDiv)
+	    jQuery(container).addClass("container-fluid")
+	    jQuery(outerDiv).addClass("container-fluid")
+	    jQuery(container).append(outerDiv)
+	    jQuery(outerDiv).append(innerDiv)
 	    var heightParent;
 	    var targetParent;
 	    if (tmp.length === 0) {
 	    	
-	        var list = $("#main").children();
+	        var list = jQuery("#main").children();
 	        if (list.length === 0) {
-	        	targetParent = $("#main");
-	            $(container).insertAfter("#main");            
+	        	targetParent = jQuery("#main");
+	            jQuery(container).insertAfter("#main");            
 	        }
 	        else {
-	        	$(container).insertBefore(list[0]);
+	        	jQuery(container).insertBefore(list[0]);
 	        }        
 	    }
 	    else {
 	    	targetParent = tmp;
-	        $(targetParent).append(container);
+	        jQuery(targetParent).append(container);
 	    }
-	    var heightParent = $(targetParent).height();
+	    var heightParent = jQuery(targetParent).height();
 	    if (typeof width == 'string') {
-	        $(innerDiv).width(width)
+	        jQuery(innerDiv).width(width)
 	    }
 	    
 	    var btnDiv = document.createElement('div');
@@ -320,85 +320,85 @@ var mmt = {
 	    var contentDiv = document.createElement('div');
 	    var button_hide = document.createElement('button');
 	    var button_close = document.createElement('button');
-	    $(innerDiv).addClass("panel panel-default");
-	    $(innerDiv).addClass("bigDiv");
-	    $(titleDiv).addClass("bg-primary")
-	    $(btnDiv).addClass("panel-heading");
-	    $(contentDiv).addClass("contDiv");
-	    $(titleDiv).append(btnDiv);
-	    $(innerDiv).append(titleDiv);
-	    $(innerDiv).append(contentDiv);
-	    $(btnDiv).append("<b>" + title + "</b");
-	    $(btnDiv).append(button_close);
-	    $(btnDiv).append(button_hide);
-	    $(button_hide).addClass("btn btn-info btn-xs pull-right")
-	    $(button_close).addClass("btn btn-info btn-xs pull-right")
-	    $(button_hide).append(
+	    jQuery(innerDiv).addClass("panel panel-default");
+	    jQuery(innerDiv).addClass("bigDiv");
+	    jQuery(titleDiv).addClass("bg-primary")
+	    jQuery(btnDiv).addClass("panel-heading");
+	    jQuery(contentDiv).addClass("contDiv");
+	    jQuery(titleDiv).append(btnDiv);
+	    jQuery(innerDiv).append(titleDiv);
+	    jQuery(innerDiv).append(contentDiv);
+	    jQuery(btnDiv).append("<b>" + title + "</b");
+	    jQuery(btnDiv).append(button_close);
+	    jQuery(btnDiv).append(button_hide);
+	    jQuery(button_hide).addClass("btn btn-info btn-xs pull-right")
+	    jQuery(button_close).addClass("btn btn-info btn-xs pull-right")
+	    jQuery(button_hide).append(
 	        "<span class=\" minus glyphicon glyphicon-minus-sign\" aria-hidden=\"true\"></span>"
 	    );
-	    $(button_close).append(
+	    jQuery(button_close).append(
 	        "<span class=\"glyphicon glyphicon-remove-sign\" aria-hidden=\"true\"></span>"
 	    )
 	    //TODO use snap options to improve dragging behavior
-	    $(outerDiv).draggable({
+	    jQuery(outerDiv).draggable({
 	        handle: titleDiv,
 	        cursor: "move"
 	    });
-	    $(innerDiv).resizable({
+	    jQuery(innerDiv).resizable({
 	        minHeight: 50,
 	        minWidth: 250
 	    })
-	    var h = $(titleDiv).height();
-	    var H = $(innerDiv).height();
+	    var h = jQuery(titleDiv).height();
+	    var H = jQuery(innerDiv).height();
 	   
-	    $(button_close).click(function() {
-	        var temp = $(button_close).closest(".panel")[0];
-	        $(temp).remove();
+	    jQuery(button_close).click(function() {
+	        var temp = jQuery(button_close).closest(".panel")[0];
+	        jQuery(temp).remove();
 	    });
 	    
 	    var minus = true
 	    var newH = 0
-	    $(button_hide).click(function() {
+	    jQuery(button_hide).click(function() {
 	    	var H ;
 	        if (minus) {
-	        	H = $(innerDiv).height();
+	        	H = jQuery(innerDiv).height();
 		    	newH = H
-	        	var h = $(titleDiv).height();
-	    	    $(contentDiv).hide();
-		    	$(innerDiv).height(h)		        
-	            $(".minus").switchClass("glyphicon-minus-sign",
+	        	var h = jQuery(titleDiv).height();
+	    	    jQuery(contentDiv).hide();
+		    	jQuery(innerDiv).height(h)		        
+	            jQuery(".minus").switchClass("glyphicon-minus-sign",
 	                "glyphicon-plus-sign");
 	            minus = false
 	        }
 	        else {
-	        	$(innerDiv).height(newH)
-	        	$(contentDiv).show();	        
-	            $(".minus").switchClass("glyphicon-plus-sign",
+	        	jQuery(innerDiv).height(newH)
+	        	jQuery(contentDiv).show();	        
+	            jQuery(".minus").switchClass("glyphicon-plus-sign",
 	                "glyphicon-minus-sign");
 	            minus = true
 	        }
 	    });
 	    // detect if element is dragged
 	    var isDragging = false;
-	    $(titleDiv)
+	    jQuery(titleDiv)
 	    .mousedown(function() {
-	        $(window).mousemove(function() {
+	        jQuery(window).mousemove(function() {
 	            isDragging = true;
-		    	$(container).height(0);
-	            $(window).unbind("mousemove");
+		    	jQuery(container).height(0);
+	            jQuery(window).unbind("mousemove");
 	        });
 	    })
 	    .mouseup(function() {
 	        var wasDragging = isDragging;
 	        isDragging = false;
-	        $(window).unbind("mousemove");
+	        jQuery(window).unbind("mousemove");
 	    });
 	    
 	    // scroll to the new inline box
-	    var el = $(contentDiv);
+	    var el = jQuery(contentDiv);
 	    var elOffset = el.offset().top;
 	    var elHeight = el.height();
-	    var windowHeight = $(window).height();
+	    var windowHeight = jQuery(window).height();
 	    var offset;
 	    if (elHeight < windowHeight) {
 	        offset = elOffset - ((windowHeight / 2) - (elHeight / 2));
@@ -407,7 +407,7 @@ var mmt = {
 	        offset = elOffset;
 	    }
 	    var speed = 400;
-	    $('html, body').animate({
+	    jQuery('html, body').animate({
 	        scrollTop: offset
 	    }, speed);
 	    return contentDiv;
@@ -415,7 +415,7 @@ var mmt = {
 	
 	
 	getSelectedParent : function (elem){
-		var s = $(elem).parents().andSelf().filterMClass('math-selected');
+		var s = jQuery(elem).parents().andSelf().filterMClass('math-selected');
 		if (s.length == 0)
 			return elem;
 		else
@@ -423,16 +423,16 @@ var mmt = {
 	},
 	
 	unsetSelected : function(){
-		$('.math-selected').removeMClass('math-selected');
+		jQuery('.math-selected').removeMClass('math-selected');
 	},
 	
 	isSelected : function(target) {
-		$(target).filterMClass("math-selected").length !== 0;
+		jQuery(target).filterMClass("math-selected").length !== 0;
 	},
 	
 	setSelected : function(target){
 		this.unsetSelected();
-		$(target).addMClass('math-selected');
+		jQuery(target).addMClass('math-selected');
 	},
 	
 	
@@ -513,6 +513,13 @@ var qmt = {
 	tuple       : function(os) {return XML.elem('tuple', os);},
 	projection  : function(o, i) {return XML.elem('projection', o, 'index', i);},
 	let         : function(v, i) {return XML.elem('let', v + i);},
+	
+	//TODO merge back/ complete QMT JS API in the MMT code
+	toobject    : function(rel) {return XML.elem('toobject', null, 'relation', rel);},
+	tosubject    : function(rel) {return XML.elem('tosubject', null, 'relation', rel);},
+	related    : function(to, by) {return XML.elem('related', to + by);},
+	//
+
 	parse       : qmtAux.extensionFunction('parse'),
 	infer       : qmtAux.extensionFunction('infer'),
 	simplify    : qmtAux.extensionFunction('simplify'),
@@ -523,7 +530,7 @@ var qmt = {
 	/* executes a QMT query (as constructed by helper functions) via ajax and runs a continuation on the result */
     exec : function (q, cont) {
 	   var qUrl = mmt.makeURL('/:query');
-		$.ajax({
+		jQuery.ajax({
 			url:qUrl, 
 			type:'POST',
 			data:q,
@@ -545,7 +552,7 @@ var action = {
 
 	/* executes an action (as constructed by helper functions) via ajax and runs a continuation on the result */
 	exec : function(a, cont) {
-		$.ajax({
+		jQuery.ajax({
 			url: mmt.makeURL('/:action') + "?" + a,
             dataType : 'text',
 			success:cont,
@@ -554,14 +561,14 @@ var action = {
 
  };
 
-$(function(){$('#latin-dialog').dialog({ autoOpen: false})});
+jQuery(function(){jQuery('#latin-dialog').dialog({ autoOpen: false})});
 
 /** function called by generated interaction elements */
 var interaction = {
    /** click on a togglable element */
    toggleClick: function(elem,label){
       var cls = label != null ? label : 'toggleTarget';
-      $(elem).parent().closest('div').find('.' + cls).toggle();
+      jQuery(elem).parent().closest('div').find('.' + cls).toggle();
    },
    /** click on a search result */
    resultClick: function(p){
