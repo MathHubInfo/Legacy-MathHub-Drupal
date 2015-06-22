@@ -34,6 +34,21 @@ mi {
     font-weight: normal;
 }
 
+.dref .math-selected:hover {
+    text-decoration: underline;
+    color: #2a6496;
+    cursor: pointer; 
+    cursor: hand;
+}
+
+.dref .math-selected {
+    background: none;
+}
+
+.dref {
+    color: #428bca;
+}
+
 .math-selected {
     background: silver;
 }

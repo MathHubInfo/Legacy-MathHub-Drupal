@@ -30,7 +30,7 @@ var ontologyNavigation = {
     			 function(data) { 
     				$(data).find("uri").each(function (i, val) {
     					var path = $(val).attr('path');
-    					related_uris[path] = function() {planetary.navigate(path);};
+    					related_uris[planetary.URIToURL(path)] = function() {planetary.navigate(path);};
     				});
     			 },
     			 false);
