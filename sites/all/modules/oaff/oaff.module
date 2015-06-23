@@ -607,27 +607,32 @@ function oaff_get_log_html($status) {
     $conversion_status = max($conversion_status, $msg->type);
   }
 
-  // creating log
-  $log = '<hr/> <div> <p> ' . $conv_status_catalog[$conversion_status] . ' <a style="cursor:pointer;" onclick="if (jQuery(this).html() == \'Show Log\') {jQuery(this).html(\'Hide Log\')} else {jQuery(this).html(\'Show Log\')}; jQuery(\'#oaff_error_log\' ).toggle( \'fold\' );" >Show Log</a> ';
-  $log .= '</p> </div>';
-  $log .= '<div id="oaff_error_log" style="display: none;"><ul>';
-  foreach ($errors as $err_level) {
-    foreach($err_level as $msg) {
-      $log .= "<li>";
-      $srcref_msg = '';
-      if ($msg->srcref) {
-        $srcref_msg .= 'at ' . $msg->srcref;
-      }
+  // if success don't show log
+  if ($conversion_status == 0) {
+    $log = '<hr/> <div> <p> ' . $conv_status_catalog[$conversion_status] .'</p></div>';
+  } else {
+    // creating log
+    $log = '<hr/> <div> <p> ' . $conv_status_catalog[$conversion_status] . ' <a style="cursor:pointer;" onclick="if (jQuery(this).html() == \'Show Log\') {jQuery(this).html(\'Hide Log\')} else {jQuery(this).html(\'Show Log\')}; jQuery(\'#oaff_error_log\' ).toggle( \'fold\' );" >Show Log</a> ';
+    $log .= '</p> </div>';
+    $log .= '<div id="oaff_error_log" style="display: none;"><ul>';
+    foreach ($errors as $err_level) {
+      foreach($err_level as $msg) {
+        $log .= "<li>";
+        $srcref_msg = '';
+        if ($msg->srcref) {
+          $srcref_msg .= 'at ' . $msg->srcref;
+        }
 
-      $short_msg = check_plain($msg->short_msg);
-      $long_msg = check_plain($msg->long_msg);
-      $color = $color_catalog[$msg->type];
-      $log .= "<p><b>$msg->compiler</b> <u style=\"color:{$color}\"> {$error_catalog[$msg->type]} $srcref_msg </u> : $short_msg </p>";
-      $log .= "<pre> $long_msg </pre>";
-      $log .= "</li>"; 
+        $short_msg = check_plain($msg->short_msg);
+        $long_msg = check_plain($msg->long_msg);
+        $color = $color_catalog[$msg->type];
+        $log .= "<p><b>$msg->compiler</b> <u style=\"color:{$color}\"> {$error_catalog[$msg->type]} $srcref_msg </u> : $short_msg </p>";
+        $log .= "<pre> $long_msg </pre>";
+        $log .= "</li>"; 
+      }
     }
+    $log .= "</ul></div>";
   }
-  $log .= "</ul></div>";
   return $log;
 }
 
