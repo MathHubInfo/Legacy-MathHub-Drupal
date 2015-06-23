@@ -17,6 +17,12 @@ var planetaryNavigation = {
 			var uri = target.attr(mmtattr.symref);
 			var uriEnc = planetary.relNavigate(uri);
 		}
+
+		var flag = target.hasAttribute(mmtattr.symref);
+		if(target.parent().hasAttribute(mmtattr.symref)) {
+			var url = planetary.URIToURL(target.parent().attr(mmtattr.symref));
+			window.location = url;
+		}
 		return false;
     },
 

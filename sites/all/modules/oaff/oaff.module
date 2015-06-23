@@ -1533,17 +1533,19 @@ function oaff_node_svg($node) {
   $oaff_path = drupal_get_path('module', 'oaff');
   $jscript = file_get_contents($oaff_path . '/scripts/svg-pan-zoom.js');
   
-  $mmt_path = drupal_get_path('module', 'mmt');
-
-  // JOBAD js
-  jobad_add_module($mmt_path . '/jobad/planetary-navigation-glossary.js', "kwarc.mmt.planetary.navigation.glossary");
-  jobad_add_module($mmt_path . '/jobad/hovering.js', "kwarc.mmt.hovering");
-  jobad_add_module("/sites/all/libraries/jobad/modules/core/mathjax.mathjax.js", "mathjax.mathjax");
-
-  // mmt js libs
-  drupal_add_js($mmt_path . '/utils/mmt-html.js', 'file', array('cache' => false));
-  drupal_add_js($mmt_path . '/utils/mmt-planetary.js', 'file', array('cache' => false));
-  drupal_add_js($mmt_path . '/utils/mathml.js', 'file', array('cache' => false));
+  // oaff_initialize
+  $location = $node->field_external['und']['0']['path'];
+  $pathinfo = oaff_get_path_info($location);
+  $archive = $pathinfo['archive'];
+  $group = $pathinfo['group'];
+  $rel_path = $pathinfo['rel_path'];
+  $status = oaff_get_errors($node->nid);
+  //adding data as js variables (used by JS/JOBAD modules)
+  drupal_add_js("var oaff_node_group = '$group';", "inline");
+  drupal_add_js("var oaff_node_archive = '$archive';", "inline");
+  drupal_add_js("var oaff_node_rel_path = '$rel_path';", "inline");
+  mmt_initialize();
+  //
 
   // modules
   $inst_id = oaff_initialize();

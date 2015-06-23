@@ -113,9 +113,9 @@ var mmt = {
 		}
 		if (elem.hasAttribute(mmtattr.symref)) {
 			mmt.currentURI = elem.getAttribute(mmtattr.symref);
-		} else if (jQuery(elem).parent().hasAttribute("xlink:href")) {
+		} else if (jQuery(elem).parent().hasAttribute(mmtattr.symref)) {
 			// in SVG graphs, the parent carries the link, attribute currently for legacy SVG
-			mmt.currentURI = jQuery(elem).parent().attr("xlink:href");
+			mmt.currentURI = jQuery(elem).parent().attr(mmtattr.symref);
 		} else {
 			mmt.currentURI = null;
 		}

@@ -105,3 +105,8 @@ span.keyword:hover {
 span.keyword:active {
   cursor: progress;
 }
+
+g a text:hover {
+  cursor: pointer; 
+  cursor: hand;
+}
