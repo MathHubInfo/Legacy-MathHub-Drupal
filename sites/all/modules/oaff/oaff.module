@@ -1292,16 +1292,15 @@ function oaff_set_lang_groups($groups) {
 
 /**
  * function to set breadcrumb when viewing oaff nodes
- * adds, in order, links to OAFF ancestor nodes to the native drupal breadcrump
+ * adds, in order, links to OAFF ancestor nodes to the native drupal breadcrumb
  * @param $nid the id of the node for which to construct breadcrumb
+ * @param $extra_pids array of node ids the links of which are added to the breadcrumb
  */
-function oaff_set_breadcrumb($nid) {
+function oaff_set_breadcrumb($nid, $extra_pids = array()) {
   $oaff_config = variable_get('oaff_config');
   $l_nid = $oaff_config['libraries_nid'];
-
   $found_root = false;
-  $pids = array();
-  // $pids[] = $nid; 
+  $pids = $extra_pids;
   while (!$found_root) {
     $last = $nid;
     if (count($pids) > 0) {
@@ -1332,10 +1331,7 @@ function oaff_set_breadcrumb($nid) {
     $title = $result['title'];
     $bc_entries[] =  '<a href="/' . $path . '">' . $title . '</a>';
   }
-  $breadcrumb = drupal_get_breadcrumb();
-  foreach ($breadcrumb as $entry) {
-    $bc_entries[] = $entry;
-  }
+  $bc_entries[] = '<a href="/">Home</a>';
   $new_bc = array_reverse($bc_entries);
   drupal_set_breadcrumb($new_bc);
 }
@@ -1528,12 +1524,15 @@ function oaff_get_path_info($location) {
   return $oaff_path_info;
 }
 
-// returns SVG of the current node
+/**
+* Function that returns formated SVG for the given node that can be panned and zoomed
+* @param $node The node to generate SVG for
+*/
 function oaff_node_svg($node) {
   $nid = $node->nid;
   $location = $node->field_external['und']['0']['path'];
   $alias = oaff_get_path_info($location)['alias'];
-  oaff_set_breadcrumb($nid);
+  oaff_set_breadcrumb($nid, array($nid));
   // script for zoom and pan
   $oaff_path = drupal_get_path('module', 'oaff');
   $jscript = file_get_contents($oaff_path . '/scripts/svg-pan-zoom.js');
@@ -1607,7 +1606,11 @@ function oaff_node_svg($node) {
   }
 }
 
-// cleans header of SVG and replaces it to allow pan and zoom
+
+/**
+* Returns SVG as a string where header is replaced to allow panning and zoom functionality
+* @param $svg SVG as a string
+*/
 function oaff_svg_clean($svg) {
   $out = substr($svg, strpos($svg, '<svg'));
   $out = substr($out, strpos($out, '>')+1);
@@ -1618,18 +1621,25 @@ function oaff_svg_clean($svg) {
   return $out;
 }
 
-// returns true if the current type of node allowed access
+/**
+* Returns true if access is allowed to the current node
+* @param $node The node to check access for
+* @param $node_types Array of node types that can be accessed
+*/
 function oaff_access_by_node_type($node, $node_types) {
   if (array_search($node->type, $node_types) != false) 
     return true;
   return false;
 }
 
-// returns omdoc of the node, if exists
+/**
+* Generates OMDoc of the node
+* @param $node The node to get OMDoc for
+*/
 function oaff_node_omdoc($node) {
   $nid = $node->nid;
   $location = $node->field_external['und']['0']['path'];
-  oaff_set_breadcrumb($nid);
+  oaff_set_breadcrumb($nid, array($nid));
   // change path extension of file from .* to .omdoc
   $slices = explode('.', strrev($location),2);
   $omdoc_location = strrev($slices[1]) . '.omdoc';
@@ -1640,10 +1650,14 @@ function oaff_node_omdoc($node) {
   return "<pre>\n" . check_plain($omdoc) . "\n</pre>";
 }
 
+/**
+* Returns source code of the document of the node
+* @param $node The node to get source code for
+*/
 function oaff_node_source($node) {
   $nid = $node->nid;
   $location = $node->field_external['und']['0']['path'];
-  oaff_set_breadcrumb($nid);
+  oaff_set_breadcrumb($nid, array($nid));
   $source = planetary_repo_load_file($location);
   return "<pre>\n" . $source . "\n</pre>";
 }
