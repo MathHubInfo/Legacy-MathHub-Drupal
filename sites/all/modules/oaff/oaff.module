@@ -984,7 +984,6 @@ function oaff_crawler_update_source_folder($group, $archive_path, $archive_id, $
   $folder_path = oaff_join_path(array($group, $archive_path, $dimension, $rel_path));
   $cids = array();
   $lang_groups = array();
-
   $items = planetary_repo_list($folder_path);
   foreach ($items as $item) {
     if ($item[0] != '.' && $item != "all.tex" && $item != "localpaths.tex") { // ignoring hidden files and folders, 
@@ -992,7 +991,7 @@ function oaff_crawler_update_source_folder($group, $archive_path, $archive_id, $
       $item_path = oaff_join_path(array($folder_path, $item));
       if (planetary_repo_is_dir($item_path)) {
         $frel_path = oaff_join_path(array($rel_path, $item));
-        $fcids = oaff_crawler_update_source_folder($group, $archive_path, $archive_id, $dimension, $frel_path);
+        $fcids = oaff_crawler_update_source_folder($group, $archive_path, $archive_id, $frel_path);
         $fid = oaff_make_folder_node($group, $archive_path, $archive_id, $dimension, $frel_path); 
         oaff_set_children($fid, $fcids);                
         $cids[] = $fid;
@@ -1148,7 +1147,6 @@ function oaff_make_file_node($group, $archive_path, $archive_id, $dimension, $re
   $fpath = oaff_join_path(array($group, $archive_path, $dimension, $rel_path, $item));
   $fpath_info = oaff_get_path_info($fpath);
   $dpath = $fpath_info['dpath'];
-
   $node_path = drupal_lookup_path('source', $fpath_info['alias']);
   if (!$node_path) { // node doesn't exist so we create it
     $nid = oaff_create_node($module, $lang, $format, $dpath, $fpath, $node_type);   
@@ -1498,20 +1496,18 @@ function oaff_get_path_info($location) {
   $oaff_path_info['dimension'] = $loc_segs[2];
   $oaff_path_info['rel_parent'] = oaff_join_path(array_slice($loc_segs, 3, -1));
 
-  $alias = $location; //default
-  $omdocName = $module; //default
+  $oaffName = $module; //default
   if ($module != $filename) { //there is an extension
-    $omdocName .= '.omdoc';
+    $oaffName .= '.omdoc';
   }
 
-  if (isset($pathinfo['extension'])) {
-    // removing 'source' and changing extension to .omdoc
-    $alias = oaff_join_path(array($oaff_path_info['group'], $oaff_path_info['archive'], $oaff_path_info['rel_parent'], $omdocName)); 
-  }
+  // removing 'source' and changing extension to .omdoc
+  $alias = oaff_join_path(array($oaff_path_info['group'], $oaff_path_info['archive'], $oaff_path_info['rel_parent'], $oaffName)); 
+  
   $oaff_path_info['alias'] = $alias;
   $frag_segs = array_slice($loc_segs, 3);
   if (count($frag_segs) > 0) {
-    $frag_segs[count($frag_segs) - 1] = $omdocName;
+    $frag_segs[count($frag_segs) - 1] = $oaffName;
   }
   $frag_path = oaff_join_path($frag_segs);
   $oaff_path_info['rel_path'] = $frag_path;
