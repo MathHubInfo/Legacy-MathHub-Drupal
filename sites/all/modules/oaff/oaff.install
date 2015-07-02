@@ -132,7 +132,7 @@ function oaff_install() {
   $extensions_s = variable_get("oaff_format_extensions", '');
   $logging = variable_get("oaff_logging_enabled", false);
   oaff_config_set($formats_s, $node_types_s, $extensions_s, $logging);
-  
+  oaff_create_text_format();
   drupal_set_message("Installed OAFF");
 }
 
@@ -308,4 +308,82 @@ function oaff_schema() {
     'primary key' => array('mid'),  
   );
   return $schema;
+}
+
+/**
+* Create sTeX text format 
+*/
+function oaff_create_text_format() {
+  $format_name = 'sTeX';
+  $format_format = str_replace(' ', '_', strtolower($format_name));
+  $format = array(
+    'format' => $format_format,
+    'name' => $format_name,
+    'filters' => array(
+      'mmt-compilation' => array(
+        'status' => 1,
+        'settings' => array('mmt_format' => 'stex',),
+        'weight' => -47,
+      ),
+      'filter_autop' => array(
+        'status' => 0,
+        'weight' => -45,
+      ),
+      'filter_html' => array(
+        'status' => 0,
+        'settings' => array(
+          "allowed_html" => "<a> <em> <strong> <cite> <blockquote> <code> <ul> <ol> <li> <dl> <dt> <dd>",
+          "filter_html_help" => "filter_html_nofollow",
+          0,
+        ),
+        'weight' => -50,
+      ),
+      'filter_htmlcorrector' => array(
+        'status' => 0,
+        'settings' => array(),
+        'weight' => -43, 
+      ),
+      'filter_html_escape' => array(
+        'status' => 0,
+        'weight' => -49,
+      ),
+      'filter_url' => array(
+        'status' => 0,
+        'settings' => array(
+          'filter_url_length' => 72,
+        ),
+        'weight' => -44,
+      ),
+      'local-compilation' => array(
+        'status' => 1,
+        'settings' => array(
+          'latexml_profile' => 'stex-module',
+          'latexml_preamble' => '',
+        ),
+        'weight' => -48,
+      ),
+      'mmt-presentation' => array(
+        'status' => 1,
+        'settings' => array(
+          'mmt_style' => 'planetary',
+        ),
+        'weight' => -46,
+      ),
+    ),
+  );
+  $format = (object) $format;
+  filter_format_save($format);
+
+  /*
+  // to add administrator to roles
+  db_insert('role_permission')
+  ->fields(array(
+    'rid' => 3,
+    'permission' => 'use text format ' . $format_name,
+    'module' => 'filter',
+  ))->execute();*/
+
+  drupal_set_message(t('A <a href="@php-code">' 
+    . $format->name . '</a> text format has been created.', 
+    array('@php-code' => url('admin/config/content/formats/' . $format->format))));
 }
