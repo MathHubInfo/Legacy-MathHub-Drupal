@@ -12,7 +12,7 @@ var interactiveViewing = {
 	
 	contextMenuEntries: function(target, JOBADInstance) {
 		mmt.setCurrentPosition(target.get(0));
-		var res = this.visibMenu();
+		var res = {"Toggle visibility":this.visibMenu()};
 		if (mmt.focusIsMath) {
 			var me = this;
 			res["infer type"] = me.inferType;

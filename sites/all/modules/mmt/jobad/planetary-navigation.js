@@ -36,40 +36,42 @@ var planetaryNavigation = {
 			var uri = target.attr(mmtattr.symref);
 			var me = this;
 			res['Go To Declaration'] = function() {planetary.navigate(uri);};
-			res['Show Definition'] = function() {
-				$.ajax({ 
-				  'url': mmtUrl + "/:planetary/getRelated",
-   	  			  'type' : 'POST',
-			      'data' : '{ "subject" : "' + uri + '",' + 
-			      	'"relation" : "isDefinedBy",' + 
-			        '"return" : "planetary"}',
-			       'dataType' : 'html',
-			       'processData' : 'false',
-	       			'contentType' : 'text/plain',
-	              'crossDomain': true,
-                  'success': function cont(data) {
-                  	
-          			$('<div>')
-          				.addClass('modal fade bs-example-modal-lg')
-          				.attr({
-          					'tabindex':'-1', 
-          					'role':"dialog"
-          				})
-      				.append(
-      					$('<div>')
-  						.addClass("modal-dialog modal-lg").css('max-width','80%')
-      					.append(
-      						$('<div>')
-      							.addClass("modal-content")
-      							.html(data)
-      					)
-      				).appendTo('body').modal();
-                  },
-                  'error' : function( reqObj, status, error ) {
-					console.log( "ERROR:", error, "\n ",status );
-		    	  },
-                });
-			};
+			if (uri.match(/\?/g).length >= 2) {	
+				res['Show Definition'] = function() {
+					$.ajax({ 
+					  'url': mmtUrl + "/:planetary/getRelated",
+	   	  			  'type' : 'POST',
+				      'data' : '{ "subject" : "' + uri + '",' + 
+				      	'"relation" : "isDefinedBy",' + 
+				        '"return" : "planetary"}',
+				       'dataType' : 'html',
+				       'processData' : 'false',
+		       			'contentType' : 'text/plain',
+		              'crossDomain': true,
+	                  'success': function cont(data) {
+	                  	
+	          			$('<div>')
+	          				.addClass('modal fade bs-example-modal-lg')
+	          				.attr({
+	          					'tabindex':'-1', 
+	          					'role':"dialog"
+	          				})
+	      				.append(
+	      					$('<div>')
+	  						.addClass("modal-dialog modal-lg").css('max-width','80%')
+	      					.append(
+	      						$('<div>')
+	      							.addClass("modal-content")
+	      							.html(data)
+	      					)
+	      				).appendTo('body').modal();
+	                  },
+	                  'error' : function( reqObj, status, error ) {
+						console.log( "ERROR:", error, "\n ",status );
+			    	  },
+	                });
+				};
+			}
 		}
 		return res;
 	},

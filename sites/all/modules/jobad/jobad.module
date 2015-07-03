@@ -137,7 +137,6 @@ function jobad_load_module($jobad_instance, $module_id, $params) {
  * @param $where Where to put the JOABD Instance. 
  * @return $name the id (name) of the jobad instance
  */
-
 function jobad_init_instance($nr, $where) {
     //inline
   $name = 'JOBAD' . $nr;
@@ -149,8 +148,6 @@ function jobad_init_instance($nr, $where) {
     ';
     
   //loading modules
-  $str .= jobad_register_module("sites/all/libraries/jobad/modules/core/jobad/jobad.config.js");
-  $str .= jobad_load_module($name, "jobad.config", array());
   $modules = variable_get('JOBADModulesArray');
     foreach($modules as $id => $options) {
     $str = $str . '    ' . jobad_load_module($name, $id, $options[1]);
@@ -162,4 +159,9 @@ function jobad_init_instance($nr, $where) {
 
   drupal_add_js($str, array('type' => 'inline', "weight" => 25));
   return $name;
+}
+
+
+function jobad_load_config_module($params = array()) {
+  jobad_add_module("sites/all/libraries/jobad/modules/core/jobad/jobad.config.js", "jobad.config", $params);
 }

@@ -102,10 +102,12 @@ var ontologyNavigation = {
         for (var key in uris) {
             temp_uris[key] = uris[key];
             count++;
-            if (count == 1) 
-                name = key.charAt(0) + " - ";
+            if (count == 1) {
+                name = key.split("/").slice(-1)[0].charAt(0) + " - ";
+                console.log(key.split("/").slice(-1));
+            }    
             else if (count == 10) {
-                name += key.charAt(0);
+                name += key.split("/").slice(-1)[0].charAt(0);
                 result[name] = temp_uris;
                 temp_uris = {};
                 count = 0;

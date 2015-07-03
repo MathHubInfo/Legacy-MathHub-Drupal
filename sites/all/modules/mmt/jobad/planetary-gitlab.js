@@ -18,9 +18,11 @@ var planetaryGitlab = {
 		var blob_url = 'http://gl.mathhub.info/' + oaff_node_group  + "/" + oaff_node_archive + "/blob/master/source/" + tex_path;
 		var blame_url = 'http://gl.mathhub.info/' + oaff_node_group  + "/" + oaff_node_archive + "/blame/master/source/" + tex_path;
 		var res = {
-			'View Source' : function() {window.open(blob_url, '_blank');},
-			'View Change History' : function() {window.open(blame_url, '_blank');},
-			'View Graph' : function() {$('#svg_modal').modal()},
+			'View Source':			
+			{
+				'Raw' : function() {window.open(blob_url, '_blank');},
+				'History' : function() {window.open(blame_url, '_blank');},
+			},
 		};
 		return res;
 	},
