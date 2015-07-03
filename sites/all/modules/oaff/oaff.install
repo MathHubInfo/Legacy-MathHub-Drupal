@@ -132,7 +132,29 @@ function oaff_install() {
   $extensions_s = variable_get("oaff_format_extensions", '');
   $logging = variable_get("oaff_logging_enabled", false);
   oaff_config_set($formats_s, $node_types_s, $extensions_s, $logging);
-  oaff_create_text_format();
+  $stex_filters = array(
+    'local-compilation' => array(
+      'status' => 1,
+      'settings' => array(
+        'latexml_profile' => 'stex-module',
+        'latexml_preamble' => '',
+      ),
+      'weight' => -48,
+    ),
+    'mmt-compilation' => array(
+      'status' => 1,
+      'settings' => array('mmt_format' => 'stex',),
+      'weight' => -47,
+    ),
+    'mmt-presentation' => array(
+      'status' => 1,
+      'settings' => array(
+        'mmt_style' => 'planetary',
+      ),
+      'weight' => -46,
+    ),
+  );
+  oaff_create_text_format('sTeX', $stex_filters, array(3));
   drupal_set_message("Installed OAFF");
 }
 
@@ -154,7 +176,7 @@ function oaff_uninstall() {
   foreach ($nids as $nid) {
     node_delete($nid);
   }
-
+  oaff_delete_text_format('sTeX');
   drupal_set_message("Uninstalled OAFF");
 }
 
@@ -311,79 +333,71 @@ function oaff_schema() {
 }
 
 /**
-* Create sTeX text format 
+* Create text format 
+* @param $format_name The name of text format to create
+* @param $filters Filters to activate for this format, array(filter name => params)
+*   params -- associative array
+*     status => integer -- 0 - inactive, 1 - active
+*     weigth => integer -- (optional) 
+*     settings => array -- params depending on filter
+* @param $roles Array of rids of user roles who will have access to this format
 */
-function oaff_create_text_format() {
-  $format_name = 'sTeX';
+function oaff_create_text_format($format_name, $filters, $roles) {
   $format_format = str_replace(' ', '_', strtolower($format_name));
   $format = array(
     'format' => $format_format,
     'name' => $format_name,
-    'filters' => array(
-      'mmt-compilation' => array(
-        'status' => 1,
-        'settings' => array('mmt_format' => 'stex',),
-        'weight' => -47,
-      ),
-      'filter_autop' => array(
-        'status' => 0,
-        'weight' => -45,
-      ),
-      'filter_html' => array(
-        'status' => 0,
-        'settings' => array(
-          "allowed_html" => "<a> <em> <strong> <cite> <blockquote> <code> <ul> <ol> <li> <dl> <dt> <dd>",
-          "filter_html_help" => "filter_html_nofollow",
-          0,
-        ),
-        'weight' => -50,
-      ),
-      'filter_htmlcorrector' => array(
-        'status' => 0,
-        'settings' => array(),
-        'weight' => -43, 
-      ),
-      'filter_html_escape' => array(
-        'status' => 0,
-        'weight' => -49,
-      ),
-      'filter_url' => array(
-        'status' => 0,
-        'settings' => array(
-          'filter_url_length' => 72,
-        ),
-        'weight' => -44,
-      ),
-      'local-compilation' => array(
-        'status' => 1,
-        'settings' => array(
-          'latexml_profile' => 'stex-module',
-          'latexml_preamble' => '',
-        ),
-        'weight' => -48,
-      ),
-      'mmt-presentation' => array(
-        'status' => 1,
-        'settings' => array(
-          'mmt_style' => 'planetary',
-        ),
-        'weight' => -46,
-      ),
-    ),
+    'filters' => $filters,
   );
   $format = (object) $format;
+  // save format
   filter_format_save($format);
-
-  /*
-  // to add administrator to roles
-  db_insert('role_permission')
-  ->fields(array(
-    'rid' => 3,
-    'permission' => 'use text format ' . $format_name,
-    'module' => 'filter',
-  ))->execute();*/
+  
+  // give permission to allowed users
+  // use direct access to database due to 
+  // absence of drupal built in function
+  foreach ($roles as $key => $role) {
+    db_merge('role_permission')
+    ->key(array(
+      'rid' => $role,
+      'permission' => 'use text format ' . $format_format,
+    ))
+    ->fields(array(
+      'module' => 'filter',
+    ))
+    ->execute();
+  }
+  
 
   drupal_set_message(t('A <a href="@php-code">' 
     . $format->name . '</a> text format has been created.', 
     array('@php-code' => url('admin/config/content/formats/' . $format->format))));
+}
+
+/**
+* Delete text format
+* @param $format_name Text format name to delete
+*/
+function oaff_delete_text_format($format_name) {
+  $format_format = str_replace(' ', '_', strtolower($format_name));
+  
+  // use direct access to database due to 
+  // absence of drupal built in functions
+
+  // delete filters activated for this format
+  db_delete('filter')
+    ->condition('format', $format_format)
+    ->execute();
+
+  // delete format
+  db_delete('filter_format')
+    ->condition('format', $format_format)
+    ->execute();
+
+  //delete user permissions
+  db_delete('role_permission')
+    ->condition('permission', 'use text format ' . $format_format)
+    ->execute();
+
+  drupal_set_message(t('A ' . $format_name . ' text format has been deleted.'));
 }
