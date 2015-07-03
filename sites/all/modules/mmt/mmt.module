@@ -1,40 +1,6 @@
 <?php
 // -------------------------- API FUNCTIONS --------------------------- \\
 
-/**
- * Initialize MMT, loads CSS and JS files and uses jobad API
- * called in mmt_node_view
- */
-function mmt_initialize() {
-    /* CSS */
-    $mmt_path = drupal_get_path('module', 'mmt');
-    $mmt_config = variable_get('mmt_config');
-    $mmt_url = $mmt_config['mmturl'];  
-
-    
-    drupal_add_css($mmt_path . '/css/mmt.css', array('weight' => PHP_INT_MAX, 'every_page' => false));
-    drupal_add_css($mmt_path . '/css/latexml.css', array('weight' => PHP_INT_MAX, 'every_page' => false));
-    
-    /* JavaScript */
-    drupal_add_js('var mmtUrl = "' . $mmt_url . '";', 'inline');
-    jobad_add_module($mmt_path . '/jobad/planetary-navigation.js', "kwarc.mmt.planetary.navigation");
-    jobad_add_module($mmt_path . '/jobad/planetary-gitlab.js', "kwarc.mmt.planetary.gitlab");
-    jobad_add_module($mmt_path . '/jobad/ontology-navigation.js', "kwarc.mmt.ontology.navigation");
-    jobad_add_module($mmt_path . '/jobad/hovering.js', "kwarc.mmt.hovering");
-    jobad_add_module($mmt_path . '/jobad/interactive-viewing.js', "kwarc.mmt.intvw");
-
-
-    // if search enabled
-    // jobad_add_module($mmt_path . '/jobad/search.js', "kwarc.mmt.search");
-
-    // mmt js libs
-    drupal_add_js($mmt_path . '/utils/mmt-html.js', 'file', array('cache' => false));
-    drupal_add_js($mmt_path . '/utils/mmt-planetary.js', 'file', array('cache' => false));
-    drupal_add_js($mmt_path . '/utils/mathml.js', 'file', array('cache' => false));
-    
-    // modules
-}
-
 
 /**
  * implements hook_node_view
@@ -46,11 +12,6 @@ function mmt_initialize() {
 function mmt_node_view($node, $view_mode, $langcode) {
   if ($view_mode != "full")
     return;
-  $oaff_config = variable_get('oaff_config');
-  $oaff_node_types = $oaff_config['all_node_types'];
-  if (in_array($node->type, $oaff_node_types)) {
-     mmt_initialize();
-  }
   if ($node->type == 'mmtdoc') {
     $mmt_path = drupal_get_path('module', 'mmt');
     drupal_add_js($mmt_path . '/mmtdocjs/html.js', 'file', array('cache' => false));
