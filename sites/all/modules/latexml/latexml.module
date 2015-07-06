@@ -26,11 +26,11 @@ function latexml_update_errors($nid, $location) {
     $mtime = planetary_repo_stat_file($log_location)['mtime'];
     $last_ran_time = oaff_get_mtime($nid, $log_location);
 
-    if ($last_ran_time == $mtime) { //no change
+    if ($last_ran_time == $mtime && false) { //no change
       $latexml_status = array("conversion" => -1, "messages" => array()); // -1 means log not changed  
       oaff_log("OAFF(LATEXML)", "No change for compiler latexml, no need to re-process errors");
     } else {      
-      $latexml_status = _latexml_produce_status_msg($log);
+      $latexml_status = _latexml_produce_status_msg($log, $location);
       oaff_log("OAFF(LATEXML)", "Re-read log for compiler latexml");
       oaff_set_mtime($nid, $mtime, $log_location);
     }
@@ -40,7 +40,7 @@ function latexml_update_errors($nid, $location) {
   return $latexml_status;
 }
 
-function _latexml_produce_status_msg($log) {
+function _latexml_produce_status_msg($log, $location) {
   $status = array();
   $status['messages'] = array();
   $log_lines = explode("\n", $log);
@@ -76,16 +76,16 @@ function _latexml_produce_status_msg($log) {
         if (isset($current_message['srcref'])) {
           $current_message['longMsg'] .=  $line . "\n";
         } else { // this is the source ref line
-          $trange_pattern = '/^.*textrange\(from=(\d*);(\d*),to=(\d*);(\d*)\)/';
+          $trange_pattern = '/^(.*)textrange\(from=(\d*);(\d*),to=(\d*);(\d*)\)/';
           $valid_trange = preg_match($trange_pattern, $line, $matches);
-          if ($valid_trange) {
+          if ($valid_trange && strpos($matches[1], $location) !== false) {
             $current_message["srcref"] = array();
             $current_message["srcref"]['from'] = array();
-            $current_message["srcref"]['from']['line'] = $matches[1] + 1; // oaff standard is that lines nr starts at 1 not 0
-            $current_message["srcref"]['from']['col'] = $matches[2];
+            $current_message["srcref"]['from']['line'] = $matches[2] + 1; // oaff standard is that lines nr starts at 1 not 0
+            $current_message["srcref"]['from']['col'] = $matches[3];
             $current_message["srcref"]['to'] = array();
-            $current_message["srcref"]['to']['line'] = $matches[3] + 1; // oaff standard is that lines nr starts at 1 not 0
-            $current_message["srcref"]['to']['col'] = $matches[4];
+            $current_message["srcref"]['to']['line'] = $matches[4] + 1; // oaff standard is that lines nr starts at 1 not 0
+            $current_message["srcref"]['to']['col'] = $matches[5];
           } else {
             // no source ref, adding to long message
             $current_message['longMsg'] .= $line . "\n";
