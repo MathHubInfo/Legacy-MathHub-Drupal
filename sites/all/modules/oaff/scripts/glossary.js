@@ -17,7 +17,6 @@ jQuery(".gls_trigger").click(function() {
 jQuery(".alt_lang").click(function() {
 	var altId = jQuery(this).attr("data-id");
 	var lang = jQuery(this).attr("data-lang");
-	console.log(jQuery("#glossary a[data-target='#gtab_'" + lang + "']"));
 	jQuery("#glossary a[data-target='#gtab_" + lang + "']").tab('show');
 	window.location.href = "#" + altId;
 	jQuery("#" + altId).parent().effect("highlight", {}, 1500);	

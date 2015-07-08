@@ -13,16 +13,20 @@ var planetaryNavigation = {
   
 
     leftClick: function(target, JOBADInstance) {
+    	//navigate only for when data-relative is set (i.e. for virtdocs where links were relative)
+    	//TODO: now after URI fix (removed /source/) this should be refactored (attr renamed)
 		if(target.hasAttribute(mmtattr.symref) && target.hasAttribute('data-relative')) {
 			var uri = target.attr(mmtattr.symref);
 			var uriEnc = planetary.relNavigate(uri);
 		}
 
-		var flag = target.hasAttribute(mmtattr.symref);
+		//disable this for now, context menu navigation should be enough
+		/*var flag = target.hasAttribute(mmtattr.symref);
 		if(target.parent().hasAttribute(mmtattr.symref)) {
 			var url = planetary.URIToURL(target.parent().attr(mmtattr.symref));
 			window.location = url;
 		}
+		*/
 		return false;
     },
 
@@ -49,22 +53,27 @@ var planetaryNavigation = {
 		       			'contentType' : 'text/plain',
 		              'crossDomain': true,
 	                  'success': function cont(data) {
-	                  	
-	          			$('<div>')
-	          				.addClass('modal fade bs-example-modal-lg')
-	          				.attr({
-	          					'tabindex':'-1', 
-	          					'role':"dialog"
-	          				})
-	      				.append(
-	      					$('<div>')
-	  						.addClass("modal-dialog modal-lg").css('max-width','80%')
-	      					.append(
-	      						$('<div>')
-	      							.addClass("modal-content")
-	      							.html(data)
-	      					)
-	      				).appendTo('body').modal();
+	                  	var elem = $("#def_lookup_content");
+	                  	if (elem.length == 0) { //not exists => creating modal 
+		          			$('<div id="def_lookup_main">')
+		          				.addClass('modal fade bs-example-modal-lg')
+		          				.attr({
+		          					'tabindex':'-1', 
+		          					'role':"dialog"
+		          				})
+		      				.append(
+		      					$('<div>')
+		  						.addClass("modal-dialog modal-lg").css('max-width','80%')
+		      					.append(
+		      						$('<div id="def_lookup_content">')
+		      							.addClass("modal-content")
+		      							.html(data)
+		      					)
+		      				).appendTo('body').modal();
+		      			} else { //just updating content
+		      				elem.html(data);
+		      				$("#def_lookup_main").modal();
+		      			}
 	                  },
 	                  'error' : function( reqObj, status, error ) {
 						console.log( "ERROR:", error, "\n ",status );
