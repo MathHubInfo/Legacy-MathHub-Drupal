@@ -504,20 +504,42 @@ function oaff_node_view($node, $view_mode, $langcode) {
   //handling node rendering
   $compiled_node_types = $oaff_config['compiled_node_types'];
   $all_node_types = $oaff_config['all_node_types'];
-  $location = $node->field_external['und']['0']['path'];
   if (drupal_get_path_alias("node/" . $node->nid) == 'mh/glossary') { //special handling for the glossary node
     $markup = file_get_contents("/var/data/localmh/MathHub/glossary.html");
+    //loading js/css manually for the glossary, not using oaff initialize
+    $mmt_path = drupal_get_path('module', 'mmt');
     $oaff_path = drupal_get_path('module', 'oaff');
+    // basics
     drupal_add_js($oaff_path . '/scripts/glossary.js', 'file', array('cache' => false));
     drupal_add_css($oaff_path . '/css/glossary.css', array('weight' => PHP_INT_MAX, 'every_page' => false));
+    drupal_add_css($mmt_path . '/css/mmt.css', array('weight' => PHP_INT_MAX, 'every_page' => false));
+    drupal_add_css($mmt_path . '/css/latexml.css', array('weight' => PHP_INT_MAX, 'every_page' => false));
 
-    $inst_id = oaff_initialize($location);
+    // mmt js libs
+    drupal_add_js($mmt_path . '/utils/mmt-html.js', 'file', array('cache' => false));
+    drupal_add_js($mmt_path . '/utils/mmt-planetary.js', 'file', array('cache' => false));
+    drupal_add_js($mmt_path . '/utils/mathml.js', 'file', array('cache' => false));
+    //jobad modules 
+    jobad_add_module($mmt_path . '/jobad/planetary-navigation.js', "kwarc.mmt.planetary.navigation");
+    jobad_add_module($mmt_path . '/jobad/ontology-navigation.js', "kwarc.mmt.ontology.navigation");
+    jobad_add_module($mmt_path . '/jobad/hovering.js', "kwarc.mmt.hovering");
+    jobad_add_module("/sites/all/libraries/jobad/modules/core/mathjax.mathjax.js", "mathjax.mathjax");
+    
+    //mmt url   
+    $mmt_config = variable_get('mmt_config');
+    $mmt_url = $mmt_config['mmturl'];  
+    drupal_add_js('var mmtUrl = "' . $mmt_url . '";', 'inline');
+
+    libraries_load("jobad");
+    $inst_id = jobad_initialize();
+
     $node->content['body'][0]['#markup'] = '<div id="' . $inst_id . '" class="bootstrap" >' . $markup . '</div>';
   }
 
   // actually presenting
   if (in_array($node->type, $compiled_node_types)) {
     //getting node data
+    $location = $node->field_external['und']['0']['path'];
     $pathinfo = oaff_get_path_info($location);
     $status = oaff_get_errors($node->nid);
 
@@ -544,6 +566,7 @@ function oaff_node_view($node, $view_mode, $langcode) {
   // settings breadcrumb
 
   if (in_array($node->type, $all_node_types)) {
+    $location = $node->field_external['und']['0']['path'];
     oaff_set_breadcrumb($node->nid);
     $inst_id = oaff_initialize($location, oaff_get_node_filter_format($node));
     $content = $node->content['field_external'][0]['content']['#markup'];
