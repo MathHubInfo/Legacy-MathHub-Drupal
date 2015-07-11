@@ -82,10 +82,10 @@ function _latexml_produce_status_msg($log, $location) {
             $current_message["srcref"] = array();
             $current_message["srcref"]['from'] = array();
             $current_message["srcref"]['from']['line'] = $matches[2] + 1; // oaff standard is that lines nr starts at 1 not 0
-            $current_message["srcref"]['from']['col'] = $matches[3];
+            $current_message["srcref"]['from']['col'] = $matches[3] + 1; // oaff standard is that column nr starts at 1 not 0
             $current_message["srcref"]['to'] = array();
             $current_message["srcref"]['to']['line'] = $matches[4] + 1; // oaff standard is that lines nr starts at 1 not 0
-            $current_message["srcref"]['to']['col'] = $matches[5];
+            $current_message["srcref"]['to']['col'] = $matches[5] + 1;  // oaff standard is that column nr starts at 1 not 0
           } else {
             // no source ref, adding to long message
             $current_message['longMsg'] .= $line . "\n";
