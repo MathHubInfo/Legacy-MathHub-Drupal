@@ -8,3 +8,7 @@
 .gs_tab {
 	cursor: pointer;	
 }
+
+.bootstrap hr {
+	margin: 5px 0px;
+}
