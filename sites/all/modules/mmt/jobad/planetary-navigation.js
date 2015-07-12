@@ -30,6 +30,27 @@ var planetaryNavigation = {
 		return false;
     },
 
+    dictionary: {
+    	"Show Definition" : {
+    		"ro" : "Vezi Definitia",
+    		"de" : "Definition Anzeigen",
+    	},
+    	"Go To Declaration" : {
+    		"ro" : "Deschide Declaratia",
+    		"de" : "Gehe zu Deklaration",
+    	}
+    },
+
+    translate: function (string, lang) {
+    	var me = this;
+    	console.log(me.dictionary);
+    	if (typeof me.dictionary[string] != "undefined" && typeof me.dictionary[string][lang] != "undefined") {
+    	  return me.dictionary[string][lang];
+    	} else {
+    	  return string; //default
+    	}
+
+    },
 
     contextMenuEntries: function(target, JOBADInstance) {
     	var res = {};
@@ -39,9 +60,13 @@ var planetaryNavigation = {
 			mmt.setSelected(select);
 			var uri = target.attr(mmtattr.symref);
 			var me = this;
-			res['Go To Declaration'] = function() {planetary.navigate(uri);};
+			var lang = planetary.getLanguage(target);
+			var goDeclS = me.translate("Go To Declaration", lang);
+			var showDefS = me.translate("Show Definition", lang);
+			
+			res[goDeclS] = function() {planetary.navigate(uri);};
 			if (uri.match(/\?/g).length >= 2) {	
-				res['Show Definition'] = function() {
+				res[showDefS] = function() {
 					$.ajax({ 
 					  'url': mmtUrl + "/:planetary/getRelated",
 	   	  			  'type' : 'POST',

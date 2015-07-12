@@ -506,7 +506,6 @@ function oaff_node_view($node, $view_mode, $langcode) {
   $all_node_types = $oaff_config['all_node_types'];
 
   if (drupal_get_path_alias("node/" . $node->nid) == 'mh/glossary') { //special handling for the glossary node
-    $location = $node->field_external['und']['0']['path'];
     $markup = file_get_contents("/var/data/localmh/MathHub/glossary.html");
     //loading js/css manually for the glossary, not using oaff initialize
     $mmt_path = drupal_get_path('module', 'mmt');

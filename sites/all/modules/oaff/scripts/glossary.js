@@ -1,15 +1,6 @@
 jQuery(function() {
 jQuery(".gls_trigger").click(function() {
-	var text = jQuery(this).attr("data-text");
-	var textOn = "Show " + text;
-	var textOff = "Hide " + text;
 	var target = jQuery(this).attr("data-target");
-	if (jQuery(this).html() == textOn) {
-		jQuery(this).html(textOff);
-	} else {
-		jQuery(this).html(textOn);
-	};
-
 	jQuery(document.getElementById(target)).toggle('fold');
 });
 
