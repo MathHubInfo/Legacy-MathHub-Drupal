@@ -820,11 +820,13 @@ function oaff_mark_source_errors($source, $nid, $status) {
   foreach ($errors_compiler as $compiler => $errors) {
     $register = "";
     $unregister = "";
+    $selector = "";
     $out .= '
     <label class="btn btn-primary btn-sm">
       <input id="'. $compiler . '" type="checkbox"> '. $compiler . ' 
     </label>';
     foreach ($errors as $msg) {
+      // errors with references
       if ($msg->srcref) {
         $parts = explode("-",$msg->srcref);
         $from_parts = explode(".",$parts[0]);
@@ -847,23 +849,28 @@ function oaff_mark_source_errors($source, $nid, $status) {
           if ($key != $last_key)
             $selector .= ", ";
         }
-
-        $register .= '
-          n'. $notification_counter . ' = ' . $inst_id .'.Sidebar.registerNotification(jQuery("' . $selector . '"), 
-              { 
-                "class": "' . strtolower($error_catalog[$msg->type]) .'",
-                "text": "' .  str_replace('"', "'", $msg->short_msg) . '", 
-                "click": function() {
-                  window.open("/node/'.$nid.'/edit?start=' . $from . '&end=' . $to . '");
-                },
-                "trace":true,
-            });';
-        $unregister .= '
-            '. $inst_id .'.Sidebar.removeNotification(n' . $notification_counter . ');'; 
-        $notification_counter++;
+        $edit_query = '?start=' . $from . '&end=' . $to;
+      } else {
+        // errors w/o references assign to whole source code
+        $selector = "#ref_general";
+        $edit_query = "";
       }
+      $register .= '
+        n'. $notification_counter . ' = ' . $inst_id .'.Sidebar.registerNotification(jQuery("' . $selector . '"), 
+            { 
+              "class": "' . strtolower($error_catalog[$msg->type]) .'",
+              "text": "' .  str_replace('"', "'", $msg->short_msg) . '", 
+              "click": function() {
+                window.open("/node/'.$nid.'/edit' . $edit_query . '");
+              },
+              "trace":true,
+          });';
+      $unregister .= '
+          '. $inst_id .'.Sidebar.removeNotification(n' . $notification_counter . ');'; 
+      $notification_counter++;
     }
 
+    // js to constantly check checkboxes status
     $sidebar = "jQuery(function(){
        jQuery('#{$compiler}').change(function(){
           if(jQuery(this).is(':checked')) {
@@ -877,6 +884,7 @@ function oaff_mark_source_errors($source, $nid, $status) {
     drupal_add_js($sidebar, array('type' => 'inline', 'weight' => 100));
   }
 
+  // if there are errors add them to outpu
   if ($out != "") {
     $out = '<div>
     <label> Compilers </label> 
@@ -886,7 +894,7 @@ function oaff_mark_source_errors($source, $nid, $status) {
 </div><br/>';
   }
 
-  $out .= "<div id=\"$inst_id\"><pre>\n" . $source . '\n</pre></div>';
+  $out .= "<div id=\"$inst_id\"><pre id=\"ref_general\">\n" . $source . '\n</pre></div>';
   return $out;
 }
 
