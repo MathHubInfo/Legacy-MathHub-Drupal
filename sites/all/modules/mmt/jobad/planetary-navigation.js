@@ -43,7 +43,6 @@ var planetaryNavigation = {
 
     translate: function (string, lang) {
     	var me = this;
-    	console.log(me.dictionary);
     	if (typeof me.dictionary[string] != "undefined" && typeof me.dictionary[string][lang] != "undefined") {
     	  return me.dictionary[string][lang];
     	} else {
