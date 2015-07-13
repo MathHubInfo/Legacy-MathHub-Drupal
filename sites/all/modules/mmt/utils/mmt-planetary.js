@@ -26,17 +26,4 @@ var planetary = {
   	var path = planetary.URIToURL(uri);
   	window.location = path;
   },
-
-  inGlossary: function(uri) {
-  	return window.location.pathname == "/mh/glossary";
-  },
-
-  getLanguage: function(target) {
-  	if (planetary.inGlossary() == true) {
-  		var elem = jQuery(target).closest("div .tab-pane");
-  		return elem.attr("id").substring(5); //removing `gtab_` 
-  	} else { //TODO implement this part too default
-  		return "en";
-  	}
-  },
 };
