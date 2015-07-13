@@ -14,15 +14,23 @@ var ontologyNavigation = {
     contextMenuEntries: function(target, JOBADInstance) {
     	var me = this;
     	var menu_entries = {};
+        var lang = locale.getLanguage(target);
+        var usedIn = locale.translate("Used In", lang);
+        var uses = locale.translate("Uses", lang);
     	if (target.hasAttribute(mmtattr.symref)) {
 			var uri = target.attr(mmtattr.symref);
-			menu_entries['Used In'] = me.getRelated(uri, qmt.tosubject("Includes"));
-			menu_entries['Uses'] = me.getRelated(uri, qmt.toobject("Includes"));
+			menu_entries[usedIn] = me.getRelated(uri, qmt.tosubject("Includes"));
+			menu_entries[uses] = me.getRelated(uri, qmt.toobject("Includes"));
 		}
 		return menu_entries;
     },
 
     getRelated: function(uri, relation) {
+        if (uri.match(/\?/g).length >= 2) {
+            slices = uri.split('?');
+            slices.pop();
+            uri = slices.join('?');
+        }
     	var query = qmt.related(qmt.literalPath(uri), relation);
     	var related_uris = [];
     	var me = this;

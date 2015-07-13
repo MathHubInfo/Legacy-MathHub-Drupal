@@ -17,13 +17,15 @@ var planetaryGitlab = {
     	var tex_path = frags.join(".")
 		var blob_url = 'http://gl.mathhub.info/' + oaff_node_group  + "/" + oaff_node_archive + "/blob/master/source/" + tex_path;
 		var blame_url = 'http://gl.mathhub.info/' + oaff_node_group  + "/" + oaff_node_archive + "/blame/master/source/" + tex_path;
-		var res = {
-			'View Source':			
-			{
-				'Raw' : function() {window.open(blob_url, '_blank');},
-				'History' : function() {window.open(blame_url, '_blank');},
-			},
-		};
+		var lang = locale.getLanguage(target);
+		console.log(lang);
+        var viewSource = locale.translate("View Source", lang);
+        var raw = locale.translate("Raw", lang);
+        var history = locale.translate("History", lang);
+		var res = {};
+		res[viewSource] = {};
+		res[viewSource][raw] = function() {window.open(blob_url, '_blank');};
+		res[viewSource][history] = function() {window.open(blame_url, '_blank');};
 		return res;
 	},
 };

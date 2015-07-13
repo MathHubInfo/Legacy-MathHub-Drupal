@@ -7,24 +7,26 @@ var locale = {
    */
   dictionary: {
     "Show Definition" : {
-      "ro" : "Vezi Definitia",
+      "ro" : "Vezi Definiția",
       "de" : "Definition Anzeigen",
       "zhs" : "显示定义",
       "zht" : "顯示定義",
     },
     "Go To Declaration" : {
-      "ro" : "Deschide Declaratia",
+      "ro" : "Deschide Declarația",
       "de" : "Gehe zu Deklaration",
       "zhs" : "前往详情",
       "zht" : "前往詳情",
     },
-    "Used in" : {
-     "zhs" : "使用于",
-     "zht" : "使用於",
+    "Used In" : {
+      "zhs" : "使用于",
+      "zht" : "使用於",
+      "ro" : "Utilizat în",
     },
     "Uses" : {
       "zhs" : "使用",
       "zht" : "使用",
+      "ro" : "Depinde de",
     },
     "View Source" : {
       "zhs" : "查看源文件",
@@ -63,11 +65,18 @@ var locale = {
    * should check URI for .<lang>. component for normal nodes
    */
   getLanguage: function(target) {
-  	if (locale.inGlossary() == true) {
+  	default_lang = "en";
+    if (locale.inGlossary() == true) {
   		var elem = jQuery(target).closest("div .tab-pane");
-  		return elem.attr("id").substring(5); //removing `gtab_` 
+      if (typeof elem.attr("id") == 'undefined')
+        return default_lang;
+      else
+        return elem.attr("id").substring(5); //removing `gtab_` 
   	} else { //TODO implement this part too default
-  		return "en";
+  		if (typeof(language) != "undefined")
+        return language;
+      else
+        return default_lang;
   	}
   },
 };
