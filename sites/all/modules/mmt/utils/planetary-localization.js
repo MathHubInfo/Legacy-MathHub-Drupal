@@ -8,7 +8,7 @@ var locale = {
   dictionary: {
     "Show Definition" : {
       "ro" : "Vezi Definiția",
-      "de" : "Definition Anzeigen",
+      "de" : "Definition anzeigen",
       "zhs" : "显示定义",
       "zht" : "顯示定義",
     },
