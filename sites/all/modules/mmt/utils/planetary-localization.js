@@ -9,20 +9,34 @@ var locale = {
     "Show Definition" : {
       "ro" : "Vezi Definitia",
       "de" : "Definition Anzeigen",
+      "zhs" : "显示定义",
+      "zht" : "顯示定義",
     },
     "Go To Declaration" : {
       "ro" : "Deschide Declaratia",
       "de" : "Gehe zu Deklaration",
+      "zhs" : "前往详情",
+      "zht" : "前往詳情",
     },
     "Used in" : {
+     "zhs" : "使用于",
+     "zht" : "使用於",
     },
     "Uses" : {
+      "zhs" : "使用",
+      "zht" : "使用",
     },
     "View Source" : {
+      "zhs" : "查看源文件",
+      "zht" : "查看源文件",
     },
     "Raw" : {
+      "zhs" : "源文件",
+      "zht" : "源文件",
     },
     "History" : {
+      "zhs" : "历史",
+      "zht" : "歷史",
     },
   },
   /**
