@@ -13,7 +13,17 @@ var locale = {
     "Go To Declaration" : {
       "ro" : "Deschide Declaratia",
       "de" : "Gehe zu Deklaration",
-    }
+    },
+    "Used in" : {
+    },
+    "Uses" : {
+    },
+    "View Source" : {
+    },
+    "Raw" : {
+    },
+    "History" : {
+    },
   },
   /**
    * This is the function JOBAD modules should call to translate a string from English to a language `lang` 
