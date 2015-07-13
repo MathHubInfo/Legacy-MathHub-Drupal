@@ -22,23 +22,28 @@ var locale = {
       "zhs" : "使用于",
       "zht" : "使用於",
       "ro" : "Utilizat în",
+      "de" : "Verwendet in", 
     },
     "Uses" : {
       "zhs" : "使用",
       "zht" : "使用",
       "ro" : "Depinde de",
+      "de" : "Benutzt", 
     },
     "View Source" : {
       "zhs" : "查看源文件",
       "zht" : "查看源文件",
+      "de" : "Quelle anzeigen", 
     },
     "Raw" : {
       "zhs" : "源文件",
       "zht" : "源文件",
+      "de" : "Roh", 
     },
     "History" : {
       "zhs" : "历史",
       "zht" : "歷史",
+      "de" : "Verlauf", 
     },
   },
   /**
