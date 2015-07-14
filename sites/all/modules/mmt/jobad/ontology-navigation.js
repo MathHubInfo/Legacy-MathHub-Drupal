@@ -26,6 +26,7 @@ var ontologyNavigation = {
     },
 
     getRelated: function(uri, relation) {
+        // TODO: 
         if (uri.match(/\?/g).length >= 2) {
             slices = uri.split('?');
             slices.pop();
@@ -49,6 +50,11 @@ var ontologyNavigation = {
            return me.buildSubMenus(related_uris);
     },
 
+    // buils submenus recursively
+    // uris -- array of arrays where first element is array
+    //         of of splitted path by "/",
+    //         second element is function to navigate
+    // prefix -- prefix to add to each enry of the menu
     buildSubMenus: function(uris, prefix="") {
         if (uris.length  == 0) 
             return {};
@@ -56,6 +62,8 @@ var ontologyNavigation = {
             prefix += "/";
         }
         var temp_uris = {};
+        
+        // sort uris in lexical order
         var sorted = uris.sort(
             function(a, b){
                 var a_ = a[0][0];
@@ -63,6 +71,7 @@ var ontologyNavigation = {
                 return a_ > b_;
             });
         var result = {};
+
         for (var i in sorted) {
             if (sorted[i][0].length == 1) {
                 result[prefix + sorted[i][0][0]] = sorted[i][1];
@@ -77,8 +86,11 @@ var ontologyNavigation = {
             }
         }
 
+        // if more then 10 entries separate alphabetically
+        // in groups of 10 
         result = this.buildAlphaSubMenu(result);
 
+        // in case there is only one entry in the menu
         if (this.objectLength(temp_uris) == 1) {
             for (var key in temp_uris) {
                 jQuery.extend(result, this.buildSubMenus(temp_uris[key],prefix + key));
@@ -92,6 +104,7 @@ var ontologyNavigation = {
         return result;
     },
 
+    // returns how many elements are in the object
     objectLength: function(obj) {
         var length = 0;
         for (var key in obj) {
@@ -100,26 +113,34 @@ var ontologyNavigation = {
         return length;
     },
 
+    // separates object with more then 10 entries
+    // into groups of ten alphabetically 
     buildAlphaSubMenu: function(uris, depth = 0) {
         if (this.objectLength(uris) <= 10)
             return uris;
         result = {};
         var count = 0;
         var name = "";
+        var fletter = "";
         var temp_uris = {};
         for (var key in uris) {
             temp_uris[key] = uris[key];
             count++;
+            fletter = key.split("/").slice(-1)[0].charAt(0).toLowerCase();
             if (count == 1) {
-                name = key.split("/").slice(-1)[0].charAt(0) + " - ";
-                console.log(key.split("/").slice(-1));
+                name = fletter + " - ";
             }    
             else if (count == 10) {
-                name += key.split("/").slice(-1)[0].charAt(0);
+                name += fletter;
                 result[name] = temp_uris;
                 temp_uris = {};
                 count = 0;
             }
+        }
+        // if less then 10 elements left
+        if (count != 0) {
+            name += fletter;
+            result[name] = temp_uris;
         }
         return result;
     }
