@@ -1172,6 +1172,9 @@ function oaff_crawler_update_source_folder($group, $archive_path, $archive_id, $
   $cids = array();
   $lang_groups = array();
   $items = planetary_repo_list($folder_path);
+  print_r($folder_path);
+  print_r($items);
+  print("\n\n\n\n\n");
   foreach ($items as $item) {
     if ($item[0] != '.' && $item != "all.tex" && $item != "localpaths.tex") { // ignoring hidden files and folders, 
                                                                               // also lmh/stex specific ones  
@@ -1602,6 +1605,8 @@ function oaff_node_insert($node) {
     oaff_save_path($nid, $alias, 'omdoc');
     oaff_save_path($nid, $alias, 'svg');
     oaff_save_path($nid, $alias, 'source');
+    oaff_save_path($nid, $alias, 'edit');
+    oaff_save_path($nid, $alias, 'devel');
   }
 }
 
