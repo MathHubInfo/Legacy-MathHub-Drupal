@@ -99,6 +99,7 @@ function oaff_install() {
   $oaff_config['all_node_types'] = array_merge($oaff_config['compiled_node_types'], array("oaff_helpdoc"));
   
   $oaff_config['latest_nodes'] = 0;
+  $oaff_config['deleted_nodes'] = 0;
   $oaff_config['crawl_nodes_offset'] = 0;
   $mlids = array();
   $nids = array();

@@ -913,16 +913,21 @@ function oaff_mark_source_errors($source, $nid, $status) {
 function oaff_create_nodes() {
   $oaff_config = variable_get('oaff_config');
   $oaff_config['latest_nodes'] = 0;
+  $oaff_config['deleted_nodes'] = 0;
   variable_set('oaff_config', $oaff_config);
   _oaff_crawler_update_doc_nodes();
   $groups = _oaff_crawler_get_active_archives();
   _oaff_crawler_update_content($groups);
   $oaff_config = variable_get('oaff_config');
   $nr_nodes = $oaff_config['latest_nodes'];
+  $nr_del_nodes = $oaff_config['deleted_nodes'];
   if ($nr_nodes == 0) {
     drupal_set_message("Successfully crawled archives, nothing new to import");
   } else {
     drupal_set_message("Successfully created $nr_nodes nodes");
+  }
+  if ($nr_del_nodes > 0) {
+    drupal_set_message("Deleted $nr_del_nodes nodes");
   }
   $out = '<div> <button class="btn btn-primary " onclick="window.location = \'/mh/initialize-nodes\'"> Continue </button> </div> ';
   return $out;
@@ -1128,7 +1133,7 @@ function _oaff_crawler_update_content($groups) {
       $aids[] = $aid;
       $archive_id = $oaff_config['archive_id'][$group][$archive];
       $srcids = oaff_crawler_update_source_folder($group, $archive, $archive_id, "");
-      oaff_set_children($aid, $srcids);
+      oaff_update_children($aid, $srcids);
       if ($oaff_config['latest_nodes'] >= 1000) {
         break 2;
       }
@@ -1172,9 +1177,6 @@ function oaff_crawler_update_source_folder($group, $archive_path, $archive_id, $
   $cids = array();
   $lang_groups = array();
   $items = planetary_repo_list($folder_path);
-  print_r($folder_path);
-  print_r($items);
-  print("\n\n\n\n\n");
   foreach ($items as $item) {
     if ($item[0] != '.' && $item != "all.tex" && $item != "localpaths.tex") { // ignoring hidden files and folders, 
                                                                               // also lmh/stex specific ones  
@@ -1183,7 +1185,7 @@ function oaff_crawler_update_source_folder($group, $archive_path, $archive_id, $
         $frel_path = oaff_join_path(array($rel_path, $item));
         $fcids = oaff_crawler_update_source_folder($group, $archive_path, $archive_id, $frel_path);
         $fid = oaff_make_folder_node($group, $archive_path, $archive_id, $dimension, $frel_path); 
-        oaff_set_children($fid, $fcids);                
+        oaff_update_children($fid, $fcids);              
         $cids[] = $fid;
       } else {
         $pathinfo = oaff_get_path_info($item_path);
@@ -1401,6 +1403,54 @@ function oaff_create_oaff_doc($fpath, $archive) {
   } else {
     return -1;
   }
+}
+
+/**
+* Updates children of the nodes and deletes nodes associated
+* with deleted files
+* @param $pid nid of the parent node
+* @param $ncids new children of the parent node
+*/
+function oaff_update_children($pid, $ncids) {
+  // get ids of old children of $pid
+  $ocids = oaff_get_children($pid);
+  
+  // get nids of nodes associated with deleted files/folders
+  $deleted_ids = array_diff($ocids, $ncids);
+   
+  foreach ($deleted_ids as $key => $nid) {
+    node_delete($nid);
+    db_delete('oaff_node_parents')
+    ->condition('cid', $nid)
+    ->execute();
+  }
+
+  $oaff_config = variable_get('oaff_config');
+  $oaff_config['deleted_nodes'] += count($deleted_ids); // count deleted nodes
+  variable_set('oaff_config', $oaff_config);
+
+  oaff_set_children($pid, $ncids);
+}
+
+/**
+* Get children nids of the parent nid
+* @param $pid Node id of the parent node
+*/
+function oaff_get_children($pid) {
+  $result = db_select('oaff_node_parents', 'p')
+      ->fields('p', array('cid'))
+      ->condition('pid', $pid)
+      ->execute()
+      ->fetchAllAssoc('cid', PDO::FETCH_BOTH);
+  
+  if (!function_exists('extract_cid')) {
+    function extract_cid($el) {
+      return $el['cid'];
+    }
+  }
+
+  $result = array_map('extract_cid', $result);
+  return  $result;
 }
 
 
