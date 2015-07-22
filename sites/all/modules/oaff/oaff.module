@@ -18,8 +18,8 @@ function oaff_menu() {
     'access arguments' => array('access administration pages'),
     'type' => MENU_NORMAL_ITEM,
   );
-  $items['mh/initialize-nodes'] = array(
-    'title' => "Initialize Nodes",
+  $items['mh/synchronize-nodes'] = array(
+    'title' => "Synchronize Nodes",
     'page callback' => 'oaff_create_nodes',
     'access callback' => 'oaff_admin_access',
     'menu_name' => 'navigation'
@@ -928,7 +928,7 @@ function oaff_create_nodes() {
   if ($nr_del_nodes > 0) {
     drupal_set_message("Deleted $nr_del_nodes nodes");
   }
-  $out = '<div> <button class="btn btn-primary " onclick="window.location = \'/mh/initialize-nodes\'"> Continue </button> </div> ';
+  $out = '<div> <button class="btn btn-primary " onclick="window.location = \'/mh/synchronize-nodes\'"> Continue </button> </div> ';
   return $out;
 }
 
