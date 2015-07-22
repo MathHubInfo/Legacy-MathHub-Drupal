@@ -1655,7 +1655,6 @@ function oaff_node_insert($node) {
     oaff_save_path($nid, $alias, 'svg');
     oaff_save_path($nid, $alias, 'source');
     oaff_save_path($nid, $alias, 'edit');
-    oaff_save_path($nid, $alias, 'devel');
   }
 }
 
