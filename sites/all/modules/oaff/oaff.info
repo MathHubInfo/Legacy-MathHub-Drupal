@@ -2,3 +2,4 @@ name = OAFF Base
 description = Place for OAFF basic functionality and API functions
 core = 7.x
 package = OAFF
+dependencies[] = planetary_libs

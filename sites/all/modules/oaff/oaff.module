@@ -488,7 +488,6 @@ function oaff_initialize($location = NULL, $text_format = "") {
     
     $inst_name = jobad_initialize();
     //mmt_initialize(); //should be before -- currently called from mmt_node_view hook instead
-    
     return $inst_name; 
 }
 
@@ -1778,7 +1777,8 @@ function oaff_node_svg($node) {
   oaff_set_breadcrumb($nid, array($nid));
   // script for zoom and pan
   $oaff_path = drupal_get_path('module', 'oaff');
-  $jscript = file_get_contents($oaff_path . '/scripts/svg-pan-zoom.js');
+  $svg_script = '/' . $oaff_path . '/scripts/svg-pan-zoom.js';
+  drupal_add_js($svg_script, 'file');
   
   // modules
   $inst_id = oaff_initialize($location, oaff_get_node_filter_format($node));
@@ -1799,38 +1799,19 @@ function oaff_node_svg($node) {
 
   $pathinfo = oaff_get_path_info($location);
   $out = oaff_svg_html($pathinfo);
+  $content = 
+'   <div id="' . $inst_id . '" style="border:3px solid #5DBCD2; border-radius: 5px;">' . 
+        oaff_svg_clean($out) .
+'   </div>
+    <script>
+      ' . $activate_pan_zoom . '    
+    </script>';  
   if (isset($_GET['view'])) {
-    $out = 
-'<!DOCTYPE html>
-<html>
-  <head>
-    <script>' . $jscript . '</script>
-  </head>
-  <body>
-    <div style="border:3px solid #5DBCD2; border-radius: 5px;">
-      ' . oaff_svg_clean($out) . '
-    </div>
-    <script>
-      ' . $activate_pan_zoom . '    
-    </script>
-
-  </body>
-
-</html>';
-
-    print($out);
+    oaff_generate_blank_page(($node->title) . ' | SVG' , $content);
   } else {
-    $out = 
-    '<script>' . $jscript . '</script>
-    <div class="modal-body" style="overflow:auto; margin: auto"> 
-      <div id="' . $inst_id . '" style="border:3px solid #5DBCD2; border-radius: 5px;">
-        <a class="btn btn-default btn-sm" target="_blank" href="/' . $alias . '%21svg?view=full' . '" role="button">Full screen</a>' . 
-          oaff_svg_clean($out) .
-    ' </div>
-    </div>
-    <script>
-      ' . $activate_pan_zoom . '    
-    </script>'; 
+    $out = "<a class=\"btn btn-default btn-sm\" target=\"_blank\" href=\"/" . 
+          $alias . "%21svg?view=full\" role=\"button\">Full screen</a>" . $content;
+   ; 
     return $out;
   }
 }
@@ -1891,6 +1872,92 @@ function oaff_node_source($node) {
   $status = oaff_get_errors($nid);
   $output = oaff_mark_source_errors(check_plain($source), $nid, $status);
   return $output; 
+}
+
+/**
+* @return Javascript for the current node as a string. Should
+* be included in the head of the page.
+*/
+function oaff_get_js_as_string() {
+  $scripts = drupal_add_js();
+  planetary_libs_js_alter($scripts);
+  $base_url = $GLOBALS['base_url'];
+  $out = '';
+  foreach ($scripts as $key => $script) {
+    // ignore drupal related scripts
+    if ($key === 'settings' 
+      || $key === "misc/drupal.js"
+      || $key === "sites/all/modules/devel/devel_krumo_path.js")
+      continue;
+    switch ($script['type']) {
+      case 'external':
+        $path = $script['data'];
+        $out .= "<script src=\"$path\"></script>\n";
+        break;
+
+      case 'file':
+        $path = $script['data'];
+        if ($path[0] != '/')
+          $path = '/' . $path;
+        $out .= "<script src=\"{$base_url}{$path}\"></script>\n";
+        // add bootstrap manually after jQuery. TODO
+        if ($key === 'misc/jquery.js')
+          $out .= "<script src=\"//netdna.bootstrapcdn.com/bootstrap/3.0.2/js/bootstrap.min.js\"></script>\n";
+        break;
+
+      case 'inline':
+        $data = $script['data'];
+        $out .= "<script>$data</script>\n";
+        break;
+      
+      default:
+        break;
+    }
+  }
+  return $out;
+}
+
+/**
+* @return CSS for the current node as  a string. Should
+* be included in the head of the page.
+*/
+function oaff_get_css_as_string() {
+  $csss = drupal_add_css();
+  planetary_libs_css_alter($csss);
+  $base_url = $GLOBALS['base_url'];
+  // add bootstrap manually after jQuery. TODO
+  $out = '<link type="text/css" rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap.min.css" media="all" />';
+  foreach ($csss as $key => $css) {
+    $path = $css['data'];
+    // ignore drupal internal css
+    if (startsWith($path, 'modules'))
+      continue;
+    if ($path[0] != '/')
+      $path = '/' . $path;
+    $out .= "<link type=\"text/css\" rel=\"stylesheet\" href=\"{$base_url}{$path}\" media=\"all\" />\n";
+  }
+  return $out;
+}
+
+/** 
+* Generates blank page (page w/o Drupal menu)
+* @param $title The title of the new page
+* @param $body The content of the body of the page
+*/
+function oaff_generate_blank_page($title, $body) {
+  $out = 
+'<!DOCTYPE html>
+<html>
+  <head>
+    <title>' . $title . '</title>' . 
+    oaff_get_css_as_string() .
+    oaff_get_js_as_string() . '
+  </head>
+  <body>
+  '. $body . '
+  </body>
+</html>';
+  print($out);
 }
 
 // -------------------------- OAFF Configuration ------------------------- \\
