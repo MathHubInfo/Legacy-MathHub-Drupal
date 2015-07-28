@@ -1,4 +1,12 @@
 <?php
+
+/*************************************************************************
+* This file is part of the MathHub.info System  (http://mathhub.info).   *
+* It is hosted at https://github.com/KWARC/MathHub                       *
+* Copyright (c) 2015 by the KWARC group (http://kwarc.info)              *
+* Licensed under GPL3, see http://www.gnu.org/licenses/gpl.html          *
+**************************************************************************/
+
 /**
  * @file
  * mathhub_worker_configurations.features.field_instance.inc

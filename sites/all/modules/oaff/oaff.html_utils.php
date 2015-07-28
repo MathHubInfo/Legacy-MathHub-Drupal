@@ -1,11 +1,20 @@
 <?php
 
-// returns information in tabs
-// Parametres:
-// data -- array of dictionaries with 2 fields:
-//		'title'
-//		'content'
-// default -- default active tab 
+/*************************************************************************
+* This file is part of the MathHub.info System  (http://mathhub.info).   *
+* It is hosted at https://github.com/KWARC/MathHub                       *
+* Copyright (c) 2015 by the KWARC group (http://kwarc.info)              *
+* Licensed under GPL3, see http://www.gnu.org/licenses/gpl.html          *
+**************************************************************************/
+
+
+/**
+* @return html for tabs with data
+* @param $data Array of dictionaries with 2 fields:
+*		'title'
+*		'content'
+* @param @default  default active tab 
+*/
 function oaff_generate_tabs($data, $default) {
 	$out = "<div role=\"tabpanel\">";
 	$out .= "	<ul class=\"nav nav-tabs\" role=\"tablist\">";
