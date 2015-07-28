@@ -1185,7 +1185,7 @@ function oaff_crawler_update_source_folder($group, $archive_path, $archive_id, $
   $lang_groups = array();
   $items = planetary_repo_list($folder_path);
   foreach ($items as $item) {
-    if ($item[0] != '.' && preg_match('/all.*.tex$/', $item) != 1 && $item != "localpaths.tex") { // ignoring hidden files and folders, 
+    if ($item[0] != '.' && preg_match('/all\..*/', $item) != 1 && $item != "localpaths.tex") { // ignoring hidden files and folders, 
                                                                               // also lmh/stex specific ones  
       $item_path = oaff_join_path(array($folder_path, $item));
       if (planetary_repo_is_dir($item_path)) {
