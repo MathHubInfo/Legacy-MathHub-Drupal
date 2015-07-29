@@ -33,7 +33,7 @@ function latexml_update_errors($nid, $location) {
     $mtime = planetary_repo_stat_file($log_location)['mtime'];
     $last_ran_time = oaff_get_mtime($nid, $log_location);
 
-    if ($last_ran_time == $mtime && false) { //no change
+    if ($last_ran_time == $mtime) { //no change
       $latexml_status = array("conversion" => -1, "messages" => array()); // -1 means log not changed  
       oaff_log("OAFF(LATEXML)", "No change for compiler latexml, no need to re-process errors");
     } else {      

@@ -74,10 +74,27 @@ function oaff_menu() {
     'type' => MENU_LOCAL_TASK,
     'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
   );
+  $items['report_issue/%get_destination'] = array(
+    'title' => "Report issue",
+    'page callback' => 'oaff_report_issue',
+    'page arguments' => array(1),
+    'access callback' => true,
+    'type' => MENU_NORMAL_ITEM,
+    'menu_name' => 'navigation',
+    'weight' => 10,
+  );
 
   oaff_features_menu($items);
   oaff_admin_menu($items);
   return $items;
+}
+
+function get_destination_to_arg() {
+  $nid = 0;
+  $node = menu_get_object();
+  if (isset($node))
+    $nid = $node->nid;
+  return $nid;
 }
 
 function oaff_dynamic_content_page() {
@@ -1965,6 +1982,16 @@ function oaff_generate_blank_page($title, $body) {
   </body>
 </html>';
   print($out);
+}
+
+function oaff_report_issue($nid) {
+  $base_url = $GLOBALS['base_url'];
+  $link = "https://github.com/KWARC/MathHub/issues/new?issue";
+  if ($nid != 0) {
+    $path = drupal_get_path_alias('node/'. $nid);
+    $link .= "&body=" . urlencode("Issue at " . $base_url . "/" . $path);
+  }
+  drupal_goto($link);
 }
 
 // -------------------------- OAFF Configuration ------------------------- \\
