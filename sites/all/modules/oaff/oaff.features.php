@@ -282,11 +282,22 @@ function oaff_features_add_doc_callback($form, &$form_state) {
 }
 
 function oaff_features_rerun_error() {
-  if (isset($_GET['nids'])) {
-    $rerun_nidsS = $_GET['nids'];
-    $rerun_nids = explode(",", $rerun_nidsS);
-    $paths = array();
-    foreach ($rerun_nids as $nid) {
+  if (isset($_GET['eid'])) {
+    $rerun_nids = array();
+    $paths=array();
+    $eid = $_GET['eid'];
+    $result = db_select('oaff_errors', 'e')
+      ->fields('e', array('short_msg'))
+      ->condition('eid', $eid)
+      ->execute()
+      ->fetchAssoc();
+    $error_msg = $result['short_msg'];
+    $rerun_nids = db_select('oaff_errors', 'e')
+      ->fields('e', array('nid'))
+      ->condition('short_msg', $error_msg, '=')
+      ->execute()
+      ->fetchAllAssoc('nid', PDO::FETCH_ASSOC);
+    foreach ($rerun_nids as $nid => $value) {
         $node = node_load($nid);
         $rel_path = $node->field_external['und'][0]['path'];
         $location = planetary_repo_access_rel_path($rel_path);
@@ -309,7 +320,7 @@ function oaff_features_rerun_error() {
 function oaff_features_common_errors() {
   // query for database
   $query = db_select('oaff_errors', 'e')
-             ->fields('e', array('nid', 'type', 'compiler', 'mh_group', 'mh_archive', 'short_msg'));
+             ->fields('e', array('eid', 'nid', 'type', 'compiler', 'mh_group', 'mh_archive', 'short_msg'));
   
   // initialize array for filtering different types of errors
   $err_checked = array("0" => false,"1" => false,"2" => false,"3" => false);
@@ -374,6 +385,7 @@ function oaff_features_common_errors() {
     $compiler = $result->compiler;
     $group = $result->mh_group;
     $archive = $result->mh_archive;
+    $eid = $result->eid;
     //initializing
     if (!isset($statistics[$group])) {
       $statistics[$group] = array("occurs" => array("0" => 0, "1" => 0, "2" => 0, "3" => 0), 'archives' => array());
@@ -388,7 +400,7 @@ function oaff_features_common_errors() {
       }
     }
     if (!isset($compilers[$compiler][$type]['msgs'][$msg])) {
-      $compilers[$compiler][$type]['msgs'][$msg] = array('occurs' => 0, 'nids' => array());
+      $compilers[$compiler][$type]['msgs'][$msg] = array('occurs' => 0, 'nids' => array(), 'eid' => $eid);
     }
     $statistics[$group]['occurs'][$type] += 1;
     $statistics[$group]['archives'][$archive][$type] += 1;
@@ -419,6 +431,7 @@ function oaff_features_common_errors() {
           'msg' => check_plain($msg),
           'occurs' => $occurs['occurs'],
           'nids' => $occurs['nids'],
+          'eid'=> $occurs['eid'],
         );
       }
     }
@@ -582,10 +595,8 @@ function oaff_features_common_errors() {
     $out .= '<li><span > ' . $error['occurs'] . ' occurrences, </span></li>';
     $out .= '<li><a style="cursor:pointer;" onclick="if (jQuery(this).html() == \'Show All\') {jQuery(this).html(\'Hide All\')} else {jQuery(this).html(\'Show All\')}; jQuery(\'#oaff_error_log' . $i . '\' ).toggle( \'fold\' );" >Show All</a> </li>';
     if (user_access("administer mathhub")) {
-      $unique_nids = array_unique($error['nids']);
-      $rerun_nids = array_slice($unique_nids, 0, 30);
-      $rerun_nidsS = implode(",", $rerun_nids);
-      $out .= '<a href="/mh/rerun-error?nids=' . $rerun_nidsS . '" class="btn btn-danger btn-xs"> <span class="glyphicon glyphicon-refresh"> </span></a>';
+      $eid = $error['eid'];
+      $out .= '<a href="/mh/rerun-error?eid=' . $eid . '" class="btn btn-danger btn-xs"> <span class="glyphicon glyphicon-refresh"> </span></a>';
     }
 
     $out .= '<div id="oaff_error_log' . $i . '" style="display: none;"><ul>';
