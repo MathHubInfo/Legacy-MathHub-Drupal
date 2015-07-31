@@ -77,7 +77,6 @@ function oaff_menu() {
   $items['report_issue/%get_destination'] = array(
     'title' => "Report issue",
     'page callback' => 'oaff_report_issue',
-    'page arguments' => array(1),
     'access callback' => true,
     'type' => MENU_NORMAL_ITEM,
     'menu_name' => 'navigation',
@@ -90,11 +89,8 @@ function oaff_menu() {
 }
 
 function get_destination_to_arg() {
-  $nid = 0;
-  $node = menu_get_object();
-  if (isset($node))
-    $nid = $node->nid;
-  return $nid;
+  $path = current_path();
+  return $path;
 }
 
 function oaff_dynamic_content_page() {
@@ -1984,13 +1980,13 @@ function oaff_generate_blank_page($title, $body) {
   print($out);
 }
 
-function oaff_report_issue($nid) {
+function oaff_report_issue() {
   $base_url = $GLOBALS['base_url'];
+  $path = $_GET['q'];;
+  $mhlinkSegs = explode("report_issue", $path);
+  $mhlink = $base_url . $mhlinkSegs[1];
   $link = "https://github.com/KWARC/MathHub/issues/new?issue";
-  if ($nid != 0) {
-    $path = drupal_get_path_alias('node/'. $nid);
-    $link .= "&body=" . urlencode("Issue at " . $base_url . "/" . $path);
-  }
+  $link .= "&body=" . urlencode("Issue at " . $mhlink);
   drupal_goto($link);
 }
 
