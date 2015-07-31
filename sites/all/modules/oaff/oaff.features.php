@@ -26,6 +26,12 @@ function oaff_features_menu(& $items) {
     'access callback' => 'oaff_admin_access',
     'type' => MENU_CALLBACK,
   );
+  $items['mh/recrawl-error'] = array(
+    'title' => "Recrawl Error",
+    'page callback' => 'oaff_features_recrawl_errors',
+    'access callback' => 'oaff_admin_access',
+    'type' => MENU_CALLBACK,
+  );
   $items['mh/add-document'] = array(
     'title' => "Add Document",
     'page callback' => 'oaff_features_add_doc',
@@ -596,7 +602,9 @@ function oaff_features_common_errors() {
     $out .= '<li><a style="cursor:pointer;" onclick="if (jQuery(this).html() == \'Show All\') {jQuery(this).html(\'Hide All\')} else {jQuery(this).html(\'Show All\')}; jQuery(\'#oaff_error_log' . $i . '\' ).toggle( \'fold\' );" >Show All</a> </li>';
     if (user_access("administer mathhub")) {
       $eid = $error['eid'];
+      $out .= '<a href="/mh/recrawl-error?eid=' . $eid . '" class="btn btn-primary btn-xs"> <span class="glyphicon glyphicon-refresh"> </span></a> ';
       $out .= '<a href="/mh/rerun-error?eid=' . $eid . '" class="btn btn-danger btn-xs"> <span class="glyphicon glyphicon-refresh"> </span></a>';
+      
     }
 
     $out .= '<div id="oaff_error_log' . $i . '" style="display: none;"><ul>';
@@ -723,4 +731,33 @@ function oaff_features_broken_nodes() {
   }
   $msg .= "</div>";
   return $msg;
+}
+
+function oaff_features_recrawl_errors() {
+  if (isset($_GET['eid'])) {
+    $rerun_nids = array();
+    $paths=array();
+    $eid = $_GET['eid'];
+    $result = db_select('oaff_errors', 'e')
+      ->fields('e', array('short_msg'))
+      ->condition('eid', $eid)
+      ->execute()
+      ->fetchAssoc();
+    $error_msg = $result['short_msg'];
+    $rerun_nids = db_select('oaff_errors', 'e')
+      ->fields('e', array('nid'))
+      ->condition('short_msg', $error_msg, '=')
+      ->execute()
+      ->fetchAllAssoc('nid', PDO::FETCH_ASSOC);
+    foreach ($rerun_nids as $nid => $value) {
+        $node = node_load($nid);
+        $location = $node->field_external['und'][0]['path'];
+        latexml_update_errors($nid, $location);
+    }
+    $count = count($rerun_nids);
+    drupal_set_message("Re-crawled errors in $count nodes.");    
+    drupal_goto('mh/common-errors');
+  } else {
+    drupal_set_message("No error given (to recrawl)", "warning");
+  }
 }

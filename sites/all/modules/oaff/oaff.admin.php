@@ -227,6 +227,8 @@ function oaff_admin_node_crawler($nids = array()) {
   $crawled = 0;
   $done = false;
   $needs_restart = false;
+  $max_compiled = 20;
+  $max_crawled = 200;
   while (!$done) {
     $query = db_select('node', 'n');
     $query->join('field_data_field_external', 'p', 'n.nid = p.entity_id');
@@ -266,7 +268,7 @@ function oaff_admin_node_crawler($nids = array()) {
       }
     }
     $crawled += count($results);
-    if ($compiled_nodes >= 20 || $crawled >= 200 || count($results) == 0) { //compiled 20 or checked 100 or finished checking all nodes
+    if ($compiled_nodes >= $max_compiled || $crawled >= $max_crawled || count($results) == 0) { //compiled 20 or checked 100 or finished checking all nodes
       $done = true;
       if (count($results) == 0) { //finished checking all nodes
         $needs_restart = true;
@@ -393,7 +395,7 @@ function oaff_admin_nodes_rebuild($paths) {
     $script .= "\$dir/mmt-mh.sh update-build.msl >> \$dir/build.log\n";
     $script .= "rm -rf \$dir/build.lock\n";
     $script .= "echo 'finished, removing lock' >> \$dir/build.log\n";
-    $rel_script_file = '"/meta/inf/config/MathHub/build.tmp.sh"';
+    $rel_script_file = '/meta/inf/config/MathHub/build.tmp.sh';
     $script_file = planetary_repo_access_rel_path($rel_script_file);
     planetary_repo_save_file("/meta/inf/config/MathHub/build.tmp.sh", $script);
     exec("chmod +x " . $script_file);
