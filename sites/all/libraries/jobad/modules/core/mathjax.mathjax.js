@@ -43,7 +43,7 @@
 			
 			this.UserConfig.setMessage("MathJax is currently used to render Math. "); //set a nice message in the config UI
 
-			JOBAD.util.loadExternalJS("http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML", function(){
+			JOBAD.util.loadExternalJS("https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML", function(){
 				//setup mathjax with the right options
 				MathJax.Hub.Config({
 				  jax: ["input/MathML", "output/HTML-CSS","output/NativeMML"],

@@ -134,6 +134,7 @@ function _features_language_save($language) {
       ->fields(array(
         'plurals' => empty($language->plurals) ? 0 : $language->plurals,
         'formula' => empty($language->formula) ? '' : $language->formula,
+        'weight' => empty($language->weight) ? 0 : $language->weight,
       ))
       ->condition('language', $language->language)
       ->execute();
@@ -141,7 +142,11 @@ function _features_language_save($language) {
   // Update Existing language.
   else {
     // @TODO: get properties from schema.
-    $properties = array('language', 'name', 'native', 'direction', 'enabled', 'plurals', 'formula', 'domain', 'prefix', 'weight');
+    $properties = array('language', 'name', 'native', 'direction', 'enabled', 'plurals', 'formula', 'domain', 'prefix', 'weight', 'javascript');
+    // The javascript hash is not in the imported data but should be empty
+    if (!isset($language->javascript)) {
+      $language->javascript = '';
+    }
 
     $fields = array_intersect_key((array) $language, array_flip($properties));
     db_update('languages')
