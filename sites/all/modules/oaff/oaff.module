@@ -89,7 +89,7 @@ function oaff_menu() {
 }
 
 function get_destination_to_arg() {
-  $path = current_path();
+  $path = drupal_get_path_alias();
   return $path;
 }
 
