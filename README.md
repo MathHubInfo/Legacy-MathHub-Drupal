@@ -94,3 +94,7 @@ Currently MathHub Admins have access to the following functionalities (via links
 * Lmh Generate -- (re)generates compiled files (that can be loaded by MMT) from source files. e.g. for sTeX, generates `.omdoc` files from `.tex` files by running LaTeXML. 
 * Update Libraries -- Updates lmh internal libraries (i.e. MMT and sTeX).
 * Rebuild MMT Archives -- Rebuilds MMT index, should be typically ran after Lmh Generate.
+
+## Upgrade
+Using drush `drush pm-update` is typically safest and easiest.
+Currently need to take care of `scripts/run-mathhub-scripts.sh`, `misc/typeahead.bundle.min.js` and `.gitignore` being removed/overridden.
