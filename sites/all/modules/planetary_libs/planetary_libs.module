@@ -338,7 +338,8 @@ function planetary_libs_libraries_info() {
     'files' => array(
       'js' => array(
         'js/deps/underscore/underscore-min.js',
-        'js/deps/bootstrap.js',
+        //  don't need bootstrap explicitly if theme is bootstrap
+        // 'js/deps/bootstrap.js',  
         'build/release/JOBAD.js',
       ),
       'css' => array(        
@@ -351,8 +352,9 @@ function planetary_libs_libraries_info() {
         'files' => array(
           'js' => array(
           'js/deps/underscore/underscore-min.js',
-          'js/deps/bootstrap.js',
-            'build/release/JOBAD.min.js',
+          //  don't need bootstrap explicitly if theme is bootstrap
+          // 'js/deps/bootstrap.js',
+          'build/release/JOBAD.min.js',
           ),
           'css' => array(
             'build/release/libs/css/libs.css',
