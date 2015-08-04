@@ -602,8 +602,8 @@ function oaff_features_common_errors() {
     $out .= '<li><a style="cursor:pointer;" onclick="if (jQuery(this).html() == \'Show All\') {jQuery(this).html(\'Hide All\')} else {jQuery(this).html(\'Show All\')}; jQuery(\'#oaff_error_log' . $i . '\' ).toggle( \'fold\' );" >Show All</a> </li>';
     if (user_access("administer mathhub")) {
       $eid = $error['eid'];
-      $out .= '<a href="/mh/recrawl-error?eid=' . $eid . '" class="btn btn-primary btn-xs"> <span class="glyphicon glyphicon-refresh"> </span></a> ';
-      $out .= '<a href="/mh/rerun-error?eid=' . $eid . '" class="btn btn-danger btn-xs"> <span class="glyphicon glyphicon-refresh"> </span></a>';
+      $out .= '<a href="/mh/recrawl-error?eid=' . $eid . '" class="btn btn-primary btn-xs" data-toggle="tooltip" data-placement="left" title="Recrawl errors"> <span class="glyphicon glyphicon-refresh"> </span></a> ';
+      $out .= '<a href="/mh/rerun-error?eid=' . $eid . '" class="btn btn-danger btn-xs" data-toggle="tooltip" data-placement="right" title="Rerun errors"> <span class="glyphicon glyphicon-refresh"> </span></a>';
       
     }
 
@@ -751,8 +751,7 @@ function oaff_features_recrawl_errors() {
       ->fetchAllAssoc('nid', PDO::FETCH_ASSOC);
     foreach ($rerun_nids as $nid => $value) {
         $node = node_load($nid);
-        $location = $node->field_external['und'][0]['path'];
-        latexml_update_errors($nid, $location);
+        node_view($node);
     }
     $count = count($rerun_nids);
     drupal_set_message("Re-crawled errors in $count nodes.");    

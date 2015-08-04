@@ -787,58 +787,9 @@ function oaff_mark_source_errors($source, $nid, $status) {
     $i += 1;
   }
 
-  // add spans to divide code 
-  function tokenize_source($source, $srcref) {
-    $lines = explode("\n", $source);
-    $line_offsets = array(0);
-    $i = 0;
-    $close_tag = false;
-    foreach ($srcref as $line_num => $char_nums) {
-      $line = $lines[$line_num - 1];
-      $new_line = "";
-      if ($char_nums[0] != 1)
-        $new_line .= substr($line, 0, $char_nums[0] - 1);
-      if ($close_tag) {
-        $new_line .= "</span>";
-        $close_tag = false;
-      }
-      for ($j = 0; $j < count($char_nums) - 1; $j++) {
-        $new_line .= "<span id=\"ref_{$line_num}_{$char_nums[$j]}\">";
-        $new_line .= substr($line, $char_nums[$j] - 1, $char_nums[$j+1] - $char_nums[$j]);
-        $new_line .= "</span>";
-      }
-      $new_line .= "<span id=\"ref_{$line_num}_" . $char_nums[count($char_nums)-1] . "\">";
-      $new_line .= substr($line, $char_nums[count($char_nums)-1]-1);
-      $close_tag = true;
-      $lines[$line_num - 1] = $new_line;
-    }
-    $source = implode("\n", $lines);
-    if ($close_tag)
-      $source .= "</span>"; 
-    return $source;
-  }
-
-
-  $source = tokenize_source($source, $refs);
+  $source = _tokenize_source($source, $refs);
 
   $out = "";
-
-  // get all values from the array that are between $from and $to, including $from
-  // $array should be sorted in increasing order
-  function get_middle_elements($array, $from, $to) {
-    $out = array();
-    $in_middle = false;
-    foreach ($array as $key => $value) {
-      if ($value >= $to)
-        break;
-      if ($value == $from) {
-        $in_middle = true;
-      }
-      if ($in_middle)
-        $out[] = $value;
-    }
-    return $out;
-  }
 
   $notification_counter = 0;
   $inst_id = oaff_initialize();
@@ -866,7 +817,7 @@ function oaff_mark_source_errors($source, $nid, $status) {
         
         
         // select several spans
-        $ids = get_middle_elements($srcrefs, $parts[0], $parts[1]);
+        $ids = _get_middle_elements($srcrefs, $parts[0], $parts[1]);
         $selector ="";
         $last_key = count($ids) - 1;
         foreach ($ids as $key => $id) {
@@ -920,6 +871,66 @@ function oaff_mark_source_errors($source, $nid, $status) {
   }
 
   $out .= "<div id=\"$inst_id\"><pre id=\"ref_general\">\n" . $source . '\n</pre></div>';
+  return $out;
+}
+
+/**
+* separates $source by spans with id="ref_{line number}_{column number}"
+* @param $source string to tokenize
+* @param $srcref array where
+*        key is line number
+*        value is array of column numbers
+* @return tokenized string
+*/ 
+function _tokenize_source($source, $srcref) {
+  $lines = explode("\n", $source);
+  $line_offsets = array(0);
+  $i = 0;
+  $close_tag = false;
+  foreach ($srcref as $line_num => $char_nums) {
+    $line = $lines[$line_num - 1];
+    $new_line = "";
+    if ($char_nums[0] != 1)
+      $new_line .= substr($line, 0, $char_nums[0] - 1);
+    if ($close_tag) {
+      $new_line .= "</span>";
+      $close_tag = false;
+    }
+    for ($j = 0; $j < count($char_nums) - 1; $j++) {
+      $new_line .= "<span id=\"ref_{$line_num}_{$char_nums[$j]}\">";
+      $new_line .= substr($line, $char_nums[$j] - 1, $char_nums[$j+1] - $char_nums[$j]);
+      $new_line .= "</span>";
+    }
+    $new_line .= "<span id=\"ref_{$line_num}_" . $char_nums[count($char_nums)-1] . "\">";
+    $new_line .= substr($line, $char_nums[count($char_nums)-1]-1);
+    $close_tag = true;
+    $lines[$line_num - 1] = $new_line;
+  }
+  $source = implode("\n", $lines);
+  if ($close_tag)
+    $source .= "</span>"; 
+  return $source;
+}
+
+
+/**
+* @param $array array sorted in increasing order by value
+* @param $from value from which begin collecting values
+* @param $to value from/after which stop collecting values
+* @return array of values between $from and $to, including $from
+*/
+function _get_middle_elements($array, $from, $to) {
+  $out = array();
+  $in_middle = false;
+  foreach ($array as $key => $value) {
+    if ($value >= $to)
+      break;
+    if ($value == $from) {
+      $in_middle = true;
+    }
+    if ($in_middle)
+      $out[] = $value;
+  }
   return $out;
 }
 
