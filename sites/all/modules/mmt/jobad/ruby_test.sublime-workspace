@@ -1,0 +1,1376 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"messa",
+				"messages"
+			],
+			[
+				"mmt",
+				"mmtattr"
+			],
+			[
+				"omd",
+				"omdoc"
+			],
+			[
+				"path",
+				"path_opt"
+			],
+			[
+				"paths",
+				"path_save"
+			],
+			[
+				"omdoc",
+				"omdoc_location"
+			],
+			[
+				"planetary",
+				"planetary_repo_load_file"
+			],
+			[
+				"out",
+				"out_location"
+			],
+			[
+				"node",
+				"node_types"
+			],
+			[
+				"ndoe",
+				"nodetype"
+			],
+			[
+				"oaff_sv",
+				"oaff_svg_clean"
+			],
+			[
+				"hea",
+				"head"
+			],
+			[
+				"as",
+				"aspect"
+			],
+			[
+				"fun",
+				"function"
+			],
+			[
+				"err",
+				"err_log"
+			],
+			[
+				"data",
+				"data_title_content"
+			],
+			[
+				"er",
+				"error_log"
+			],
+			[
+				"erro",
+				"error_log"
+			],
+			[
+				"con",
+				"content"
+			],
+			[
+				"for",
+				"foreach	foreach …"
+			],
+			[
+				"comp",
+				"compiler"
+			],
+			[
+				"ne",
+				"nextnodes"
+			],
+			[
+				"pat",
+				"pathd"
+			],
+			[
+				"next",
+				"nextnode"
+			],
+			[
+				"page",
+				"pagelink"
+			],
+			[
+				"is",
+				"isset"
+			],
+			[
+				"N",
+				"No_Closin_Tag"
+			],
+			[
+				"re",
+				"remSpace"
+			],
+			[
+				"bui",
+				"buildRoot"
+			],
+			[
+				"str",
+				"strwot"
+			],
+			[
+				"ex",
+				"extract"
+			],
+			[
+				"mh",
+				"mh_regex"
+			],
+			[
+				"touc",
+				"touchFiles"
+			],
+			[
+				"on",
+				"onclick"
+			],
+			[
+				"tou",
+				"touch-files"
+			],
+			[
+				"sort",
+				"sortTags"
+			],
+			[
+				"rm",
+				"rmvSeparators"
+			],
+			[
+				"bu",
+				"buildRoot"
+			],
+			[
+				"ta",
+				"tab"
+			],
+			[
+				"sor",
+				"sortTree"
+			],
+			[
+				"rmv",
+				"rmvSeparators"
+			],
+			[
+				"bil",
+				"bildTree"
+			],
+			[
+				"tag",
+				"tagname"
+			],
+			[
+				"le",
+				"let	SML 'let' block"
+			],
+			[
+				"ins",
+				"inside"
+			],
+			[
+				"in",
+				"inside"
+			],
+			[
+				"n",
+				"nstr"
+			],
+			[
+				"fla",
+				"flag2"
+			],
+			[
+				"tr",
+				"true"
+			],
+			[
+				"File",
+				"Filename"
+			],
+			[
+				"link",
+				"links"
+			],
+			[
+				"ext",
+				"extractLinks"
+			],
+			[
+				"nor",
+				"normalizeLinks"
+			],
+			[
+				"get",
+				"getFileName"
+			],
+			[
+				"extr",
+				"extractHTML"
+			],
+			[
+				"getpa",
+				"getPage"
+			],
+			[
+				"exp",
+				"expLnk"
+			],
+			[
+				"li",
+				"link"
+			],
+			[
+				"extrL",
+				"extractLinks"
+			],
+			[
+				"to",
+				"toString"
+			],
+			[
+				"sub",
+				"substring"
+			],
+			[
+				"cl",
+				"close"
+			],
+			[
+				"socke",
+				"Socket"
+			],
+			[
+				"val",
+				"valOf"
+			],
+			[
+				"fu",
+				"fullMessage"
+			],
+			[
+				"Con",
+				"connection"
+			],
+			[
+				"ba",
+				"background-attachment"
+			],
+			[
+				"va",
+				"value"
+			],
+			[
+				"margin",
+				"margin-top"
+			],
+			[
+				"fo",
+				"font-size"
+			],
+			[
+				"fon",
+				"font-style"
+			],
+			[
+				"ma",
+				"margin-top"
+			],
+			[
+				"tot",
+				"totalScore"
+			],
+			[
+				"d",
+				"document"
+			],
+			[
+				"font",
+				"font-style"
+			],
+			[
+				"pa",
+				"padding-top"
+			],
+			[
+				"mar",
+				"margin"
+			],
+			[
+				"padd",
+				"padding-top"
+			],
+			[
+				"pad",
+				"padding-top"
+			],
+			[
+				"font-",
+				"font-size"
+			],
+			[
+				"text",
+				"text-align"
+			],
+			[
+				"marg",
+				"margin"
+			],
+			[
+				"p",
+				"port"
+			],
+			[
+				"fn",
+				"fname"
+			],
+			[
+				"In",
+				"InvalidPassword"
+			],
+			[
+				"or",
+				"orelse"
+			],
+			[
+				"rece",
+				"receiver"
+			],
+			[
+				"sen",
+				"sender"
+			],
+			[
+				"send",
+				"sendSingleMail"
+			],
+			[
+				"se",
+				"sender"
+			],
+			[
+				"route",
+				"routeMail"
+			],
+			[
+				"from",
+				"from"
+			],
+			[
+				"be",
+				"beforeTerm"
+			],
+			[
+				"bef",
+				"before"
+			],
+			[
+				"wh",
+				"which"
+			],
+			[
+				"da",
+				"data"
+			],
+			[
+				"respo",
+				"response"
+			],
+			[
+				"de",
+				"default"
+			],
+			[
+				"cou",
+				"count"
+			],
+			[
+				"coun",
+				"countMails"
+			],
+			[
+				"read",
+				"readMail"
+			],
+			[
+				"soc",
+				"socketReceive"
+			],
+			[
+				"sock",
+				"socketSend"
+			],
+			[
+				"lo",
+				"lookForOk"
+			],
+			[
+				"loo",
+				"lookForOk"
+			],
+			[
+				"we",
+				"webserver"
+			],
+			[
+				"sende",
+				"senderOK"
+			],
+			[
+				"rcp",
+				"rcptOk"
+			],
+			[
+				"and",
+				"andalso"
+			],
+			[
+				"hos",
+				"hostOk"
+			],
+			[
+				"cle",
+				"client_socket"
+			],
+			[
+				"ho",
+				"hostsender"
+			],
+			[
+				"ser",
+				"server_message"
+			],
+			[
+				"client",
+				"client_socket"
+			],
+			[
+				"fin",
+				"fin5"
+			],
+			[
+				"Fi",
+				"fin5"
+			],
+			[
+				"time",
+				"timeStart"
+			],
+			[
+				"fil",
+				"getFileName"
+			],
+			[
+				"cop",
+				"copyTextFile"
+			],
+			[
+				"ar",
+				"arg"
+			],
+			[
+				"s",
+				"string"
+			],
+			[
+				"Crea",
+				"Creature"
+			],
+			[
+				"arg",
+				"args"
+			],
+			[
+				"po",
+				"pop2"
+			],
+			[
+				"ha",
+				"handle"
+			],
+			[
+				"exe",
+				"executeProg"
+			],
+			[
+				"Exec",
+				"executeProg"
+			],
+			[
+				"Inv",
+				"InvalidPeekPoke"
+			]
+		]
+	},
+	"buffers":
+	[
+		{
+			"file": "/home/akbar/mysites/Test/config/routes.rb",
+			"settings":
+			{
+				"buffer_size": 1752,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "/home/akbar/mysites/Test/app/views/pages/home.html.erb",
+			"settings":
+			{
+				"buffer_size": 122,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "/home/akbar/mysites/Test/db/migrate/20150617230154_create_messages.rb",
+			"settings":
+			{
+				"buffer_size": 165,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "/home/akbar/mysites/Test/app/controllers/messages_controller.rb",
+			"settings":
+			{
+				"buffer_size": 351,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "/home/akbar/mysites/Test/app/assets/stylesheets/messages.scss",
+			"settings":
+			{
+				"buffer_size": 1868,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "/home/akbar/mysites/Test/app/views/messages/index.html.erb",
+			"settings":
+			{
+				"buffer_size": 520,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "/home/akbar/mysites/Test/app/views/messages/new.html.erb",
+			"settings":
+			{
+				"buffer_size": 208,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"contents": "<!DOCTYPE html>\n<html>\n<head>\n  <title>Test</title>\n  <%= stylesheet_link_tag    'application', media: 'all', 'data-turbolinks-track' => true %>\n  <%= javascript_include_tag 'application', 'data-turbolinks-track' => true %>\n  <%= csrf_meta_tags %>\n</head>\n<body>\n\n<%= yield %>\n\n</body>\n</html>\n`",
+			"file": "/home/akbar/mysites/Test/app/views/layouts/application.html.erb",
+			"file_size": 294,
+			"file_write_time": 130790507488375564,
+			"settings":
+			{
+				"buffer_size": 295,
+				"line_ending": "Unix"
+			}
+		}
+	],
+	"build_system": "Packages/Prolog/Prolog.sublime-build",
+	"build_system_choices":
+	[
+		[
+			[
+				[
+					"Packages/Prolog/Prolog.sublime-build",
+					""
+				],
+				[
+					"Packages/SublimeREPL/sublimerepl_build_system_hack.sublime-build",
+					""
+				]
+			],
+			[
+				"Packages/Prolog/Prolog.sublime-build",
+				""
+			]
+		],
+		[
+			[
+				[
+					"Packages/SML (Standard ML)/SML.sublime-build",
+					""
+				],
+				[
+					"Packages/SublimeREPL/sublimerepl_build_system_hack.sublime-build",
+					""
+				]
+			],
+			[
+				"Packages/SML (Standard ML)/SML.sublime-build",
+				""
+			]
+		]
+	],
+	"build_varint": "",
+	"command_palette":
+	{
+		"height": 186.0,
+		"last_filter": "",
+		"selected_items":
+		[
+			[
+				"repl sm",
+				"SublimeREPL: SML"
+			],
+			[
+				"insta",
+				"Package Control: Install Package"
+			],
+			[
+				"repl s",
+				"SublimeREPL: SML"
+			],
+			[
+				"REpl sm",
+				"SublimeREPL: SML"
+			],
+			[
+				"REPL",
+				"SublimeREPL: Python"
+			],
+			[
+				"repl sml",
+				"SublimeREPL: SML"
+			],
+			[
+				"repls",
+				"SublimeREPL: SML"
+			],
+			[
+				"repl r",
+				"SublimeREPL: Ruby"
+			],
+			[
+				"repl ",
+				"SublimeREPL: Matlab"
+			],
+			[
+				"repls ",
+				"SublimeREPL: Clisp"
+			],
+			[
+				"ipyh",
+				"Open IPython Notebook"
+			],
+			[
+				"ipy",
+				"Restart IPython Notebook Kernel"
+			],
+			[
+				"ip",
+				"Open IPython Notebook"
+			],
+			[
+				"install",
+				"Package Control: Advanced Install Package"
+			],
+			[
+				"repl",
+				"SublimeREPL: Python"
+			],
+			[
+				"repl py",
+				"SublimeREPL: Python"
+			],
+			[
+				"sml",
+				"SublimeREPL: SML"
+			]
+		],
+		"width": 598.0
+	},
+	"console":
+	{
+		"height": 162.0,
+		"history":
+		[
+			"import urllib.request,os,hashlib; h = '2deb499853c4371624f5a07e27c334aa' + 'bf8c4e67d14fb0525ba4f89698a6d7e1'; pf = 'Package Control.sublime-package'; ipp = sublime.installed_packages_path(); urllib.request.install_opener( urllib.request.build_opener( urllib.request.ProxyHandler()) ); by = urllib.request.urlopen( 'http://packagecontrol.io/' + pf.replace(' ', '%20')).read(); dh = hashlib.sha256(by).hexdigest(); print('Error validating download (got %s instead of %s), please try manual install' % (dh, h)) if dh != h else open(os.path.join( ipp, pf), 'wb' ).write(by)"
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"expanded_folders":
+	[
+		"/home/akbar/mysites/Test",
+		"/home/akbar/mysites/Test/app",
+		"/home/akbar/mysites/Test/app/assets",
+		"/home/akbar/mysites/Test/app/assets/javascripts",
+		"/home/akbar/mysites/Test/app/assets/stylesheets",
+		"/home/akbar/mysites/Test/app/controllers",
+		"/home/akbar/mysites/Test/app/models",
+		"/home/akbar/mysites/Test/app/views",
+		"/home/akbar/mysites/Test/app/views/layouts",
+		"/home/akbar/mysites/Test/app/views/messages",
+		"/home/akbar/mysites/Test/app/views/pages",
+		"/home/akbar/mysites/Test/db",
+		"/home/akbar/mysites/Test/db/migrate"
+	],
+	"file_history":
+	[
+		"/home/akbar/mysites/Test/.git/COMMIT_EDITMSG",
+		"/home/akbar/MathHub/sites/all/modules/mmt/jobad/search.js",
+		"/home/akbar/MathHub/sites/all/modules/mmt/jobad/planetary-navigation-glossary.js",
+		"/home/akbar/MathHub/sites/all/modules/mmt/jobad/planetary-navigation.js",
+		"/home/akbar/MathHub/sites/all/modules/mmt/jobad/planetary-gitlab.js",
+		"/home/akbar/MathHub/sites/all/modules/mmt/jobad/ontology-navigation.js",
+		"/home/akbar/MathHub/sites/all/modules/mmt/jobad/navigation.js",
+		"/home/akbar/MathHub/sites/all/modules/mmt/jobad/interactive-viewing.js",
+		"/home/akbar/MathHub/sites/all/modules/mmt/jobad/hovering.js",
+		"/home/akbar/MathHub/sites/all/modules/mmt/jobad/folding.js",
+		"/home/akbar/MathHub/sites/all/modules/mmt/jobad/edit.js",
+		"/home/akbar/MathHub/sites/all/modules/mmt/utils/mmt-html.js",
+		"/home/akbar/MathHub/sites/all/modules/oaff/oaff.module",
+		"/home/akbar/Desktop/commandnotes.txt",
+		"/home/akbar/mysites/Test/app/controllers/pages_controller.rb",
+		"/home/akbar/.config/sublime-text-3/Packages/User/Preferences.sublime-settings",
+		"/home/akbar/MathHub/.git/COMMIT_EDITMSG",
+		"/home/akbar/MathHub/sites/all/modules/jobad/jobad.module",
+		"/home/akbar/MathHub/sites/all/modules/oaff/oaff.features.php",
+		"/home/akbar/MathHub/sites/all/modules/oaff/oaff.html_utils.php",
+		"/home/akbar/MathHub/sites/all/modules/mmt/css/mmt.css",
+		"/home/akbar/MathHub/sites/all/modules/oaff/oaff.admin.php",
+		"/home/akbar/MathHub/sites/all/modules/oaff/oaff.info",
+		"/home/akbar/MathHub/.git/MERGE_MSG",
+		"/home/akbar/MathHub/sites/all/modules/oaff/scripts/svg-pan-zoom.js",
+		"/home/akbar/MathHub/sites/all/modules/mmt/utils/mmt-planetary.js",
+		"/home/akbar/MathHub/sites/all/modules/mmt/mmt.module",
+		"/home/akbar/MathHub/sites/all/libraries/jobad/modules/core/jobad/jobad.config.js",
+		"/home/akbar/MathHub/sites/all/modules/jobad/README.txt",
+		"/home/akbar/.cache/.fr-bIr3qM/svg-pan-zoom-master/demo/inline.html",
+		"/home/akbar/MathHub/sites/all/modules/devel/devel_node_access.module",
+		"/home/akbar/nat.pl",
+		"/home/akbar/GenCS/Problem12/Problem12.3.2.sml",
+		"/home/akbar/Desktop/temp.pl",
+		"/home/akbar/GenCS/Problem12/Problem12.3.sml",
+		"/home/akbar/Desktop/NatSciLabCS II/Advanced C/Problem7/Problem7.1/Makefile.txt",
+		"/home/akbar/GenCS/Problem12/Problem12.2.sml",
+		"/home/akbar/MathHub/sites/all/modules/oaff/oaff.logger.php",
+		"/home/akbar/GenCS/Problem11/Promlem11.sml",
+		"/home/akbar/Desktop/Nico Website/en/gallery/jquery.light-carousel.js",
+		"/home/akbar/Desktop/Nico Website/en/gallery/light-carousel.css",
+		"/home/akbar/Desktop/Nico Website/en/category.php",
+		"/home/akbar/Desktop/Nico Website/en/mygallery.php",
+		"/home/akbar/Desktop/Nico Website/en/gallery/index.html",
+		"/home/akbar/GenCS/Problem10/Problem10.1.sml",
+		"/home/akbar/Desktop/temp.sml",
+		"/home/akbar/SMLwebserver/Webserver.sml",
+		"/home/akbar/GenCS/Problem9/index.html",
+		"/home/akbar/MathHub/sites/all/modules/oaff/contribute.xhtml",
+		"/home/akbar/GenCS/Problem11",
+		"/home/akbar/GenCS/Problem10/writetofile.sml",
+		"/opt/lampp/htdocs/nico/test.php",
+		"/home/akbar/Desktop/javascripts.txt",
+		"/home/akbar/sockets.sml",
+		"/home/akbar/GenCS/Problem9/js/app.js",
+		"/opt/lampp/phpmyadmin/config.inc.php",
+		"/home/akbar/GenCS/Problem9/help.html",
+		"/home/akbar/GenCS/Problem9/old/css/main.css",
+		"/home/akbar/GenCS/Problem9/css/style.css",
+		"/home/akbar/Downloads/test.php",
+		"/home/akbar/GenCS/Problem8/Problem8.2.sml",
+		"/home/akbar/GenCS/Problem8/p1.sml",
+		"/home/akbar/GenCS/Problem8/p2.sml",
+		"/home/akbar/GenCS/Problem8/p3.sml",
+		"/home/akbar/GenCS/Problem8/Problem8.1.sml",
+		"/home/akbar/GenCS/Problem8/test.sml",
+		"/home/akbar/GenCS/Problem8/tutorial12042015.txt",
+		"/home/akbar/GenCS/Problem9/css/main.css",
+		"/home/akbar/GenCS/Problem9/index.htm",
+		"/home/akbar/Desktop/GIT/asteroids/game.js",
+		"/home/akbar/GenCS/Problem8/Problem8.1",
+		"/home/akbar/GenCS/Problem8/Problem8.2",
+		"/home/akbar/Problem8.1.sml",
+		"/home/akbar/Desktop/GIT/pappu-pakia/js/pappu.js",
+		"/home/akbar/Desktop/GIT/reflections/lesson_1_reflections.txt",
+		"/home/akbar/multi4.py",
+		"/home/akbar/Desktop/GIT/pappu-pakia/a/js/pappu.js",
+		"/home/akbar/Desktop/example.cpp",
+		"/home/akbar/Desktop/Nico Website/en/index.php",
+		"/home/akbar/openjub-js-sdk/index.html",
+		"/home/akbar/Desktop/GenCS II/Problem6.1.1.txt",
+		"/home/akbar/Desktop/NatSciLabCS II/C++/Problem7.1/quiz1.cpp",
+		"/home/akbar/Desktop/SQLscripts.txt",
+		"/home/akbar/Desktop/untitled.sml",
+		"/usr/lib/smlnj/bin/sml",
+		"/home/akbar/Desktop/smlserver-4.3.2-i386/lib/smlserver/basis/Word.sml",
+		"/home/akbar/Desktop/GenCS II/sockets.sml",
+		"/home/akbar/Desktop/GenCS II/Problem5.1.sml",
+		"/home/akbar/untitled.sml",
+		"/home/akbar/Desktop/GenCS II/untitled.sml",
+		"/home/akbar/Desktop/NatSciLabCS II/C++/Problem6.2/TournamentMember.h",
+		"/home/akbar/Desktop/NatSciLabCS II/C++/Problem6.2/TournamentMember.cpp",
+		"/home/akbar/Problem 5.3.sml",
+		"/home/akbar/Desktop/algorithm.py",
+		"/home/akbar/Desktop/tutrialCS08032014.txt",
+		"/home/akbar/Desktop/hanoi.sml",
+		"/home/akbar/Desktop/Problem5.1.sml",
+		"/home/akbar/Desktop/GenCS II/Problem 5.3.sml",
+		"/home/akbar/Desktop/NatSciLabCS II/Problem5.2/Creature.cpp",
+		"/home/akbar/jPeople/index.html",
+		"/media/akbar/Windows8_OS/Users/Akbar/OneDrive/GenCS 2/Problem4.2.sml",
+		"/media/akbar/Windows8_OS/Users/Akbar/OneDrive/DOCS/copy_txt_file.sml",
+		"/media/akbar/Windows8_OS/Users/Akbar/OneDrive/DOCS/fun.sml",
+		"/media/akbar/Windows8_OS/Users/Akbar/OneDrive/DOCS/any.sml",
+		"/media/akbar/Windows8_OS/Users/Akbar/OneDrive/DOCS/test.sml",
+		"/home/akbar/Downloads/pdfbox-1.8.8/pdfbox/src/main/java/org/apache/pdfbox/Version.java",
+		"/home/akbar/Desktop/NatSciLabCS II/Problem1.1.c",
+		"/home/akbar/Desktop/Sudoku_v1.0/Sudoku.java",
+		"/media/akbar/Windows8_OS/Users/Akbar/Link to OneDrive/NatSciLabCS I/8/Problem 8.5.c",
+		"/home/akbar/Desktop/Java/Chap17Part7.java",
+		"/home/akbar/Desktop/Sudoku/Sudoku.java",
+		"/home/akbar/Desktop/Problem2.1.sml",
+		"/media/akbar/Windows8_OS/Users/Akbar/OneDrive/DOCS/CS assignment 10.2.3.sml",
+		"/media/akbar/Windows8_OS/Users/Akbar/OneDrive/DOCS/CS assignment 10.2.4.sml",
+		"/home/akbar/Desktop/GenCS II/Problem 2.1.sml",
+		"/home/akbar/Downloads/Problem 2.1.sml",
+		"/home/akbar/Desktop/Sudoku.java",
+		"/home/akbar/Desktop/hangman_v1.java",
+		"/media/akbar/My Drive/Self-study/P1T1",
+		"/home/akbar/Desktop/TestSudoku.java",
+		"/media/akbar/Windows8_OS/Users/Akbar/OneDrive/Java/Chap13Part3.java",
+		"/media/akbar/Windows8_OS/Users/Akbar/OneDrive/Java/Manager.java",
+		"/media/akbar/Windows8_OS/Users/Akbar/OneDrive/Java/Chap13Part4.java",
+		"/media/akbar/Windows8_OS/Users/Akbar/OneDrive/Java/Employee.java",
+		"/media/akbar/Windows8_OS/Users/Akbar/OneDrive/Java/Chap13Part2.java",
+		"/media/akbar/Windows8_OS/Users/Akbar/OneDrive/Java/Chap13Part1.java",
+		"/media/akbar/Windows8_OS/Users/Akbar/OneDrive/Java/Chap11Part3.java",
+		"/media/akbar/Windows8_OS/Users/Akbar/OneDrive/Java/Chap11Part2.java"
+	],
+	"find":
+	{
+		"height": 44.0
+	},
+	"find_in_files":
+	{
+		"height": 127.0,
+		"where_history":
+		[
+			"<open files>"
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+			"processData",
+			"async",
+			"url",
+			"Show definition",
+			"qmt.exec",
+			"toobject",
+			"setSelected",
+			"#math-selected",
+			"mmtUrl",
+			"'jobad:owner'",
+			"\"jobad:owner\"",
+			"'jobad:component'",
+			"\"jobad:component\"",
+			"Show Notations",
+			"$",
+			"show log",
+			"jobad:mmtref",
+			"jobad:",
+			"'jobad:source'",
+			"\"jobad:source\"",
+			"\"jobad:varref\"",
+			"'jobad:varref'",
+			"varref",
+			"$",
+			"\"jobad:href\"",
+			"'jobad:href'",
+			"'jobad:href', \"jobad:href\"",
+			"jQuery",
+			"$",
+			"'data-mmt-symref'",
+			"\"jobad:href\"",
+			"'jobad:href'",
+			"$",
+			"jQuery",
+			"$",
+			"$=",
+			"mmtattr",
+			"getPreventDefault",
+			"$",
+			"{\n",
+			"jQuery",
+			"jQuery]",
+			"jQuery",
+			"path_save",
+			"oaff_node_svg",
+			"oaff_node_source",
+			"svg",
+			"path_save",
+			"!",
+			"oaff_save_path",
+			"path_save",
+			"path save",
+			"path_save",
+			"oaff_save_path",
+			"oaff_get_log_html",
+			"source",
+			"oaff_crawl_source_folder",
+			"breadcrumb",
+			"print",
+			"oaff_crawler_update_source_folder",
+			"oaff_get_path_info",
+			"oaff_svg_html",
+			"oaff_svg_",
+			"file_get_contents",
+			"oaff_node_view",
+			"virtdoc",
+			"META-INF",
+			"oaff_config",
+			"_oaff_crawler_update_content($groups)",
+			"_oaff_crawler_update_content($groups);",
+			"oaff_create_nodes",
+			"node_view",
+			"href",
+			"oaff_initialize",
+			"JOBAD",
+			"oaff_generate_tabs",
+			"oaff_get_log_html",
+			"oaff_generate_tabs",
+			"libraries",
+			"defa",
+			"g4",
+			"demo-tiger",
+			"drupal_add_js",
+			"oaff_save_path",
+			"is_set",
+			"oaff_svg_html",
+			"oaff_svg_html\n",
+			"oaff_svg_html\n\n",
+			"oaff_save_path\n",
+			"oaff_svg_html",
+			"svg",
+			"    \n",
+			"save_path",
+			"breadcru",
+			"path_save",
+			"path_sava",
+			"svg",
+			"pagina",
+			"pagination",
+			"pagina",
+			"filter",
+			"oaff_get_log_html",
+			"oaff_node_view",
+			"class_map",
+			"class=\"' . $class_map[$type]",
+			"sub",
+			"touch-file",
+			"oaff_log",
+			"oaff_admin_administrate",
+			"oaff_features_common_errors",
+			"broken",
+			"oaff_features_common_errors",
+			"touch",
+			"update",
+			"”",
+			"str",
+			"msg)) \n	);\n",
+			")) \n	);\n",
+			" \n	);\n",
+			"\n	);\n",
+			"	);\n",
+			");\n",
+			"stringToBytes",
+			"sock",
+			"(){}</",
+			"client",
+			"splice",
+			"top"
+		],
+		"highlight": false,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+			"mmtattr.owner",
+			"mmtattr.component",
+			"jQuery",
+			"mmtattr.varref",
+			"jQuery",
+			"mmtattr.symref",
+			"$",
+			"jQuery",
+			"mmtattr.symref",
+			"jQuery",
+			"wrapper",
+			"node-svg",
+			"style=\"color:' . $class_map[$type]",
+			"\"",
+			"*"
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"selected": 5,
+			"sheets":
+			[
+				{
+					"buffer": 0,
+					"file": "/home/akbar/mysites/Test/config/routes.rb",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1752,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								104,
+								104
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Ruby/Ruby.tmLanguage",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 3,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "/home/akbar/mysites/Test/app/views/pages/home.html.erb",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 122,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								122,
+								122
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Rails/HTML (Rails).tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 6,
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "/home/akbar/mysites/Test/db/migrate/20150617230154_create_messages.rb",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 165,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								122,
+								122
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Ruby/Ruby.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 4,
+					"type": "text"
+				},
+				{
+					"buffer": 3,
+					"file": "/home/akbar/mysites/Test/app/controllers/messages_controller.rb",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 351,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								203,
+								203
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Ruby/Ruby.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 2,
+					"type": "text"
+				},
+				{
+					"buffer": 4,
+					"file": "/home/akbar/mysites/Test/app/assets/stylesheets/messages.scss",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1868,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								1868,
+								1868
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Text/Plain text.tmLanguage",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 5,
+					"file": "/home/akbar/mysites/Test/app/views/messages/index.html.erb",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 520,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								182,
+								520
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Rails/HTML (Rails).tmLanguage",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				},
+				{
+					"buffer": 6,
+					"file": "/home/akbar/mysites/Test/app/views/messages/new.html.erb",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 208,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								208,
+								208
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Rails/HTML (Rails).tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 5,
+					"type": "text"
+				},
+				{
+					"buffer": 7,
+					"file": "/home/akbar/mysites/Test/app/views/layouts/application.html.erb",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 295,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								295,
+								295
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Rails/HTML (Rails).tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 7,
+					"type": "text"
+				}
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 28.0
+	},
+	"input":
+	{
+		"height": 38.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.exec":
+	{
+		"height": 253.0
+	},
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"output.unsaved_changes":
+	{
+		"height": 118.0
+	},
+	"pinned_build_system": "",
+	"project": "ruby_test.sublime-project",
+	"replace":
+	{
+		"height": 82.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 782.0,
+		"last_filter": "",
+		"selected_items":
+		[
+			[
+				"",
+				"~/jacobsmkt.sublime-project"
+			]
+		],
+		"width": 594.0
+	},
+	"select_symbol":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"selected_group": 0,
+	"settings":
+	{
+	},
+	"show_minimap": true,
+	"show_open_files": true,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 367.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}

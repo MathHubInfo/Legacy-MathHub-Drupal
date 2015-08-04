@@ -47,15 +47,15 @@ function field_base_features_export_options() {
  */
 function field_instance_features_export_options() {
   $options = array();
-  $instances = field_info_instances();
-  foreach ($instances as $entity_type => $bundles) {
-    foreach ($bundles as $bundle => $fields) {
-      foreach ($fields as $field) {
-        $identifier = "{$entity_type}-{$bundle}-{$field['field_name']}";
+  foreach (field_info_fields() as $field_name => $field) {
+    foreach ($field['bundles'] as $entity_type => $bundles) {
+      foreach ($bundles as $bundle) {
+        $identifier = "{$entity_type}-{$bundle}-{$field_name}";
         $options[$identifier] = $identifier;
       }
     }
   }
+  ksort($options);
   return $options;
 }
 
@@ -151,7 +151,7 @@ function field_base_features_export_render($module, $data, $export = NULL) {
   foreach ($data as $identifier) {
     if ($field = features_field_base_load($identifier)) {
       unset($field['columns']);
-      // unset($field['locked']);
+      unset($field['foreign keys']);
       // Only remove the 'storage' declaration if the field is using the default
       // storage type.
       if ($field['storage']['type'] == variable_get('field_storage_default', 'field_sql_storage')) {
@@ -166,8 +166,15 @@ function field_base_features_export_render($module, $data, $export = NULL) {
 
       _field_instance_features_export_sort($field);
       $field_export = features_var_export($field, '  ');
+      $field_prefix = '  // Exported field_base: ';
       $field_identifier = features_var_export($identifier);
-      $code[] = "  // Exported field_base: {$field_identifier}";
+      if (features_field_export_needs_wrap($field_prefix, $field_identifier)) {
+        $code[] = rtrim($field_prefix);
+        $code[] = "  // {$field_identifier}";
+      }
+      else {
+        $code[] = $field_prefix . $field_identifier;
+      }
       $code[] = "  \$field_bases[{$field_identifier}] = {$field_export};";
       $code[] = "";
     }
@@ -190,8 +197,15 @@ function field_instance_features_export_render($module, $data, $export = NULL) {
     if ($instance = features_field_instance_load($identifier)) {
       _field_instance_features_export_sort($instance);
       $field_export = features_var_export($instance, '  ');
+      $instance_prefix = '  // Exported field_instance: ';
       $instance_identifier = features_var_export($identifier);
-      $code[] = "  // Exported field_instance: {$instance_identifier}";
+      if (features_field_export_needs_wrap($instance_prefix, $instance_identifier)) {
+        $code[] = rtrim($instance_prefix);
+        $code[] = "  // {$instance_identifier}";
+      }
+      else {
+        $code[] = $instance_prefix . $instance_identifier;
+      }
       $code[] = "  \$field_instances[{$instance_identifier}] = {$field_export};";
       $code[] = "";
 
@@ -260,7 +274,8 @@ function field_base_features_rebuild($module) {
       // Create or update field.
       if (isset($existing_fields[$field['field_name']])) {
         $existing_field = $existing_fields[$field['field_name']];
-        if ($field + $existing_field != $existing_field) {
+        $array_diff_result = drupal_array_diff_assoc_recursive($field + $existing_field, $existing_field);
+        if (!empty($array_diff_result)) {
           field_update_field($field);
         }
       }
@@ -294,12 +309,22 @@ function field_instance_features_rebuild($module) {
       // Create or update field instance.
       if (isset($existing_instances[$field_instance['entity_type']][$field_instance['bundle']][$field_instance['field_name']])) {
         $existing_instance = $existing_instances[$field_instance['entity_type']][$field_instance['bundle']][$field_instance['field_name']];
-        if ($field_instance + $existing_instance != $existing_instance) {
-          field_update_instance($field_instance);
+        if ($field_instance + $existing_instance !== $existing_instance) {
+          try {
+            field_update_instance($field_instance);
+          }
+          catch (FieldException $e) {
+            watchdog('features', 'Attempt to update field instance %label (in %entity entity type %bundle bundle) failed: %message', array('%label' => $field_instance['field_name'], '%entity' => $field_instance['entity_type'], '%bundle' => $field_instance['bundle'], '%message' => $e->getMessage()), WATCHDOG_ERROR);
+          }
         }
       }
       else {
-        field_create_instance($field_instance);
+        try {
+          field_create_instance($field_instance);
+        }
+        catch (FieldException $e) {
+          watchdog('features', 'Attempt to create field instance %label (in %entity entity type %bundle bundle) failed: %message', array('%label' => $field_instance['field_name'], '%entity' => $field_instance['entity_type'], '%bundle' => $field_instance['bundle'], '%message' => $e->getMessage()), WATCHDOG_ERROR);
+        }
         $existing_instances[$field_instance['entity_type']][$field_instance['bundle']][$field_instance['field_name']] = $field_instance;
       }
     }
@@ -363,48 +388,8 @@ function field_features_export_options() {
  */
 function field_features_export($data, &$export, $module_name = '') {
   $pipe = array();
-  $map = features_get_default_map('field');
-
-  // The field_default_fields() hook integration is provided by the
-  // features module so we need to add it as a dependency.
-  $export['dependencies']['features'] = 'features';
-
-  foreach ($data as $identifier) {
-    if ($field = features_field_load($identifier)) {
-      // If this field is already provided by another module, remove the field
-      // and add the other module as a dependency.
-      if (isset($map[$identifier]) && $map[$identifier] != $module_name) {
-        if (isset($export['features']['field'][$identifier])) {
-          unset($export['features']['field'][$identifier]);
-        }
-        $module = $map[$identifier];
-        $export['dependencies'][$module] = $module;
-      }
-      // If the field has not yet been exported, add it
-      else {
-        $export['features']['field'][$identifier] = $identifier;
-        $export['dependencies'][$field['field_config']['module']] = $field['field_config']['module'];
-        if ($field['field_config']['storage']['type'] != variable_get('field_storage_default', 'field_sql_storage')) {
-          $export['dependencies'][$field['field_config']['storage']['module']] = $field['field_config']['storage']['module'];
-        }
-        $export['dependencies'][$field['field_instance']['widget']['module']] = $field['field_instance']['widget']['module'];
-        foreach ($field['field_instance']['display'] as $key => $display) {
-          if (isset($display['module'])) {
-            $export['dependencies'][$display['module']] = $display['module'];
-            // @TODO: handle the pipe to image styles
-          }
-        }
-        // If taxonomy field, add in the vocabulary
-        if ($field['field_config']['type'] == 'taxonomy_term_reference' && !empty($field['field_config']['settings']['allowed_values'])) {
-          foreach ($field['field_config']['settings']['allowed_values'] as $allowed_values) {
-            if (!empty($allowed_values['vocabulary'])) {
-              $pipe['taxonomy'][] = $allowed_values['vocabulary'];
-            }
-          }
-        }
-      }
-    }
-  }
+  // Convert 'field' to 'field_instance' on features-update.
+  $pipe['field_instance'] = $data;
   return $pipe;
 }
 
@@ -499,12 +484,23 @@ function field_features_rebuild($module) {
       $field_config = $field['field_config'];
       if (isset($existing_fields[$field_config['field_name']])) {
         $existing_field = $existing_fields[$field_config['field_name']];
-        if ($field_config + $existing_field != $existing_field) {
-          field_update_field($field_config);
+        $array_diff_result = drupal_array_diff_assoc_recursive($field_config + $existing_field, $existing_field);
+        if (!empty($array_diff_result)) {
+          try {
+            field_update_field($field_config);
+          }
+          catch (FieldException $e) {
+            watchdog('features', 'Attempt to update field %label failed: %message', array('%label' => $field_config['field_name'], '%message' => $e->getMessage()), WATCHDOG_ERROR);
+          }
         }
       }
       else {
-        field_create_field($field_config);
+        try {
+          field_create_field($field_config);
+        }
+        catch (FieldException $e) {
+          watchdog('features', 'Attempt to create field %label failed: %message', array('%label' => $field_config['field_name'], '%message' => $e->getMessage()), WATCHDOG_ERROR);
+        }
         $existing_fields[$field_config['field_name']] = $field_config;
       }
 
@@ -512,7 +508,7 @@ function field_features_rebuild($module) {
       $field_instance = $field['field_instance'];
       if (isset($existing_instances[$field_instance['entity_type']][$field_instance['bundle']][$field_instance['field_name']])) {
         $existing_instance = $existing_instances[$field_instance['entity_type']][$field_instance['bundle']][$field_instance['field_name']];
-        if ($field_instance + $existing_instance != $existing_instance) {
+        if ($field_instance + $existing_instance !== $existing_instance) {
           field_update_instance($field_instance);
         }
       }
@@ -547,4 +543,24 @@ function features_field_load($identifier) {
     );
   }
   return FALSE;
+}
+
+/**
+ * Determine if a field export line needs to be wrapped.
+ *
+ * Drupal code standards specify that comments should wrap at 80 characters or
+ * less.
+ *
+ * @param string $prefix
+ *   The prefix to be exported before the field identifier.
+ * @param string $identifier
+ *   The field identifier.
+ *
+ * @return BOOL
+ *   TRUE if the line should be wrapped after the prefix, else FALSE.
+ *
+ * @see https://www.drupal.org/node/1354
+ */
+function features_field_export_needs_wrap($prefix, $identifier) {
+  return (strlen($prefix) + strlen($identifier) > 80);
 }

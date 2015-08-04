@@ -1993,7 +1993,7 @@ function oaff_generate_blank_page($title, $body) {
 
 function oaff_report_issue() {
   $base_url = $GLOBALS['base_url'];
-  $path = $_GET['q'];;
+  $path = drupal_get_path_alias();
   $mhlinkSegs = explode("report_issue", $path);
   $mhlink = $base_url . $mhlinkSegs[1];
   $link = "https://github.com/KWARC/MathHub/issues/new?issue";
