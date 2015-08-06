@@ -381,7 +381,7 @@ function mmt_get_compiled($nid, $location, $compiler = "stex-omdoc") {
   if (planetary_repo_stat_file($log_location)) { //log exists
     $mtime = planetary_repo_stat_file($log_location)['mtime'];
     $last_ran_time = oaff_get_mtime($nid, $log_location);
-    if ($last_ran_time == $mtime) { //no change
+    if (false && $last_ran_time == $mtime) { //no change
       $mmt_status = array("conversion" => -1, "messages" => array()); // -1 means log not changed  
       oaff_log("OAFF(MMT)", "No change for compiler $compiler, no need to re-process errors");
     } else {
@@ -455,41 +455,51 @@ function _mmt_produce_status_msg($log) {
   $lvlmap = array(0 => "Info", 1 => "Warning", 2 => "Error", 3 => "Fatal");
   try {
     $xmllog = new SimpleXMLElement($log);
+    $dom = dom_import_simplexml($xmllog);
     $errors = array();
     $conversion_status = 0;
-    foreach ($xmllog->error as $error) {
-      $current = array();
-      $current['shortMsg'] = $error['shortMsg'];
-      $level = (string) $error['level'];
-      if (!isset($lvlmap[$level])) {
-        $level = 3; //assuming Fatal.
-      }
-      $current['type'] = $lvlmap[$level];
-      $conversion_status = max($conversion_status, $level);
-      $xmlstacktrace = $error->stacktrace;
-      $stacktrace = '';
-      $stack_count = min(5, count($xmlstacktrace->element));
-      for($i = 0; $i < $stack_count; $i++ ) {
-        $stacktrace .= (string) $xmlstacktrace->element[$i];
-        $stacktrace .= "\n";      
-      }
-      $current['longMsg'] = $stacktrace;
-      if (isset($error['sref'])) {
-        $positions = explode(":",$error['sref']);
-        if (count($positions) == 2) {
-          $from = explode(".", $positions[0]);
-          $to = explode(".", $positions[1]);
-          $current["srcref"] = array();
-          $current["srcref"]['from'] = array();
-          $current["srcref"]['from']['line'] = $from[1] + 1; // oaff standard is that lines nr starts at 1 not 0
-          $current["srcref"]['from']['col'] = $from[2] + 1; //same for columns
-          $current["srcref"]['to'] = array();
-          $current["srcref"]['to']['line'] = $to[1] + 1; // oaff standard is that lines nr starts at 1 not 0
-          $current["srcref"]['to']['col'] = $to[2] + 1; // same for columns
+    $domErrors = $dom->childNodes;
+    for($i = 0; $i < $domErrors->length; $i++) {
+      $domErr = $domErrors->item($i);
+      if ($domErr->nodeType == XML_ELEMENT_NODE) { //actual error node
+        $current = array();
+        $current['shortMsg'] = $domErr->getAttribute('shortMsg');
+        $level = $domErr->getAttribute('level');
+        if (!isset($lvlmap[$level])) {
+          $level = 3; //assuming Fatal.
         }
+        $conversion_status = max($conversion_status, $level);
+        $current['type'] = $lvlmap[$level];
+        if ($domErr->hasAttribute('sref')) {
+          $srcref = $domErr->getAttribute('sref');
+          $positions = explode(":", $srcref);
+          if (count($positions) == 2) {
+            $from = explode(".", $positions[0]);
+            $to = explode(".", $positions[1]);
+            $current["srcref"] = array();
+            $current["srcref"]['from'] = array();
+            $current["srcref"]['from']['line'] = $from[1] + 1; // oaff standard is that lines nr starts at 1 not 0
+            $current["srcref"]['from']['col'] = $from[2] + 1; //same for columns
+            $current["srcref"]['to'] = array();
+            $current["srcref"]['to']['line'] = $to[1] + 1; // oaff standard is that lines nr starts at 1 not 0
+            $current["srcref"]['to']['col'] = $to[2] + 1; // same for columns
+          }
+        }
+
+        $current['longMsg'] = '';
+        if ($domErr->childNodes->item(0)->nodeType == XML_TEXT_NODE) {
+          $current['longMsg'] .= trim($domErr->childNodes->item(0)->nodeValue);
+        }
+
+        $strace = $domErr->getElementsByTagName("stacktrace")->item(0);
+        $stackElems = $strace->getElementsByTagName("element");
+        for ($j = 0; $j < $stackElems->length && $j < 5; $j++) {
+          $current['longMsg'] .= $stackElems->item($j)->nodeValue . "\n";
+        }
+        $errors[] = $current;
       }
-      $errors[] = $current;
     }
+
     $status['messages'] = $errors;
     $status['conversion'] = $conversion_status; 
   } catch (Exception $e) { //invalid xml, possibly empty -> no errors
