@@ -381,7 +381,7 @@ function mmt_get_compiled($nid, $location, $compiler = "stex-omdoc") {
   if (planetary_repo_stat_file($log_location)) { //log exists
     $mtime = planetary_repo_stat_file($log_location)['mtime'];
     $last_ran_time = oaff_get_mtime($nid, $log_location);
-    if (false && $last_ran_time == $mtime) { //no change
+    if ($last_ran_time == $mtime) { //no change
       $mmt_status = array("conversion" => -1, "messages" => array()); // -1 means log not changed  
       oaff_log("OAFF(MMT)", "No change for compiler $compiler, no need to re-process errors");
     } else {
@@ -488,7 +488,7 @@ function _mmt_produce_status_msg($log) {
 
         $current['longMsg'] = '';
         if ($domErr->childNodes->item(0)->nodeType == XML_TEXT_NODE) {
-          $current['longMsg'] .= trim($domErr->childNodes->item(0)->nodeValue);
+          $current['longMsg'] .= trim($domErr->childNodes->item(0)->nodeValue) . "\n";
         }
 
         $strace = $domErr->getElementsByTagName("stacktrace")->item(0);
