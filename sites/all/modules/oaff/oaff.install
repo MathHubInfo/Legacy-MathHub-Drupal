@@ -337,6 +337,66 @@ function oaff_schema() {
     ),
     'primary key' => array('mid'),  
   );
+  $schema['oaff_archive_stat'] = array(
+    'description' => 'the statistics of archive ',
+    'fields' => array(
+      'aid' => array(
+        'description' => 'The primary identifier of an archive',
+        'type' => 'serial', 
+        'unsigned' => true,
+        'not null' => true,
+      ),
+      'mh_archive' => array(
+        'description' => 'The archive name',
+        'type' => 'varchar',
+        'length' => 63,
+        'not null' => true,
+      ),
+      'view' => array(
+        'description' => 'The number of views in the archive',
+        'type' => 'int',
+        'unsigned' => true,
+        'not null' => true,
+      ),
+      'theory' => array(
+        'description' => 'The number of theories in the archive',
+        'type' => 'int',
+        'unsigned' => true,
+        'not null' => true,
+      ),
+      'definition' => array(
+        'description' => 'The number of definitions in the archive',
+        'type' => 'int',
+        'unsigned' => true,
+        'not null' => true,
+      ),
+      'constant' => array(
+        'description' => 'The number of constatns in the archive',
+        'type' => 'int',
+        'unsigned' => true,
+        'not null' => true,
+      ),
+      'file' => array(
+        'description' => 'The number of files in the archive',
+        'type' => 'int',
+        'unsigned' => true,
+        'not null' => true,
+      ),
+      'omdoc' => array(
+        'description' => 'OMDoc size',
+        'type' => 'varchar',
+        'length' => 63,
+        'not null' => true,
+      ),
+      'source' => array(
+        'description' => 'The source size',
+        'type' => 'varchar',
+        'length' => 63,
+        'not null' => true,
+      ),
+    ),
+    'primary key' => array('aid'),  
+  );
   return $schema;
 }
 

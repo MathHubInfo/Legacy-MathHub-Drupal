@@ -224,15 +224,76 @@ function oaff_autogenerate_archive_doc($group, $archive) {
   }
   $html .= $desc;
   $html .= $resp;
+  $html .= oaff_autogenerate_archive_statistics($group, $archive);
   $content_path = oaff_join_path(array($group, $archive, 'export/planetary/narration', '.html'));
   $html .= "<div>" . planetary_repo_load_file($content_path) . "</div>";
- 
   //$html .= "<ul><li><a href=\"/$group/$archive/source\">Content</a> </li>
   //             <li><a href=\"http://gl.mathhub.info/$group/$archive\" target=\"_blank\">Sources</a> </li>
   //              <li><a href=\"/mh/common-errors?&groups=$group&archives=$archive\">Errors</a> </li></ul>";
   return $html;
 }
 
+/**
+ * @param $group The group of the archive
+ * @param $archive The archive to get statististics for
+ * @return Statistics about the archive
+ */
+function oaff_autogenerate_archive_statistics($group, $archive) {
+  $result = db_select('oaff_archive_stat', 'a')
+    ->fields('a')
+    ->condition('mh_archive', $archive, '=')
+    ->execute()
+    ->fetchAssoc();
+  $out = '<div class="panel panel-default">';
+  $out .= '<div class="panel-heading"> Statistics</div>';
+  $out .= '<div class="panel-body">';
+  $out .= "<li>Views: " . $result['view'] . "</li>";
+  $out .= "<li>Theories: " . $result['theory'] . "</li>";
+  $out .= "<li>Definitions: " . $result['definition'] . "</li>";
+  $out .= "<li>Constants: " . $result['constant'] . "</li>";
+  $out .= "<li>Files: " . $result['file'] . "</li>";
+  $out .= "<li>OMDoc size: " . $result['omdoc'] . "</li>";
+  $out .= "<li>Source size: " . $result['source'] . "</li>";
+  $out .= "</div></div>";
+  return $out;
+}
+
+/**
+ * Updates archive statistics in the database
+ * @param $group The group of the archive
+ * @param $archive The archive name to update statistics for
+ */
+function oaff_update_archive_statistics($group, $archive) {
+  $result = db_select('node', 'n')
+    ->fields('n', array('nid'))
+    ->condition('title', $archive, '=')
+    ->execute()
+    ->fetchAssoc();
+  $pid = $result['nid'];
+  $file_nr = count(oaff_get_children($pid));
+  $archive_path = "/var/data/localmh/MathHub/$group/$archive/";
+  $omdoc_path = oaff_join_path(array($archive_path, 'content', 'http..mathhub.info', $group, $archive));
+  $stat_tags = array('theory' => '', 'definition' => '', 'constant' => '', 'view' => '');
+  foreach ($stat_tags as $key => $value) {
+    $stat_tags[$key] = exec('cd ' . $omdoc_path . '; fgrep "</' . $key . '>" * -R | wc -l');  
+  }
+  $source_size = exec("du -hs " . $archive_path . " | cut -f1");
+  $omdoc_size = exec("du -hs " . $omdoc_path . " | cut -f1");
+  db_merge('oaff_archive_stat')
+    ->key(array(
+      'mh_archive' => $archive,
+    ))
+    ->fields(array(
+      'view' => $stat_tags['view'],
+      'theory' => $stat_tags['theory'],
+      'definition' => $stat_tags['definition'],
+      'constant' => $stat_tags['constant'],
+      'file' => $file_nr,
+      'omdoc' => $omdoc_size,
+      'source' => $source_size,
+    ))
+    ->execute();
+}
 
 /**
  * implements hook_filed_formatter view, 
@@ -1165,6 +1226,7 @@ function _oaff_crawler_update_content($groups) {
       $archive_id = $oaff_config['archive_id'][$group][$archive];
       $srcids = oaff_crawler_update_source_folder($group, $archive, $archive_id, "");
       oaff_update_children($aid, $srcids);
+      oaff_update_archive_statistics($group, $archive);
       if ($oaff_config['latest_nodes'] >= 1000) {
         break 2;
       }
@@ -1464,9 +1526,10 @@ function oaff_update_children($pid, $ncids) {
 }
 
 /**
-* Get children nids of the parent nid
-* @param $pid Node id of the parent node
-*/
+ * Get children nids of the parent nid
+ * @param $pid Node id of the parent node
+ * @return Array of nids
+ */
 function oaff_get_children($pid) {
   $result = db_select('oaff_node_parents', 'p')
       ->fields('p', array('cid'))
