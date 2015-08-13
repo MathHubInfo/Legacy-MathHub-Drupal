@@ -1555,13 +1555,19 @@ function oaff_get_children($pid) {
  */
 function oaff_set_children($pid, $cids) {
   foreach ($cids as $cid) {
-    db_insert('oaff_node_parents')
-      ->fields(array(
-        'cid' => $cid,
-        'pid' => $pid,
-      ))
+    db_merge('oaff_node_parents')
+      ->key(array(
+          'cid' => $cid,
+          'pid' => $pid,
+        ))
       ->execute();
   }
+}
+
+function oaff_remove_child($cid) {
+  db_delete('oaff_node_parents')
+  ->condition('cid', $cid)
+  ->execute();
 }
 
 function oaff_set_mtime($nid, $mtime, $file) {
@@ -1701,6 +1707,10 @@ function oaff_create_node($title, $lang, $format, $dpath, $location, $node_type)
   node_save($newnode);
   return $newnode->nid;
 }
+
+/*function oaff_node_delete($node) {
+  oaff_remove_child($node->nid);
+}*/
 
 /**
  * created an article node programmatically, (for OAFF documents corresponding to folders in source)
