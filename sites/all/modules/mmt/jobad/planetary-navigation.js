@@ -138,7 +138,7 @@ var planetaryNavigation = {
 	*/
 	parseServerResponse: function(response) {
 		var subject = $(response).attr("data-subject");
-		var definitions = $(response).find("definition");
+		var definitions = $(response).find("result");
 		var result = {};
 		result['title'] = subject;
 		if (definitions.length <= 0) {
