@@ -2125,6 +2125,34 @@ function oaff_config_submit($form, &$form_state) {
 }
 
 /**
+ * submit function of the oaff configuration form configuration file
+ * @param $form the form to be validated
+ * @param $form the form state, including filled in values
+ */
+function oaff_config_save_path($form, &$form_state) {
+  $path = $form_state['values']['oaff_path_to_config_file'];
+  $oaff_config = variable_get('oaff_config');
+  $oaff_config['config_file'] = $path;
+  variable_set("oaff_config", $oaff_config);
+
+  $formats_s = oaff_config_variable_get('formats', variable_get('oaff_archive_formats'));
+  $node_types_s = oaff_config_variable_get('node_types', variable_get('oaff_format_node_types'));
+  $extensions_s = oaff_config_variable_get('extensions', variable_get('oaff_format_extensions'));
+  $logging = oaff_config_variable_get('logging', variable_get('oaff_logging_enabled'));
+
+  variable_set('oaff_archive_formats', $formats_s);
+  variable_set('oaff_format_node_types', $node_types_s);
+  variable_set('oaff_format_extensions', $extensions_s);
+  variable_set('oaff_logging_enabled', $logging);
+
+  oaff_config_variable_set('test', 'test');
+  oaff_config_variable_delete('test');
+
+  oaff_config_set($formats_s, $node_types_s, $extensions_s, $logging);
+  drupal_set_message("Path saved and settings loaded");
+}
+
+/**
  * helper function to set oaff configuration, called by oaff_config_submit and oaff_install
  * @param $formats_S string encoding information of archive - format pairs
  * @param $node_types_S string encoding information of format - node_type pairs
@@ -2164,6 +2192,11 @@ function oaff_config_set($formats_s, $node_types_s, $extensions_s, $logging) {
   $oaff_config['extensions'] = $extensions;
   $oaff_config['logging'] = $logging;
   variable_set("oaff_config", $oaff_config);
+
+  oaff_config_variable_set('formats', $formats_s);
+  oaff_config_variable_set('node_types', $node_types_s); 
+  oaff_config_variable_set('extensions', $extensions_s);
+  oaff_config_variable_set('logging', $logging);
 }
 
 /**
@@ -2173,28 +2206,52 @@ function oaff_config_set($formats_s, $node_types_s, $extensions_s, $logging) {
  * @return the newly built form
  */
 function oaff_config_form($form, &$form_state) {
-  $form['oaff_archive_formats'] = array(
+  $oaff_config = variable_get('oaff_config', '');
+  $form['oaff_config_file'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Configuration file'),
+  );
+
+  $form['oaff_config_file']['oaff_path_to_config_file'] = array(
+    '#type' => 'textfield',
+    '#title' => t('The path to MathHub configuration file'),
+    '#default_value' => $oaff_config['config_file'],
+    '#description' => t('The file contains JSON object where keys are variable names and values are corresponding values. If file doesn\'t exist, all data from fields below will be saved to that file. If file exists data from the file will be loaded to database.'),
+  );
+
+  $form['oaff_config_file']['oaff_save_config_file'] = array(
+    '#type' => 'submit',
+    '#value' => t('Load settings'),
+    '#submit' => array('oaff_config_save_path'),
+  );
+
+  $form['oaff_config'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Configuration settings'),
+  );
+
+  $form['oaff_config']['oaff_archive_formats'] = array(
     '#type' => 'textarea',
     '#title' => t('The Text Format associated with each archive'),
     '#default_value' => variable_get('oaff_archive_formats', ''),
     '#description' => t(' Archive name and its associated text format separated by space. One such pair per line'),
   );
 
-  $form['oaff_format_node_types'] = array(
+  $form['oaff_config']['oaff_format_node_types'] = array(
     '#type' => 'textarea',
     '#title' => t('The content type associated with each text format'),
     '#default_value' => variable_get('oaff_format_node_types', ''),
     '#description' => t('Text format and its associated node type separated by space. One such pair per line'),
   );
 
-  $form['oaff_format_extensions'] = array(
+  $form['oaff_config']['oaff_format_extensions'] = array(
     '#type' => 'textarea',
     '#title' => t('The extension associated with each format'),
     '#default_value' => variable_get('oaff_format_extensions', ''),
     '#description' => t('Text format and its associated extension separated by space. One such pair per line'),
   );
 
-  $form['oaff_logging_enabled'] = array(
+  $form['oaff_config']['oaff_logging_enabled'] = array(
      '#type' => 'checkbox',
      '#title' => t("Check to enable logging"),
      '#default_value' => variable_get('oaff_logging_enabled', false),
@@ -2205,5 +2262,71 @@ function oaff_config_form($form, &$form_state) {
   $form['#submit'] = array('oaff_config_submit');
 
   return system_settings_form($form);
+}
+
+/**
+ * Function to get variable from configuration file 
+ * @param $name Variable name
+ * @param $default Variable value if it's not set in the config file
+ * @return Variable value
+ */
+function oaff_config_variable_get($name, $default=NULL) {
+  $value = $default;
+  $oaff_config = variable_get('oaff_config');
+  $config_file_path = $oaff_config['config_file'];
+  $config_content = @file_get_contents($config_file_path);
+  if ($config_content) {
+    $oaff_configs = json_decode($config_content, true);
+    if ($oaff_configs == NULL || $oaff_configs == false)
+      drupal_set_message('oaff_config_variable_get: JSON cannot be decoded', 'warning');
+    $value = isset($oaff_configs[$name]) ? $oaff_configs[$name] : $default; 
+  }
+  return $value;
+}
+
+/**
+ * Function to set variable in configuration file
+ * @param $name Variable name
+ * @param $value Value to set for variable
+ */
+function oaff_config_variable_set($name, $value) {
+  $oaff_config = variable_get('oaff_config');
+  $config_file_path = $oaff_config['config_file'];
+  $config_content = false;
+  $oaff_configs = array();
+  $config_content = @file_get_contents($config_file_path);
+
+  if ($config_content) {
+    $oaff_configs = json_decode($config_content, true);
+    if ($oaff_configs == NULL || $oaff_configs == false)
+      drupal_set_message('oaff_config_variable_set: JSON cannot be decoded', 'warning');
+  }
+
+  $oaff_configs[$name] = $value;
+  $json_content = json_encode($oaff_configs);
+  file_put_contents($config_file_path, $json_content);
+}
+
+
+/**
+ * Function to delete variable from configuration file
+ * @param $name Variable name
+ */
+function oaff_config_variable_delete($name) {
+  $oaff_config = variable_get('oaff_config');
+  $config_file_path = $oaff_config['config_file'];
+  $config_content = @file_get_contents($config_file_path);
+  $oaff_configs = array();
+  
+  if ($config_content) {
+    $oaff_configs = json_decode($config_content, true);
+    if ($oaff_configs == NULL || $oaff_configs == false)
+      drupal_set_message('oaff_config_variable_delete: JSON cannot be decoded', 'warning');
+    if (isset($oaff_configs[$name])) {
+      unset($oaff_configs[$name]);
+      $json_content = json_encode($oaff_configs);
+      file_put_contents($config_file_path, $json_content);    
+    }
+  }
 }
 // ######################## End OAFF Configuration ######################### \\
