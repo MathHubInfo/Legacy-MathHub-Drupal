@@ -244,17 +244,23 @@ function oaff_autogenerate_archive_statistics($group, $archive) {
     ->condition('mh_archive', $archive, '=')
     ->execute()
     ->fetchAssoc();
-  $out = '<div class="panel panel-default">';
-  $out .= '<div class="panel-heading"> Statistics</div>';
-  $out .= '<div class="panel-body">';
-  $out .= "<li>Views: " . $result['view'] . "</li>";
-  $out .= "<li>Theories: " . $result['theory'] . "</li>";
-  $out .= "<li>Definitions: " . $result['definition'] . "</li>";
-  $out .= "<li>Constants: " . $result['constant'] . "</li>";
-  $out .= "<li>Files: " . $result['file'] . "</li>";
-  $out .= "<li>OMDoc size: " . $result['omdoc'] . "</li>";
-  $out .= "<li>Source size: " . $result['source'] . "</li>";
-  $out .= "</div></div>";
+  $out = "<div class=\"panel panel-default\">\n";
+  $out .= " <div class=\"panel-heading\" role=\"tab\" id=\"collapseStatistics\">\n";
+  $out .= "   <strong><a onclick=\"jQuery('#statistics').collapse('toggle');\" style=\"cursor:pointer;\">";
+  $out .= "Statistics";
+  $out .= "</a></strong>\n";
+  $out .= " </div>\n";
+  $out .= " <div class=\"panel-collapse collapse\" id=\"statistics\" role=\"tabpanel\" >\n";
+  $out .= "   <ul>\n";
+  $out .= "     <li>Views: " . $result['view'] . "</li>\n";
+  $out .= "     <li>Theories: " . $result['theory'] . "</li>\n";
+  $out .= "     <li>Definitions: " . $result['definition'] . "</li>\n";
+  $out .= "     <li>Constants: " . $result['constant'] . "</li>\n";
+  $out .= "     <li>Files: " . $result['file'] . "</li>\n";
+  $out .= "     <li>OMDoc size: " . $result['omdoc'] . "</li>\n";
+  $out .= "     <li>Source size: " . $result['source'] . "</li>\n";
+  $out .= "   </ul>\n";
+  $out .= " </div>\n</div>\n";
   return $out;
 }
 
