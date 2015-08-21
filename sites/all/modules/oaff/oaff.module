@@ -2144,10 +2144,6 @@ function oaff_config_save_path($form, &$form_state) {
   variable_set('oaff_format_node_types', $node_types_s);
   variable_set('oaff_format_extensions', $extensions_s);
   variable_set('oaff_logging_enabled', $logging);
-
-  oaff_config_variable_set('test', 'test');
-  oaff_config_variable_delete('test');
-
   oaff_config_set($formats_s, $node_types_s, $extensions_s, $logging);
   drupal_set_message("Path saved and settings loaded");
 }
@@ -2216,7 +2212,7 @@ function oaff_config_form($form, &$form_state) {
     '#type' => 'textfield',
     '#title' => t('The path to MathHub configuration file'),
     '#default_value' => $oaff_config['config_file'],
-    '#description' => t('The file contains JSON object where keys are variable names and values are corresponding values. If file doesn\'t exist, all data from fields below will be saved to that file. If file exists data from the file will be loaded to database.'),
+    '#description' => t('The file contains settings in oaff config text format. If file doesn\'t exist, all data from fields below will be saved to that file. If file exists data from the file will be loaded to database.'),
   );
 
   $form['oaff_config_file']['oaff_save_config_file'] = array(
@@ -2265,6 +2261,17 @@ function oaff_config_form($form, &$form_state) {
 }
 
 /**
+ * Custom oaff configuration text format description:
+ * Lines starting with '#' are variable names
+ * Lines strating with any other character are variable values
+ * Example:
+ *  Variable $test1 = "test1\nvalue" will be encoded as
+ *  "#test1
+ *   test1
+ *   value"
+ */
+
+/**
  * Function to get variable from configuration file 
  * @param $name Variable name
  * @param $default Variable value if it's not set in the config file
@@ -2276,9 +2283,9 @@ function oaff_config_variable_get($name, $default=NULL) {
   $config_file_path = $oaff_config['config_file'];
   $config_content = @file_get_contents($config_file_path);
   if ($config_content) {
-    $oaff_configs = json_decode($config_content, true);
+    $oaff_configs = oaff_config_decode($config_content);
     if ($oaff_configs == NULL || $oaff_configs == false)
-      drupal_set_message('oaff_config_variable_get: JSON cannot be decoded', 'warning');
+      drupal_set_message('oaff_config_variable_get: Config file cannot be decoded', 'warning');
     $value = isset($oaff_configs[$name]) ? $oaff_configs[$name] : $default; 
   }
   return $value;
@@ -2297,16 +2304,15 @@ function oaff_config_variable_set($name, $value) {
   $config_content = @file_get_contents($config_file_path);
 
   if ($config_content) {
-    $oaff_configs = json_decode($config_content, true);
+    $oaff_configs = oaff_config_decode($config_content);
     if ($oaff_configs == NULL || $oaff_configs == false)
-      drupal_set_message('oaff_config_variable_set: JSON cannot be decoded', 'warning');
+      drupal_set_message('oaff_config_variable_set: Config file cannot be decoded', 'warning');
   }
 
   $oaff_configs[$name] = $value;
-  $json_content = json_encode($oaff_configs);
-  file_put_contents($config_file_path, $json_content);
+  $config_content = oaff_config_encode($oaff_configs);
+  file_put_contents($config_file_path, $config_content);
 }
-
 
 /**
  * Function to delete variable from configuration file
@@ -2319,14 +2325,67 @@ function oaff_config_variable_delete($name) {
   $oaff_configs = array();
   
   if ($config_content) {
-    $oaff_configs = json_decode($config_content, true);
+    $oaff_configs = oaff_config_decode($config_content, true);
     if ($oaff_configs == NULL || $oaff_configs == false)
-      drupal_set_message('oaff_config_variable_delete: JSON cannot be decoded', 'warning');
+      drupal_set_message('oaff_config_variable_delete: Config file cannot be decoded', 'warning');
     if (isset($oaff_configs[$name])) {
       unset($oaff_configs[$name]);
-      $json_content = json_encode($oaff_configs);
-      file_put_contents($config_file_path, $json_content);    
+      $config_content = oaff_config_encode($oaff_configs);
+      file_put_contents($config_file_path, $config_content);    
     }
   }
 }
+
+/**
+ * Function to decode custom config text format
+ * @param $value String in custom config format 
+ * @return Array where keys are variable names and corresponding values are variable values
+ */
+function oaff_config_decode($value) {
+  if (strlen($value) == 0)
+    return array();
+  $lines = explode("\n", $value);
+  $result = array();
+  $var_name = "";
+  $last_key = count($lines) - 1;
+  foreach ($lines as $key => $line) {
+    $fchar = substr($line, 0, 1);
+    
+    if ($key == 0 && $fchar != "#") {
+      return NULL;
+    }
+
+    if ($fchar == "#") {
+      if ($key != 0)
+        $result[$var_name] = trim($result[$var_name]);
+      $var_name = trim(substr($line, 1));
+      $result[$var_name] = "";
+    } else {
+      $result[$var_name] .= $line . "\n";
+      if ($key == $last_key)
+        $result[$var_name] = trim($result[$var_name]);
+    }
+  }
+  return $result;
+}
+
+/**
+ * Function to decode custom config text format
+ * @param $value Array where keys are variable names and corresponding values are variable values
+ * @return String in custom config format 
+ */
+function oaff_config_encode($value) {
+  $result = "";
+  $isBegin = true;
+  foreach ($value as $key => $val) {
+    if ($isBegin) {
+      $result .= "#" . $key . "\n" . $val;
+      $isBegin = false;
+    } else {
+      $result .= "\n#" . $key . "\n" . $val;
+    }
+  }
+  return $result;
+}
+
 // ######################## End OAFF Configuration ######################### \\
