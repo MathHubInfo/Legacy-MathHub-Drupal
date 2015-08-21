@@ -353,6 +353,12 @@ function oaff_schema() {
         'length' => 63,
         'not null' => true,
       ),
+      'mh_group' => array(
+        'description' => 'The group where the archive belongs',
+        'type' => 'varchar',
+        'length' => 63,
+        'not null' => true,
+      ),
       'view' => array(
         'description' => 'The number of views in the archive',
         'type' => 'int',
@@ -397,6 +403,66 @@ function oaff_schema() {
       ),
     ),
     'primary key' => array('aid'),  
+  );
+  $schema['oaff_group_stat'] = array(
+    'description' => 'the statistics of the group ',
+    'fields' => array(
+      'gid' => array(
+        'description' => 'The primary identifier of a group',
+        'type' => 'serial', 
+        'unsigned' => true,
+        'not null' => true,
+      ),
+      'mh_group' => array(
+        'description' => 'The group name',
+        'type' => 'varchar',
+        'length' => 63,
+        'not null' => true,
+      ),
+      'archive' => array(
+        'description' => 'The number of archives in the group',
+        'type' => 'int',
+        'unsigned' => true,
+        'not null' => true,
+      ),
+      'view' => array(
+        'description' => 'The number of views in the group',
+        'type' => 'int',
+        'unsigned' => true,
+        'not null' => true,
+      ),
+      'theory' => array(
+        'description' => 'The number of theories in the group',
+        'type' => 'int',
+        'unsigned' => true,
+        'not null' => true,
+      ),
+      'definition' => array(
+        'description' => 'The number of definitions in the group',
+        'type' => 'int',
+        'unsigned' => true,
+        'not null' => true,
+      ),
+      'constant' => array(
+        'description' => 'The number of constatns in the group',
+        'type' => 'int',
+        'unsigned' => true,
+        'not null' => true,
+      ),
+      'file' => array(
+        'description' => 'The number of files in the group',
+        'type' => 'int',
+        'unsigned' => true,
+        'not null' => true,
+      ),
+      'size' => array(
+        'description' => 'Group folder size',
+        'type' => 'varchar',
+        'length' => 63,
+        'not null' => true,
+      ),
+    ),
+    'primary key' => array('gid'),  
   );
   return $schema;
 }

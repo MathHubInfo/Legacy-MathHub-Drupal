@@ -181,10 +181,11 @@ function oaff_autogenerate_group_doc($group) {
   }
   $resp = ""; //default
   if (isset($group_info['responsible'])) {
-    $resp = $group_info['responsible'];
+    $resp = "<p><strong>Responsible: </strong>" . $group_info['responsible'] . "</p>";
   }
   $html .= $desc;
   $html .= $resp;
+  $html .=  oaff_autogenerate_group_statistics($group);
   //adding archive list
   $archives = planetary_repo_list($group);
   $html .= '<ul>';
@@ -209,6 +210,65 @@ function oaff_autogenerate_group_doc($group) {
   return $html;
 }
 
+/**
+ * @param $group The group to get statistics for
+ * @return Group statistics as a string
+ */
+function oaff_autogenerate_group_statistics($group) {
+  $result = db_select('oaff_group_stat', 'g')
+    ->fields('g')
+    ->condition('mh_group', $group, '=')
+    ->execute()
+    ->fetchAssoc();
+  $out = "<div class=\"panel panel-default\">\n";
+  $out .= " <div class=\"panel-heading\" role=\"tab\" id=\"collapseStatistics\">\n";
+  $out .= "   <strong><a onclick=\"jQuery('#statistics').collapse('toggle');\" style=\"cursor:pointer;\">";
+  $out .= "Statistics";
+  $out .= "</a></strong>\n";
+  $out .= " </div>\n";
+  $out .= " <div class=\"panel-collapse collapse\" id=\"statistics\" role=\"tabpanel\" >\n";
+  $out .= "   <ul>\n";
+  $out .= "     <li>Archives: " . $result['archive'] . "</li>\n";
+  $out .= "     <li>Views: " . $result['view'] . "</li>\n";
+  $out .= "     <li>Theories: " . $result['theory'] . "</li>\n";
+  $out .= "     <li>Definitions: " . $result['definition'] . "</li>\n";
+  $out .= "     <li>Constants: " . $result['constant'] . "</li>\n";
+  $out .= "     <li>Files: " . $result['file'] . "</li>\n";
+  $out .= "     <li>Size: " . $result['size'] . "</li>\n";
+  $out .= "   </ul>\n";
+  $out .= " </div>\n</div>\n";
+  return $out;  
+}
+
+/**
+ * Updates group statistics in the database
+ * @param $group The group to update statistics for
+ */
+function oaff_update_group_statistics($group) {
+  $result = db_select('oaff_archive_stat', 'a')
+    ->fields('a')
+    ->condition('mh_group', $group, '=')
+    ->execute()
+    ->fetchAll();
+  $stat = array('archive'=>0, 'theory' => 0, 'definition' => 0, 'constant' => 0, 'view' => 0, 'file' => 0);
+  foreach ($result as $key => $row) {
+    $stat['archive']++;
+    $stat['theory'] += $row->theory;
+    $stat['definition'] += $row->definition;
+    $stat['constant'] += $row->constant;
+    $stat['view'] += $row->view;
+    $stat['file'] += $row->file;
+  }
+  $group_path = "/var/data/localmh/MathHub/$group/";
+  $stat['size'] = exec("du -hs " . $group_path . " | cut -f1");
+  db_merge('oaff_group_stat')
+    ->key(array(
+      'mh_group' => $group,
+    ))
+    ->fields($stat)
+    ->execute();
+}
+
 function oaff_autogenerate_archive_doc($group, $archive) {
   $arch_path = oaff_join_path(array($group, $archive));
   $html = "";
@@ -220,7 +280,7 @@ function oaff_autogenerate_archive_doc($group, $archive) {
   }
   $resp = ""; //default
   if (isset($arch_info['responsible'])) {
-    $resp = "<p><strong>Responsible: </strong>" . $arch_info['responsible'] . "</p>";;
+    $resp = "<p><strong>Responsible: </strong>" . $arch_info['responsible'] . "</p>";
   }
   $html .= $desc;
   $html .= $resp;
@@ -236,7 +296,7 @@ function oaff_autogenerate_archive_doc($group, $archive) {
 /**
  * @param $group The group of the archive
  * @param $archive The archive to get statististics for
- * @return Statistics about the archive
+ * @return Archive statistics as a string
  */
 function oaff_autogenerate_archive_statistics($group, $archive) {
   $result = db_select('oaff_archive_stat', 'a')
@@ -261,7 +321,7 @@ function oaff_autogenerate_archive_statistics($group, $archive) {
   $out .= "     <li>Source size: " . $result['source'] . "</li>\n";
   $out .= "   </ul>\n";
   $out .= " </div>\n</div>\n";
-  return $out;
+  return $out;  
 }
 
 /**
@@ -288,6 +348,7 @@ function oaff_update_archive_statistics($group, $archive) {
   db_merge('oaff_archive_stat')
     ->key(array(
       'mh_archive' => $archive,
+      'mh_group' => $group,
     ))
     ->fields(array(
       'view' => $stat_tags['view'],
@@ -1238,6 +1299,7 @@ function _oaff_crawler_update_content($groups) {
       }
     }
     oaff_set_children($gid, $aids);
+    oaff_update_group_statistics($group);
   }
   oaff_set_children($rid, $gids);
 }
