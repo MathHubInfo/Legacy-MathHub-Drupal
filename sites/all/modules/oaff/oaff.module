@@ -143,7 +143,7 @@ function oaff_autogenerate_top_doc() {
   }
   $resp = ""; //default
   if (isset($top_info['responsible'])) {
-    "<p><strong>Responsible: </strong>" . $top_info['responsible'] . "</p>";
+    $resp .= "<p><strong>Responsible: </strong>" . $top_info['responsible'] . "</p>";
   }
   $html .= $desc;
   $html .= $resp;
