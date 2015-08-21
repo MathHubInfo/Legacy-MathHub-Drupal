@@ -2135,15 +2135,23 @@ function oaff_config_save_path($form, &$form_state) {
   $oaff_config['config_file'] = $path;
   variable_set("oaff_config", $oaff_config);
 
-  $formats_s = oaff_config_variable_get('formats', variable_get('oaff_archive_formats'));
-  $node_types_s = oaff_config_variable_get('node_types', variable_get('oaff_format_node_types'));
-  $extensions_s = oaff_config_variable_get('extensions', variable_get('oaff_format_extensions'));
-  $logging = oaff_config_variable_get('logging', variable_get('oaff_logging_enabled'));
+  $oaff_configs = oaff_config_variable_get(array(
+    'formats' => variable_get('oaff_archive_formats'),
+    'node_types'=> variable_get('oaff_format_node_types'),
+    'extensions'=> variable_get('oaff_format_extensions'),
+    'logging' => variable_get('oaff_logging_enabled'),
+  ));
+
+  $formats_s = $oaff_configs['formats'];
+  $node_types_s = $oaff_configs['node_types'];
+  $extensions_s = $oaff_configs['extensions'];
+  $logging = $oaff_configs['logging'];
 
   variable_set('oaff_archive_formats', $formats_s);
   variable_set('oaff_format_node_types', $node_types_s);
   variable_set('oaff_format_extensions', $extensions_s);
   variable_set('oaff_logging_enabled', $logging);
+
   oaff_config_set($formats_s, $node_types_s, $extensions_s, $logging);
   drupal_set_message("Path saved and settings loaded");
 }
@@ -2189,10 +2197,12 @@ function oaff_config_set($formats_s, $node_types_s, $extensions_s, $logging) {
   $oaff_config['logging'] = $logging;
   variable_set("oaff_config", $oaff_config);
 
-  oaff_config_variable_set('formats', $formats_s);
-  oaff_config_variable_set('node_types', $node_types_s); 
-  oaff_config_variable_set('extensions', $extensions_s);
-  oaff_config_variable_set('logging', $logging);
+  oaff_config_variable_set(array(  
+    'formats' => $formats_s,
+    'node_types' => $node_types_s, 
+    'extensions' => $extensions_s,
+    'logging' => $logging,
+  ));
 }
 
 /**
@@ -2273,7 +2283,7 @@ function oaff_config_form($form, &$form_state) {
 
 /**
  * Function to get variable from configuration file 
- * @param $name Variable name
+ * @param $name Variable name as a string or array of (variable name => default value)
  * @param $default Variable value if it's not set in the config file
  * @return Variable value
  */
@@ -2286,17 +2296,25 @@ function oaff_config_variable_get($name, $default=NULL) {
     $oaff_configs = oaff_config_decode($config_content);
     if ($oaff_configs == NULL || $oaff_configs == false)
       drupal_set_message('oaff_config_variable_get: Config file cannot be decoded', 'warning');
-    $value = isset($oaff_configs[$name]) ? $oaff_configs[$name] : $default; 
+    if (gettype($name) == 'string') { //case only one variable
+      $value = isset($oaff_configs[$name]) ? $oaff_configs[$name] : $default;
+    } else if (gettype($name) == 'array') { //case array of variables
+      $names = $name;
+      $value = array();
+      foreach ($names as $name => $default) {
+        $value[$name] = isset($oaff_configs[$name]) ? $oaff_configs[$name] : $default;
+      }
+    }
   }
   return $value;
 }
 
 /**
  * Function to set variable in configuration file
- * @param $name Variable name
+ * @param $name Variable name as a string or array of (variable name => variable value)
  * @param $value Value to set for variable
  */
-function oaff_config_variable_set($name, $value) {
+function oaff_config_variable_set($name, $value=NULL) {
   $oaff_config = variable_get('oaff_config');
   $config_file_path = $oaff_config['config_file'];
   $config_content = false;
@@ -2309,14 +2327,21 @@ function oaff_config_variable_set($name, $value) {
       drupal_set_message('oaff_config_variable_set: Config file cannot be decoded', 'warning');
   }
 
-  $oaff_configs[$name] = $value;
+  if (gettype($name) == 'string') { // case one variable
+    $oaff_configs[$name] = $value;  
+  } else if (gettype($name) == 'array') {
+    $names = $name;
+    foreach ($names as $name => $value) { // case array of variables
+      $oaff_configs[$name] = $value;
+    }
+  }
   $config_content = oaff_config_encode($oaff_configs);
   file_put_contents($config_file_path, $config_content);
 }
 
 /**
  * Function to delete variable from configuration file
- * @param $name Variable name
+ * @param $name Variable name as a string or array of variable names
  */
 function oaff_config_variable_delete($name) {
   $oaff_config = variable_get('oaff_config');
@@ -2326,13 +2351,24 @@ function oaff_config_variable_delete($name) {
   
   if ($config_content) {
     $oaff_configs = oaff_config_decode($config_content, true);
-    if ($oaff_configs == NULL || $oaff_configs == false)
+    if ($oaff_configs == NULL || $oaff_configs == false) {
       drupal_set_message('oaff_config_variable_delete: Config file cannot be decoded', 'warning');
-    if (isset($oaff_configs[$name])) {
-      unset($oaff_configs[$name]);
-      $config_content = oaff_config_encode($oaff_configs);
-      file_put_contents($config_file_path, $config_content);    
+      return;
     }
+    if (gettype($name) == 'string') {
+      if (isset($oaff_configs[$name])) {
+        unset($oaff_configs[$name]);
+      }
+    } else if (gettype($name) == 'array') {
+      $names = $name;
+      foreach ($names as $key => $name) {
+         if (isset($oaff_configs[$name])) {
+          unset($oaff_configs[$name]);
+        } 
+      }
+    }
+    $config_content = oaff_config_encode($oaff_configs);
+    file_put_contents($config_file_path, $config_content);
   }
 }
 
