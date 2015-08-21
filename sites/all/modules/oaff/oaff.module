@@ -143,10 +143,11 @@ function oaff_autogenerate_top_doc() {
   }
   $resp = ""; //default
   if (isset($top_info['responsible'])) {
-    $resp = $top_info['responsible'];
+    "<p><strong>Responsible: </strong>" . $top_info['responsible'] . "</p>";
   }
   $html .= $desc;
   $html .= $resp;
+  $html .= oaff_autogenerate_top_statistics();
   //adding group list
   $groups = planetary_repo_list("");
   $elems = array();
@@ -169,6 +170,60 @@ function oaff_autogenerate_top_doc() {
   $html .= "</ul>";
   
   return $html;
+}
+
+function oaff_autogenerate_top_statistics() {
+  $oaff_config = variable_get('oaff_config');
+  $stat = $oaff_config['top_stat'];
+  $out = "<div class=\"panel panel-default\">\n";
+  $out .= " <div class=\"panel-heading\" role=\"tab\" id=\"collapseStatistics\">\n";
+  $out .= "   <strong><a onclick=\"jQuery('#statistics').collapse('toggle');\" style=\"cursor:pointer;\">";
+  $out .= "Statistics";
+  $out .= "</a></strong>\n";
+  $out .= " </div>\n";
+  $out .= " <div class=\"panel-collapse collapse\" id=\"statistics\" role=\"tabpanel\" >\n";
+  $out .= "   <ul>\n";
+  $out .= "     <li>Groups: " . $stat['group'] . "</li>\n";
+  $out .= "     <li>Archives: " . $stat['archive'] . "</li>\n";
+  $out .= "     <li>Views: " . $stat['view'] . "</li>\n";
+  $out .= "     <li>Theories: " . $stat['theory'] . "</li>\n";
+  $out .= "     <li>Definitions: " . $stat['definition'] . "</li>\n";
+  $out .= "     <li>Constants: " . $stat['constant'] . "</li>\n";
+  $out .= "     <li>Files: " . $stat['file'] . "</li>\n";
+  $out .= "     <li>Size: " . oaff_filter_size($stat['size']) . "</li>\n";
+  $out .= "   </ul>\n";
+  $out .= " </div>\n</div>\n";
+  return $out;  
+}
+
+function oaff_update_top_statistics() {
+  $result = db_select('oaff_group_stat', 'g')
+    ->fields('g')
+    ->execute()
+    ->fetchAll();
+  $stat = array(
+    'group' => 0,
+    'archive' => 0, 
+    'theory' => 0, 
+    'definition' => 0, 
+    'constant' => 0, 
+    'view' => 0, 
+    'file' => 0,
+    'size' => 0,
+  );
+  foreach ($result as $key => $row) {
+    $stat['group']++;
+    $stat['archive'] += $row->archive;
+    $stat['theory'] += $row->theory;
+    $stat['definition'] += $row->definition;
+    $stat['constant'] += $row->constant;
+    $stat['view'] += $row->view;
+    $stat['file'] += $row->file;
+    $stat['size'] += $row->size;
+  }
+  $oaff_config = variable_get('oaff_config');
+  $oaff_config['top_stat'] = $stat;
+  variable_set('oaff_config', $oaff_config);
 }
 
 function oaff_autogenerate_group_doc($group) {
@@ -234,7 +289,7 @@ function oaff_autogenerate_group_statistics($group) {
   $out .= "     <li>Definitions: " . $result['definition'] . "</li>\n";
   $out .= "     <li>Constants: " . $result['constant'] . "</li>\n";
   $out .= "     <li>Files: " . $result['file'] . "</li>\n";
-  $out .= "     <li>Size: " . $result['size'] . "</li>\n";
+  $out .= "     <li>Size: " . oaff_filter_size($result['size']) . "</li>\n";
   $out .= "   </ul>\n";
   $out .= " </div>\n</div>\n";
   return $out;  
@@ -250,7 +305,14 @@ function oaff_update_group_statistics($group) {
     ->condition('mh_group', $group, '=')
     ->execute()
     ->fetchAll();
-  $stat = array('archive'=>0, 'theory' => 0, 'definition' => 0, 'constant' => 0, 'view' => 0, 'file' => 0);
+  $stat = array(
+    'archive' => 0, 
+    'theory' => 0, 
+    'definition' => 0, 
+    'constant' => 0, 
+    'view' => 0, 
+    'file' => 0
+  );
   foreach ($result as $key => $row) {
     $stat['archive']++;
     $stat['theory'] += $row->theory;
@@ -260,7 +322,7 @@ function oaff_update_group_statistics($group) {
     $stat['file'] += $row->file;
   }
   $group_path = "/var/data/localmh/MathHub/$group/";
-  $stat['size'] = exec("du -hs " . $group_path . " | cut -f1");
+  $stat['size'] = (int) exec("du -s " . $group_path . " | cut -f1");
   db_merge('oaff_group_stat')
     ->key(array(
       'mh_group' => $group,
@@ -360,6 +422,25 @@ function oaff_update_archive_statistics($group, $archive) {
       'source' => $source_size,
     ))
     ->execute();
+}
+
+/**
+ * Function to convert from KB to closest highest unit
+ * @param $kbytes int Number of KiloBytes
+ * @param $round int Sets the number of decimal point
+ * @return string Converted result
+ */
+function oaff_filter_size($kbytes, $round=0) {
+  if ($kbytes >= 1073741824) {
+    $kbytes = number_format($kbytes / 1073741824, $round) . 'T';
+  } elseif ($kbytes >= 1048576) {
+    $kbytes = number_format($kbytes / 1048576, $round) . 'G';
+  } elseif ($kbytes >= 1024) {
+    $kbytes = number_format($kbytes / 1024, $round) . 'M'; 
+  } else {
+    $kbytes = $kbytes . 'K'; 
+  }
+  return $kbytes;
 }
 
 /**
@@ -1077,6 +1158,7 @@ function oaff_create_nodes() {
   _oaff_crawler_update_doc_nodes();
   $groups = _oaff_crawler_get_active_archives();
   _oaff_crawler_update_content($groups);
+  oaff_update_top_statistics();
   $oaff_config = variable_get('oaff_config');
   $nr_nodes = $oaff_config['latest_nodes'];
   $nr_del_nodes = $oaff_config['deleted_nodes'];

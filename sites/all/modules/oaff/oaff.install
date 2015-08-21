@@ -134,6 +134,17 @@ function oaff_install() {
   $oaff_config['log'] = array(); //oaff log
   $oaff_config['archives'] = array(); //archive properties
   $oaff_config['groups'] = array(); //group properties
+  $oaff_config['top_stat'] = array(
+    'group' => 0,
+    'archive' => 0, 
+    'theory' => 0, 
+    'definition' => 0, 
+    'constant' => 0, 
+    'view' => 0, 
+    'file' => 0,
+    'size' => 0,
+  );
+
   variable_set('oaff_config', $oaff_config);
 
   $formats_s = variable_get("oaff_archive_formats", '');
@@ -456,9 +467,9 @@ function oaff_schema() {
         'not null' => true,
       ),
       'size' => array(
-        'description' => 'Group folder size',
-        'type' => 'varchar',
-        'length' => 63,
+        'description' => 'int',
+        'type' => 'int',
+        'unsigned' => true,
         'not null' => true,
       ),
     ),
