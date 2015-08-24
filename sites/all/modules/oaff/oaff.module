@@ -398,7 +398,8 @@ function oaff_update_archive_statistics($group, $archive) {
     ->execute()
     ->fetchAssoc();
   $pid = $result['nid'];
-  $file_nr = count(oaff_get_children($pid));
+  $file_nr = oaff_count_children($pid);
+
   $archive_path = "/var/data/localmh/MathHub/$group/$archive/";
   $omdoc_path = oaff_join_path(array($archive_path, 'content', 'http..mathhub.info', $group, $archive));
   $stat_tags = array('theory' => '', 'definition' => '', 'constant' => '', 'view' => '');
@@ -1686,15 +1687,34 @@ function oaff_get_children($pid) {
       ->condition('pid', $pid)
       ->execute()
       ->fetchAllAssoc('cid', PDO::FETCH_BOTH);
-  
-  if (!function_exists('extract_cid')) {
-    function extract_cid($el) {
-      return $el['cid'];
-    }
-  }
 
-  $result = array_map('extract_cid', $result);
+  $result = array_map('_oaff_extract_cid', $result);
   return  $result;
+}
+
+/**
+ * Count recursively all children, grand children, etc. of the parent
+ * @param $pid int nid of the parent node
+ * @return int number of children, grand children, etc.
+ */
+function oaff_count_children($pid) {
+  $node = node_load($pid);
+  if (!$node)
+    return 0; // no node exists
+  $type = $node->type;
+  if ($type == 'oaff_doc')
+    return 1;
+  if ($type == 'oaff_helpdoc' || $type == 'oaff_virtdoc') {
+    $result = oaff_get_children($pid);
+    $result = array_map('oaff_count_children', $result); 
+    $result = array_sum($result); 
+    return $result;
+  }
+  return 0;
+}
+
+function _oaff_extract_cid($el) {
+  return $el['cid'];
 }
 
 
