@@ -26,7 +26,7 @@ function latexml_update_errors($nid, $location) {
     // TODO add a message to status
     oaff_log("LATEXML", "Could not find .log or .omdoc file for $base_relpath (generation failed)");
     $latexml_status = array("conversion" => 3, "messages" => array(array('shortMsg' => " fatal error, conversion failed (no latexml log)", 
-                            'longMsg' => "expected log to be at $log_def_location or $log_bck_location", 'type' => "Fatal")));   
+                            'longMsg' => "expected log to be at $log_mmt_location or $log_ltx_location", 'type' => "Fatal")));   
   } else {
     //default
     $log_location = $log_mmt_location;
