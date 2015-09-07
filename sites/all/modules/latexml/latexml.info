@@ -4,5 +4,7 @@ core = 7.x
 package     = OAFF
 
 dependencies[] = planetary_repo	
-dependencies[] = oaff	
+dependencies[] = oaff
+dependencies[] = mmt
+
 

@@ -2125,8 +2125,8 @@ function oaff_node_omdoc($node) {
   $location = $node->field_external['und']['0']['path'];
   oaff_set_breadcrumb($nid, array($nid));
   // change path extension of file from .* to .omdoc
-  $slices = explode('.', strrev($location),2);
-  $omdoc_location = strrev($slices[1]) . '.omdoc';
+  $pathinfo = oaff_get_path_info($location);
+  $omdoc_location = oaff_join_path(array($pathinfo['group'], $pathinfo['archive'], 'latexml', $pathinfo['rel_parent'], $pathinfo['module'] . '.omdoc'));
   $omdoc = ""; //default
   if (planetary_repo_stat_file($omdoc_location)) { //omdoc exists
     $omdoc = planetary_repo_load_file($omdoc_location);

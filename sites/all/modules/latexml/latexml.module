@@ -16,18 +16,24 @@ function latexml_update_errors($nid, $location) {
   $base = oaff_join_path(array($pathinfo['group'], $pathinfo['archive']));
   $rel_parent = $pathinfo['rel_parent'];
   $basename = $pathinfo['module'];
-  $log_filename = $basename . '.ltxlog';
-  $log_def_location = oaff_join_path(array($base, "errors", "latexml", $rel_parent, $log_filename));
-  $log_bck_location = $base_relpath . '.ltxlog';
-  if ((planetary_repo_stat_file($log_def_location) == null && planetary_repo_stat_file($log_bck_location) == null)) { //something failed
+  $log_filename = $basename . '.ltxlog';  
+  $log_mmt_location = oaff_join_path(array($base, "errors", "latexml", $rel_parent, $pathinfo['filename'] . '.err'));
+  $log_ltx_location = oaff_join_path(array($base, "errors", "latexml", $rel_parent, $log_filename));
+  if (planetary_repo_stat_file($log_ltx_location) == null) {
+    $log_ltx_location = $base_relpath . '.ltxlog';
+  }
+  if (planetary_repo_stat_file($log_mmt_location) == null && planetary_repo_stat_file($log_ltx_location) == null) { //something failed
     // TODO add a message to status
     oaff_log("LATEXML", "Could not find .log or .omdoc file for $base_relpath (generation failed)");
     $latexml_status = array("conversion" => 3, "messages" => array(array('shortMsg' => " fatal error, conversion failed (no latexml log)", 
                             'longMsg' => "expected log to be at $log_def_location or $log_bck_location", 'type' => "Fatal")));   
   } else {
-    $log_location = $log_def_location; 
+    //default
+    $log_location = $log_mmt_location;
+    $comp = 'mmt'; 
     if (planetary_repo_stat_file($log_location) == null) {
-      $log_location = $log_bck_location;
+      $log_location = $log_ltx_location;
+      $comp = 'ltx';
     }
     $log = planetary_repo_load_file($log_location);
     $mtime = planetary_repo_stat_file($log_location)['mtime'];
@@ -36,8 +42,12 @@ function latexml_update_errors($nid, $location) {
     if ($last_ran_time == $mtime) { //no change
       $latexml_status = array("conversion" => -1, "messages" => array()); // -1 means log not changed  
       oaff_log("OAFF(LATEXML)", "No change for compiler latexml, no need to re-process errors");
-    } else {      
-      $latexml_status = _latexml_produce_status_msg($log, $location);
+    } else {  
+      if ($comp = 'mmt') {
+        $latexml_status = _mmt_produce_status_msg($log);
+      } else {  //$comp = 'ltx'  
+        $latexml_status = _latexml_produce_status_msg($log, $location);
+      }
       oaff_log("OAFF(LATEXML)", "Re-read log for compiler latexml");
       oaff_set_mtime($nid, $mtime, $log_location);
     }
