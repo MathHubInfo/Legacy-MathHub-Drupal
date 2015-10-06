@@ -340,6 +340,12 @@ function oaff_schema() {
         'length' => 511,
         'not null' => true,
       ),
+    'compiler' => array(
+        'description' => 'The compiler that generated the logfile',
+        'type' => 'varchar',
+        'length' => 63,
+        'not null' => true,
+      ),
     'mtime' => array(
         'description' => 'The modification time',
         'type' => 'int',

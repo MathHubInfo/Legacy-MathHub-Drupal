@@ -49,7 +49,7 @@ function latexml_update_errors($nid, $location) {
         $latexml_status = _latexml_produce_status_msg($log, $location);
       }
       oaff_log("OAFF(LATEXML)", "Re-read log for compiler latexml");
-      oaff_set_mtime($nid, $mtime, $log_location);
+      oaff_set_mtime($nid, $mtime, $log_location, "latexml");
     }
   }
   //saving error status

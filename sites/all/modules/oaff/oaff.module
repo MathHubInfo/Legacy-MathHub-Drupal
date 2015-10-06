@@ -1740,7 +1740,7 @@ function oaff_remove_child($cid) {
   ->execute();
 }
 
-function oaff_set_mtime($nid, $mtime, $file) {
+function oaff_set_mtime($nid, $mtime, $file, $comp) {
   $old = oaff_get_mtime($nid, $file);
   if ($old == "") { //not set
     db_insert('oaff_node_mtime')
@@ -1748,6 +1748,7 @@ function oaff_set_mtime($nid, $mtime, $file) {
         'nid' => $nid,
         'mtime' => $mtime,
         'logfile' => $file,
+        'compiler' => $comp,
       ))
       ->execute();
   } else { //updating

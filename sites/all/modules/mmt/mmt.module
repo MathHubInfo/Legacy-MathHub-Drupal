@@ -387,7 +387,7 @@ function mmt_get_compiled($nid, $location, $compiler = "stex-omdoc") {
     } else {
       $log = planetary_repo_load_file($log_location);
       $mmt_status = _mmt_produce_status_msg($log);
-      oaff_set_mtime($nid, $mtime, $log_location);
+      oaff_set_mtime($nid, $mtime, $log_location, $compiler);
       oaff_log("OAFF(MMT)", "Re-read errors for compiler $compiler");
     }
   } else {
@@ -435,7 +435,7 @@ function mmt_get_presentation($nid, $location, $presenter = "planetary") {
       } else {
         $log = planetary_repo_load_file($log_location);
         $mmt_status = _mmt_produce_status_msg($log);
-        oaff_set_mtime($nid, $mtime, $log_location);
+        oaff_set_mtime($nid, $mtime, $log_location, $presenter);
         oaff_log("OAFF(MMT)", "Re-read errors for presenter $presenter");
       }
     } else {
