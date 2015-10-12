@@ -57,11 +57,14 @@ class DatabaseConnection_mysql extends DatabaseConnection {
     // Force MySQL to use the UTF-8 character set. Also set the collation, if a
     // certain one has been set; otherwise, MySQL defaults to 'utf8_general_ci'
     // for UTF-8.
+    if(!isset($connection_options['collation'])) {
+      $connection_options['charset'] = 'utf8';
+    }
     if (!empty($connection_options['collation'])) {
-      $this->exec('SET NAMES utf8mb4 COLLATE ' . $connection_options['collation']);
+       $this->exec('SET NAMES '.$connection_options['charset'].' COLLATE ' . $connection_options['collation']);
     }
     else {
-      $this->exec('SET NAMES utf8mb4');
+      $this->exec('SET NAMES ' . $connection_options['charset']);
     }
 
     // Set MySQL init_commands if not already defined.  Default Drupal's MySQL

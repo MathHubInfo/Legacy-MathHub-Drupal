@@ -95,6 +95,27 @@ Currently MathHub Admins have access to the following functionalities (via links
 * Update Libraries -- Updates lmh internal libraries (i.e. MMT and sTeX).
 * Rebuild MMT Archives -- Rebuilds MMT index, should be typically ran after Lmh Generate.
 
+##UTF8 Setup
+MySQL's default encoding is a partial UTF-8 that uses only 3 bytes max instead of 4 which means it's not adequate for some math characters.
+To solve that one needs to:
+* Create the database with the right defaults: 
+ ```create database mathhub DEFAULT CHARACTER SET utf8mb4 DEFAULT COLLATE utf8mb4_unicode_ci;```
+* Configure MySQL to start with the "innodb_large_prefix" option to enable keys longer than 767 bytes (255 chars in utf8, 191 in in utf8mb4) which are needed by Drupal after switching to utf8mb4. It is enough to put a `mh.cnf` file in `/etc/mysql/conf.d/` containing :
+```
+[mysqld]
+innodb_file_per_table=1
+innodb_file_format=BARRACUDA
+innodb_large_prefix=1
+```
+and then restart the mysql server.
+* After initial setup update Drupal's `sites/default/settings.php` file to add
+```
+     'collation' => 'utf8mb4_unicode_ci',
+      'charset' => 'utf8mb4',	
+```
+to the `$databases` settings array.
+* Update drupal's database API in `includes/database/mysql/` to interface with mysql properly. You need to switch `utf8` to `utf8mb4` wherever it appears as well as add `SET NAMES utfmb4` at the connection start and make sure every table has the correct charset and collation. Additionally, you need to add `ROW_FORMAT=DYNAMIC` (or `COMPRESSED`) in the sql for table creation. Check the patch files in `patches/`.  Some of these files might be overwritten by drupal update, so make sure to keep them up to date. 
+
 ## Upgrade
 Using drush `drush pm-update` is typically safest and easiest.
 Currently need to take care of `scripts/run-mathhub-scripts.sh`, `misc/typeahead.bundle.min.js` and `.gitignore` being removed/overridden.

@@ -81,7 +81,7 @@ class DatabaseSchema_mysql extends DatabaseSchema {
     // Provide defaults if needed.
     $table += array(
       'mysql_engine' => 'InnoDB',
-      'mysql_character_set' => 'utf8',
+      'mysql_character_set' => 'utf8mb4',
     );
 
     $sql = "CREATE TABLE {" . $name . "} (\n";
@@ -108,6 +108,8 @@ class DatabaseSchema_mysql extends DatabaseSchema {
     if (!empty($info['collation'])) {
       $sql .= ' COLLATE ' . $info['collation'];
     }
+    //ADD row format, needed for utf8mb4 in drupal -- large index keys
+    $sql .= ' ROW_FORMAT=DYNAMIC';
 
     // Add table comment.
     if (!empty($table['description'])) {
