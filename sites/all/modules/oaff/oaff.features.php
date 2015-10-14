@@ -609,8 +609,20 @@ function oaff_features_common_errors() {
 
     $out .= '<div id="oaff_error_log' . $i . '" style="display: none;"><ul>';
     $nids = array_count_values($error['nids']);
+    $mtimeRes = db_select('oaff_node_mtime', 'u')
+              ->fields('u', array('mtime', 'nid'))
+              ->condition('u.nid', array_keys($nids), 'IN')
+              ->condition('u.compiler', $error['compiler'])
+              ->execute()
+              ->fetchAll();
+    $mtimes = array();
+    foreach ($mtimeRes as $mr) {
+      $mtimes[$mr->nid] = $mr->mtime;
+    }
+
     foreach ($nids as $nid => $count) {
       $alias = drupal_lookup_path('alias', 'node/' . $nid);
+      //this is probably inefficient and can be optimized
       $title = db_select('node', 'n')
           ->fields('n', array('title'))
           ->condition('n.nid', $nid)
@@ -620,7 +632,12 @@ function oaff_features_common_errors() {
       if ($count == 1) {
         $occurs = $count. ' occurence';
       }
-      $out .= '<li><a href="/' . $alias . '"> ' . $title . ' </a> <span>'. $occurs . '</span> </li>';
+      $mtimeS = '';
+      if (isset($mtimes[$nid])) {
+        $mtimeS = '<small style="color:gray">' . date('D M y G:i:s', $mtimes[$nid]) . '</small>';
+      }
+
+      $out .= '<li><a href="/' . $alias . '"> ' . $title . ' </a> <span>'. $occurs . '</span> ' . $mtimeS . ' </li>';
     }
     $out .= '</ul></div>';
     $out .= '</ul></div>';
