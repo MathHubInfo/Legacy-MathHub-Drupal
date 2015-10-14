@@ -634,7 +634,7 @@ function oaff_features_common_errors() {
       }
       $mtimeS = '';
       if (isset($mtimes[$nid])) {
-        $mtimeS = '<small style="color:gray">' . date('D M y G:i:s', $mtimes[$nid]) . '</small>';
+        $mtimeS = '<small style="color:gray">' . date('j M G:i', $mtimes[$nid]) . '</small>';
       }
 
       $out .= '<li><a href="/' . $alias . '"> ' . $title . ' </a> <span>'. $occurs . '</span> ' . $mtimeS . ' </li>';
