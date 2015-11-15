@@ -45,10 +45,11 @@ function oaff_admin_menu(& $items) {
     'type' => MENU_CALLBACK,
   );
   $items['mh/administrate_mathhub'] = array(
-    'title' => "Administer MathHub",
+    'title' => "Admin",
     'page callback' => 'oaff_admin_administrate',
     'access callback' => 'oaff_admin_access',
-    'menu_name' => 'navigation',
+    'menu_name' => 'main-menu',
+    'weight' => 50,
   );  
   $items['mh/update_errors'] = array(
     'title' => "Update Errors",

@@ -111,24 +111,42 @@ function oaff_install() {
   $oaff_config['config_file'] = '/var/data/localmh/MathHub/meta/inf/config/MathHub/config';
   $mlids = array();
   $nids = array();
-  $arch_info = oaff_create_help_node('Libraries', 'mh/libraries', oaff_join_path(array("meta/inf/doc/", "index.html")), array('show_in_menu' => true));
+  
+  //root menu entries
+  $libs_info = oaff_create_static_node('Libraries', 'mh/libraries', "", NULL, 1);
+  $nids[] = $libs_info['nid'];
+  $mlids[] = $libs_info['mlid'];
+  $oaff_config['menus']['libs'] = $libs_info;
+
+  $serv_info = oaff_create_static_node("Resources", "mh/resources", "", NULL, 1);
+  $nids[] = $serv_info['nid'];
+  $mlids[] = $serv_info['mlid'];
+  $oaff_config['menus']['serv'] = $serv_info;
+
+  $help_info = oaff_create_static_node("Help", "mh/help", "", NULL, 1, 15);
+  $nids[] = $help_info['nid'];
+  $mlids[] = $help_info['mlid'];
+  $oaff_config['menus']['help'] = $help_info;
+
+
+  $arch_info = oaff_create_help_node('Content', 'mh/content', 
+    oaff_join_path(array("meta/inf/doc/", "index.html")), array('show_in_menu' => true, 'plid' => $libs_info['mlid']));
   $oaff_config['libraries_nid'] = $arch_info['nid'];
   $nids[] = $arch_info['nid'];
   $mlids[] = $arch_info['mlid'];
-  $contr_info = oaff_create_static_node("Contribute", "mh/contribute", file_get_contents(drupal_get_path('module', 'oaff') . '/contribute.xhtml'), true);
+
+  $contr_info = oaff_create_static_node("Misc", "mh/contribute", 
+    file_get_contents(drupal_get_path('module', 'oaff') . '/contribute.xhtml'), $serv_info['mlid'], 0, 30);
+  $contr_info = oaff_create_static_node("Glossary", "mh/glossary", "", $serv_info['mlid']);
   $nids[] = $contr_info['nid'];
   $mlids[] = $contr_info['mlid'];
   
   //adding source menu item (pointing to gitlab)
-  $arch_item = array(
-      'link_path' => 'http://gl.mathhub.info',
-      'link_title' => 'Sources',
-      'weight' => 10,
-      'options' => array('attributes' => array('target' => '_blank')),
-      'menu_name' => 'main-menu'
-    );
-  $mlids[] = menu_link_save($arch_item);
-  
+
+  $mlids[] = oaff_create_menu_link('http://gl.mathhub.info', "Sources", 10, $libs_info['mlid'], 0, array('attributes' => array('target' => '_blank')));
+  $mlids[] = oaff_create_menu_link('mailto:m.iancu@jacobs-university.de?Subject=[MathHub]', "Contact a Human", 
+    11, $help_info['mlid'], 0, array('attributes' => array('target' => '_blank')));
+
   $oaff_config['mlids'] = $mlids;
   $oaff_config['nids'] = $nids;
   $oaff_config['log'] = array(); //oaff log
@@ -188,16 +206,37 @@ function oaff_uninstall() {
    
   delete_node_type('mmtdoc', false);
  
-  $mlids = $oaff_config['mlids'];
+  //deleting menu children also, otherwise they are orphaned
+  $tree = menu_build_tree('main-menu', array('expanded' => $oaff_config['mlids']));
+  $mlids = array_unique(array_merge($oaff_config['mlids'], oaff_mlids_gather($tree)));
+
   foreach ($mlids as $mlid) {
-    menu_link_delete($mlid);
+    //menu_link_delete($mlid);
+    // the API function above doesn't actually delete system links from hook menu
+    // Therefore I must do it manually :(
+    db_delete("menu_links")->condition('mlid', $mlid)->execute();
   }
+
   $nids = $oaff_config['nids'];
   foreach ($nids as $nid) {
     node_delete($nid);
   }
   oaff_delete_text_format('sTeX');
   drupal_set_message("Uninstalled OAFF");
+}
+
+function oaff_mlids_gather($tree) {
+  $mlids = array();
+  foreach ($tree as $item) {
+    if (isset($item['link'])) {
+      $mlids[] = $item['link']['mlid'];
+    }
+    if (isset($item['below'])) {
+      $nmlids = oaff_mlids_gather($item['below']);
+      $mlids = array_merge($mlids, $nmlids);
+    }
+  }
+  return $mlids;
 }
 
 /** declares tables for OAFF-specific content */ 
