@@ -2254,29 +2254,45 @@ function oaff_report_issue() {
  */
 function oaff_config_validate($form, &$form_state) {
   $formats_s = $form_state['values']['oaff_archive_formats'];
-  $formats_lines = explode("\n", $formats_s);
-  foreach ($formats_lines as $line) {
-    $pair = explode(' ', $line);
-    if (count($pair) != 2) {
-      form_set_error('oaff_archive_formats', t('Invalid line "' . $line .  '", must be space-separated pair of archive and text format'));
-    }
-  }
-
   $node_types_s = $form_state['values']['oaff_format_node_types'];
-  $node_types_lines = explode("\n", $node_types_s);
-  foreach ($node_types_lines as $line) {
-    $pair = explode(' ', $line);
-    if (count($pair) != 2) {
-      form_set_error('oaff_format_node_types', t('Invalid line "' . $line .  '", must be space-separated pair of text format and nodetype'));
-    }
-  }
-  
   $extensions_s = $form_state['values']['oaff_format_extensions'];
-  $extensions_lines = explode("\n", $extensions_s);
-  foreach ($extensions_lines as $line) {
-    $pair = explode(' ', $line);
-    if (count($pair) != 2) {
-      form_set_error('oaff_format_extensions', t('Invalid line "' . $line .  '", must be space-separated pair of format and extension'));
+  $from_file = $form_state['values']['oaff_load_from_file'];
+
+  if (isset($form_state['clicked_button']['#submit']) 
+    && $form_state['clicked_button']['#submit'][0] == 'oaff_config_save_path'
+    && $from_file) {
+    if ($formats_s != '') {
+      form_set_error('oaff_archive_formats', t('Archives and text formats must be empty'));
+    }
+    if ($node_types_s  != '') {
+      form_set_error('oaff_format_node_types', t('Text formats and nodetypes must be empty'));
+    }
+    if ($extensions_s  != '') {
+      form_set_error('oaff_format_extensions', t('Formats and extensions must be empty'));
+    }
+  } else {
+    $formats_lines = explode("\n", $formats_s);
+    foreach ($formats_lines as $line) {
+      $pair = explode(' ', $line);
+      if (count($pair) != 2) {
+        form_set_error('oaff_archive_formats', t('Invalid line "' . $line .  '", must be space-separated pair of archive and text format'));
+      }
+    }
+
+    $node_types_lines = explode("\n", $node_types_s);
+    foreach ($node_types_lines as $line) {
+      $pair = explode(' ', $line);
+      if (count($pair) != 2) {
+        form_set_error('oaff_format_node_types', t('Invalid line "' . $line .  '", must be space-separated pair of text format and nodetype'));
+      }
+    }
+    
+    $extensions_lines = explode("\n", $extensions_s);
+    foreach ($extensions_lines as $line) {
+      $pair = explode(' ', $line);
+      if (count($pair) != 2) {
+        form_set_error('oaff_format_extensions', t('Invalid line "' . $line .  '", must be space-separated pair of format and extension'));
+      }
     }
   }
 }
@@ -2305,26 +2321,36 @@ function oaff_config_save_path($form, &$form_state) {
   $oaff_config = variable_get('oaff_config');
   $oaff_config['config_file'] = $path;
   variable_set("oaff_config", $oaff_config);
+  if ($form_state['values']['oaff_load_from_file'] == 1) {
+    // load from the file
+    $oaff_configs = oaff_config_variable_get(array(
+      'formats' => variable_get('oaff_archive_formats'),
+      'node_types'=> variable_get('oaff_format_node_types'),
+      'extensions'=> variable_get('oaff_format_extensions'),
+      'logging' => variable_get('oaff_logging_enabled'),
+    ));
 
-  $oaff_configs = oaff_config_variable_get(array(
-    'formats' => variable_get('oaff_archive_formats'),
-    'node_types'=> variable_get('oaff_format_node_types'),
-    'extensions'=> variable_get('oaff_format_extensions'),
-    'logging' => variable_get('oaff_logging_enabled'),
-  ));
+    $formats_s = $oaff_configs['formats'];
+    $node_types_s = $oaff_configs['node_types'];
+    $extensions_s = $oaff_configs['extensions'];
+    $logging = $oaff_configs['logging'];
 
-  $formats_s = $oaff_configs['formats'];
-  $node_types_s = $oaff_configs['node_types'];
-  $extensions_s = $oaff_configs['extensions'];
-  $logging = $oaff_configs['logging'];
+    variable_set('oaff_archive_formats', $formats_s);
+    variable_set('oaff_format_node_types', $node_types_s);
+    variable_set('oaff_format_extensions', $extensions_s);
+    variable_set('oaff_logging_enabled', $logging);
 
-  variable_set('oaff_archive_formats', $formats_s);
-  variable_set('oaff_format_node_types', $node_types_s);
-  variable_set('oaff_format_extensions', $extensions_s);
-  variable_set('oaff_logging_enabled', $logging);
-
-  oaff_config_set($formats_s, $node_types_s, $extensions_s, $logging);
-  drupal_set_message("Path saved and settings loaded");
+    oaff_config_set($formats_s, $node_types_s, $extensions_s, $logging); 
+    drupal_set_message("Path saved and settings loaded from the file");
+  } else {
+    // save to the file
+    $formats_s = $form_state['values']['oaff_archive_formats'];
+    $node_types_s = $form_state['values']['oaff_format_node_types'];
+    $extensions_s = $form_state['values']['oaff_format_extensions'];
+    $logging = $form_state['values']['oaff_logging_enabled'];
+    oaff_config_set($formats_s, $node_types_s, $extensions_s, $logging);
+    drupal_set_message("Path saved and settings saved the file");
+  }
 }
 
 /**
@@ -2392,8 +2418,15 @@ function oaff_config_form($form, &$form_state) {
   $form['oaff_config_file']['oaff_path_to_config_file'] = array(
     '#type' => 'textfield',
     '#title' => t('The path to MathHub configuration file'),
-    '#default_value' => $oaff_config['config_file'],
-    '#description' => t('The file contains settings in oaff config text format. If file doesn\'t exist, all data from fields below will be saved to that file. If file exists data from the file will be loaded to database.'),
+    '#default_value' => isset($oaff_config['config_file'])?$oaff_config['config_file']:'',
+    '#description' => t('The path to config file where configuration settings are saved'),
+  );
+
+  $form['oaff_config_file']['oaff_load_from_file'] = array(
+     '#type' => 'checkbox',
+     '#title' => t("Check to load settings from the file"),
+     '#default_value' => variable_get('oaff_load_from_file', false),
+     '#description' => t('If disabled settings are saved to config file. If enabled, settings are loaded from the config file.'),
   );
 
   $form['oaff_config_file']['oaff_save_config_file'] = array(
