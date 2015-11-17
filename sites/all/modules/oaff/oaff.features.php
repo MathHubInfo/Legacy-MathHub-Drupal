@@ -8,6 +8,7 @@
 **************************************************************************/
 
 function oaff_features_menu(& $items) {
+  $oaff_config = variable_get('oaff_config');
   $items['mh/broken-docs'] = array(
     'title' => "Broken Documents",
     'page callback' => 'oaff_features_broken_nodes',
@@ -15,11 +16,14 @@ function oaff_features_menu(& $items) {
     'type' => MENU_CALLBACK,
   );
   $items['mh/common-errors'] = array(
-    'title' => "Common Errors",
+    'title' => "Errors",
     'page callback' => 'oaff_features_common_errors',
     'access callback' => true,
-    'type' => MENU_CALLBACK,
+    'type' => MENU_NORMAL_ITEM,
+    'weight' => 20,
+    'plid' => $oaff_config['menus']['libs']['mlid'],
   );
+
   $items['mh/rerun-error'] = array(
     'title' => "Rerun Error",
     'page callback' => 'oaff_features_rerun_error',
@@ -55,7 +59,8 @@ function oaff_features_menu(& $items) {
     'title' => "Math Dictionary",
     'page callback' => 'oaff_multi_dictionary',
     'access callback' => true,
-    'type' => MENU_CALLBACK,
+    'type' => MENU_NORMAL_ITEM,
+    'plid' => $oaff_config['menus']['serv']['mlid'],
   );
 
   return $items;

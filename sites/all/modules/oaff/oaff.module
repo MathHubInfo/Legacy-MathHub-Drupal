@@ -18,6 +18,7 @@ require_once 'oaff.html_utils.php';
  */
 function oaff_menu() {
   $items = array();
+  $oaff_config = variable_get('oaff_config');
   $items['admin/config/content/oaff'] = array(
     'title' => 'OAFF configuration',
     'description' => 'Configure OAFF',
@@ -30,19 +31,7 @@ function oaff_menu() {
     'title' => "Synchronize Nodes",
     'page callback' => 'oaff_create_nodes',
     'access callback' => 'oaff_admin_access',
-    'menu_name' => 'navigation'
-  );
-  $items['mh/help'] = array(
-    'title' => "Help",
-    'page callback' => 'oaff_help_page',
-    'access callback' => true,
-    'menu_name' => 'navigation'
-  );
-  $items['mh/content'] = array(
-    'title' => "MMT Content",
-    'page callback' => 'oaff_dynamic_content_page',
-    'access callback' => true,
-    'type' => MENU_CALLBACK,
+    'menu_name' => MENU_CALLBACK
   );
   $items['node/%node/svg'] = array(
     'title' => 'SVG',
@@ -75,11 +64,12 @@ function oaff_menu() {
     'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
   );
   $items['report_issue/%get_destination'] = array(
-    'title' => "Report issue",
+    'title' => "Report Issue",
     'page callback' => 'oaff_report_issue',
     'access callback' => true,
     'type' => MENU_NORMAL_ITEM,
-    'menu_name' => 'navigation',
+    'menu_name' => 'main-menu',
+    'plid' => $oaff_config['menus']['help']['mlid'],
     'weight' => 10,
   );
 
@@ -93,13 +83,6 @@ function get_destination_to_arg() {
   return $path;
 }
 
-function oaff_dynamic_content_page() {
-  $uri = $_GET["uri"];
-  drupal_add_js("$ = jQuery;", "inline");
-  $response = mmt_get($uri);
-  return $response;
-}
-
 function oaff_permission() {
   return array(
     'administer mathhub' => array(
@@ -107,15 +90,6 @@ function oaff_permission() {
       'description' => t("Perform administration and devel tasks in MathHub"),
     ),
   );
-}
-
-function oaff_help_page() {
-  $out = '<p> Using MathHub should be documented on the <a href="/">homepage</a>. For any other issues, use the links below. </p>';
-  $out .= '<div>';
-  $out .= '<a href="mailto:m.iancu@jacobs-university.de?Subject=[MathHub]" target="_blank" class="btn btn-primary"> Contact a human </a> ';
-  $out .= '<a href="http://github.com/KWARC/MathHub/issues/new?issue" target="_blank" class="btn btn-danger" data-toggle="tooltip" data-placement="top" title="Requires Authentication"> Report an Issue </a> (click <a href="https://github.com/KWARC/MathHub/issues/" target="_blank">here</a> for known issues)';
-  $out .= '</div>';
-  return $out;
 }
 
 /**
@@ -1182,6 +1156,7 @@ function oaff_create_nodes() {
 function _oaff_crawler_update_doc_nodes() {
   $docs_base = "/meta/inf/doc/help/";
   $files = planetary_repo_list($docs_base);
+  $oaff_config = variable_get('oaff_config');
   foreach ($files as $filename) {
     $pathinfo = pathinfo($filename);
     $name = $pathinfo['filename'];
@@ -1192,8 +1167,11 @@ function _oaff_crawler_update_doc_nodes() {
     if (!$srcpath) {
       if (isset($pathinfo['extension']) && $pathinfo['extension'] == "html") {
         $options = array();
-        if ($fpath == "/meta/inf/doc/help/main.html") { //main entry point of documentation
+        if ($fpath == "/meta/inf/doc/help/main.html") { //doc overview for frontpage
           $options = array("promote" => 1, "sticky" => 1);
+        }
+        if ($fpath == "/meta/inf/doc/help/documentation.html") { //main entry point of documentation
+          $options = array('show_in_menu' => true, "plid" => $oaff_config['menus']['help']['mlid']);
         }
         oaff_create_help_node($name, 'help/' . $fullname, $fpath, $options);
       }
@@ -1368,7 +1346,7 @@ function _oaff_crawler_update_content($groups) {
       $archive_help_fpath = oaff_join_path(array($group, $archive, 'META-INF', 'index.html'));
       $srcpath = drupal_lookup_path('source', $archive_path);
       if (!$srcpath) {
-        $aid =     oaff_create_help_node($archive, $archive_path, $archive_help_fpath);
+        $aid = oaff_create_help_node($archive, $archive_path, $archive_help_fpath);
       } else {
         $aid = explode("/", $srcpath)[1];
       }
@@ -1454,8 +1432,21 @@ function oaff_crawler_update_source_folder($group, $archive_path, $archive_id, $
   return $cids;
 }
 
+function oaff_create_menu_link($path, $title, $weight, $plid = NULL, $expanded = 0, $options = array()) {
+  $arch_item = array(
+    'link_path' => $path,
+    'link_title' => $title,
+    'weight' => $weight,
+    'menu_name' => 'main-menu',
+    'options' => $options,
+    'expanded' => $expanded,
+    'plid' => $plid,
+  );
+  $mlid = menu_link_save($arch_item);
+  return $mlid;
+}
 
-function oaff_create_static_node($title, $alias, $content, $show_in_menu = false) {
+function oaff_create_static_node($title, $alias, $content, $plid = NULL, $expanded = 0, $weight = 10) {
   $static_node = (object) array(
    'type' => 'page',
    'uid' => 0,
@@ -1479,18 +1470,8 @@ function oaff_create_static_node($title, $alias, $content, $show_in_menu = false
   );
   path_save($path_opt);
   
-  if ($show_in_menu) { //adding menu entry
-    $arch_item = array(
-      'link_path' => drupal_get_normal_path($alias),
-      'link_title' => $title,
-      'weight' => 10,
-      'menu_name' => 'main-menu'
-    );
-    $mlid = menu_link_save($arch_item);
-    return array('nid' => $static_node->nid, 'mlid' => $mlid);
-  } else {
-    return array('nid' => $static_node->nid);
-  }
+  $mlid = oaff_create_menu_link(drupal_get_normal_path($alias), $title, $weight, $plid, $expanded);
+  return array('nid' => $static_node->nid, 'mlid' => $mlid);
 }
 
 function oaff_create_help_node($title, $alias, $fpath, $options = array()) {
@@ -1506,6 +1487,11 @@ function oaff_create_help_node($title, $alias, $fpath, $options = array()) {
   if (isset($options['sticky'])) {
     $sticky = $options['sticky'];
   }
+  $plid = NULL;
+  if (isset($options['plid'])) {
+    $plid = $options['plid'];
+  }
+  
 
   $help_node = (object) array(
    'type' => 'oaff_helpdoc',
@@ -1531,13 +1517,7 @@ function oaff_create_help_node($title, $alias, $fpath, $options = array()) {
   path_save($path_opt);
   
   if ($show_in_menu) { //adding menu entry
-    $arch_item = array(
-      'link_path' => drupal_get_normal_path($alias),
-      'link_title' => $title,
-      'weight' => 10,
-      'menu_name' => 'main-menu'
-    );
-    $mlid = menu_link_save($arch_item);
+    $mlid = oaff_create_menu_link(drupal_get_normal_path($alias), ucfirst($title), 10, $plid);
     return array('nid' => $help_node->nid, 'mlid' => $mlid);
   } else {
     return array('nid' => $help_node->nid);

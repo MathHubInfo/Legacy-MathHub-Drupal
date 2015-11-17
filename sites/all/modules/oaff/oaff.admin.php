@@ -45,10 +45,11 @@ function oaff_admin_menu(& $items) {
     'type' => MENU_CALLBACK,
   );
   $items['mh/administrate_mathhub'] = array(
-    'title' => "Administer MathHub",
+    'title' => "Admin",
     'page callback' => 'oaff_admin_administrate',
     'access callback' => 'oaff_admin_access',
-    'menu_name' => 'navigation',
+    'menu_name' => 'main-menu',
+    'weight' => 50,
   );  
   $items['mh/update_errors'] = array(
     'title' => "Update Errors",
@@ -321,7 +322,9 @@ function oaff_admin_administrate() {
   $out .= '<button onclick="window.location = \'/mh/libs-update\'" class="btn btn-primary btn-xs"> Update Libs </button> </li>';
   $out .= '<li> Touch Source Files (useful in case of compiler update to mark them as modified for crawler) ';
   $out .= '<button onclick="window.location = \'/mh/touch-files\'" class="btn btn-primary btn-xs"> Touch Files </button> </li>';
-  $out .= '<li> Crawl Loaded Nodes (normally handled by cron, run manually if needed) ';
+  $out .= '<li> Synchronize with disk (create/delete nodes for new/removed files) ';
+  $out .= '<button onclick="window.location = \'/mh/synchronize-nodes\'" class="btn btn-primary btn-xs"> Synchronize Nodes </button> </li> ';
+  $out .= '<li> Crawl to update status info (errors logs) for nodes ';
   $out .= '<button onclick="window.location = \'/mh/crawl-nodes\'" class="btn btn-primary btn-xs"> Crawl Nodes </button> </li> ';
   $out .= '<li> Regenerate Glossary ';
   $out .= '<button onclick="window.location = \'/mh/generate-glossary\'" class="btn btn-primary btn-xs"> Regenerate </button> </li>';
