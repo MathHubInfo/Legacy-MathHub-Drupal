@@ -1562,7 +1562,7 @@ function oaff_make_file_node($group, $archive_path, $archive_id, $dimension, $re
   $extension = $pathinfo['extension'];
   $lang = 'und'; // default;
   $mod_pathinfo = pathinfo($module);
-  if (isset($mod_pathinfo['extension'])) {
+  if (isset($mod_pathinfo['extension']) && $group == 'smglom') { //TODO: hack for smglom, to rethink lang detection, breaks on TPS lib
     $lang = $mod_pathinfo['extension'];
   }
   $format = $oaff_config['formats'][$archive_id];
