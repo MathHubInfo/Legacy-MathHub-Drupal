@@ -113,12 +113,12 @@ function oaff_install() {
   $nids = array();
   
   //root menu entries
-  $libs_info = oaff_create_static_node('Libraries', 'mh/libraries', "", NULL, 1);
+  $libs_info = oaff_create_static_node('Explore', 'mh/explore', "", NULL, 1, 10);
   $nids[] = $libs_info['nid'];
   $mlids[] = $libs_info['mlid'];
   $oaff_config['menus']['libs'] = $libs_info;
 
-  $serv_info = oaff_create_static_node("Resources", "mh/resources", "", NULL, 1);
+  $serv_info = oaff_create_static_node("Applications", "mh/applications", "", NULL, 1, 13);
   $nids[] = $serv_info['nid'];
   $mlids[] = $serv_info['mlid'];
   $oaff_config['menus']['serv'] = $serv_info;
@@ -129,13 +129,13 @@ function oaff_install() {
   $oaff_config['menus']['help'] = $help_info;
 
 
-  $arch_info = oaff_create_help_node('Content', 'mh/content', 
+  $arch_info = oaff_create_help_node('Libraries', 'mh/libraries', 
     oaff_join_path(array("meta/inf/doc/", "index.html")), array("promote" => 1, 'show_in_menu' => true, 'plid' => $libs_info['mlid']));
   $oaff_config['libraries_nid'] = $arch_info['nid'];
   $nids[] = $arch_info['nid'];
   $mlids[] = $arch_info['mlid'];
 
-  $contr_info = oaff_create_static_node("Misc", "mh/contribute", 
+  $contr_info = oaff_create_static_node("Miscellaneous", "mh/contribute", 
     file_get_contents(drupal_get_path('module', 'oaff') . '/contribute.xhtml'), $serv_info['mlid'], 0, 30);
   $contr_info = oaff_create_static_node("Glossary", "mh/glossary", "", $serv_info['mlid']);
   $nids[] = $contr_info['nid'];
@@ -143,7 +143,7 @@ function oaff_install() {
   
   //adding source menu item (pointing to gitlab)
 
-  $mlids[] = oaff_create_menu_link('http://gl.mathhub.info', "Sources", 10, $libs_info['mlid'], 0, array('attributes' => array('target' => '_blank')));
+  $mlids[] = oaff_create_menu_link('http://gl.mathhub.info', "Git Sources", 20, $libs_info['mlid'], 0, array('attributes' => array('target' => '_blank')));
   $mlids[] = oaff_create_menu_link('mailto:m.iancu@jacobs-university.de?Subject=[MathHub]', "Contact a Human", 
     11, $help_info['mlid'], 0, array('attributes' => array('target' => '_blank')));
 

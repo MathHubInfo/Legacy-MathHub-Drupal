@@ -16,11 +16,11 @@ function oaff_features_menu(& $items) {
     'type' => MENU_CALLBACK,
   );
   $items['mh/common-errors'] = array(
-    'title' => "Errors",
+    'title' => "Build Errors",
     'page callback' => 'oaff_features_common_errors',
     'access callback' => true,
     'type' => MENU_NORMAL_ITEM,
-    'weight' => 20,
+    'weight' => 15,
     'plid' => $oaff_config['menus']['libs']['mlid'],
   );
 

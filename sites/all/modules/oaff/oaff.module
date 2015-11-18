@@ -323,7 +323,13 @@ function oaff_autogenerate_archive_doc($group, $archive) {
   $html .= $desc;
   $html .= $resp;
   $html .= oaff_autogenerate_archive_statistics($group, $archive);
-  $content_path = oaff_join_path(array($group, $archive, 'export/planetary/narration', '.html'));
+  $style = 'planetary'; // default
+  $format = $oaff_config['formats'][$arch_info['id']];
+  $filters = filter_list_format($format);
+  if (isset($filters['mmt-presentation'])) {
+    $style = $filters['mmt-presentation']->settings['mmt_style'];
+  }
+  $content_path = oaff_join_path(array($group, $archive, 'export/' . $style . '/narration', '.html'));
   $html .= "<div>" . planetary_repo_load_file($content_path) . "</div>";
   //$html .= "<ul><li><a href=\"/$group/$archive/source\">Content</a> </li>
   //             <li><a href=\"http://gl.mathhub.info/$group/$archive\" target=\"_blank\">Sources</a> </li>
@@ -1271,7 +1277,7 @@ function _oaff_get_archive_info($group, $archive_path) {
   foreach ($mf_lines as $line) {
     $pair = explode(":", $line, 2);
     if (count($pair) == 2) { //ignoring invalid (e.g empty) lines 
-      $props[$pair[0]] = $pair[1];
+      $props[$pair[0]] = trim($pair[1]);
       if (trim($pair[0]) == "narration-base") {
         $docbase = trim($pair[1]);
       } elseif (trim($pair[0]) == "id") {
