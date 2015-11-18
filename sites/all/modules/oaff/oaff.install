@@ -451,10 +451,10 @@ function oaff_schema() {
         'length' => 63,
         'not null' => true,
       ),
-      'source' => array(
-        'description' => 'The source size',
-        'type' => 'varchar',
-        'length' => 63,
+      'size' => array(
+        'description' => 'The source size in kb',
+        'type' => 'int',
+        'unsigned' => true,
         'not null' => true,
       ),
     ),
@@ -512,7 +512,7 @@ function oaff_schema() {
         'not null' => true,
       ),
       'size' => array(
-        'description' => 'int',
+        'description' => 'The source size in kb',
         'type' => 'int',
         'unsigned' => true,
         'not null' => true,

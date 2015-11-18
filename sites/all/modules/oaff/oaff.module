@@ -285,7 +285,8 @@ function oaff_update_group_statistics($group) {
     'definition' => 0, 
     'constant' => 0, 
     'view' => 0, 
-    'file' => 0
+    'file' => 0,
+    'size' => 0,
   );
   foreach ($result as $key => $row) {
     $stat['archive']++;
@@ -294,9 +295,10 @@ function oaff_update_group_statistics($group) {
     $stat['constant'] += $row->constant;
     $stat['view'] += $row->view;
     $stat['file'] += $row->file;
+    $stat['size'] += $row->size;
   }
   $group_path = "/var/data/localmh/MathHub/$group/";
-  $stat['size'] = (int) exec("du -s " . $group_path . " | cut -f1");
+  //$stat['size'] = (int) exec("du -s " . $group_path . " | cut -f1");
   db_merge('oaff_group_stat')
     ->key(array(
       'mh_group' => $group,
@@ -353,8 +355,8 @@ function oaff_autogenerate_archive_statistics($group, $archive) {
   $out .= "     <li>Definitions: " . $result['definition'] . "</li>\n";
   $out .= "     <li>Constants: " . $result['constant'] . "</li>\n";
   $out .= "     <li>Files: " . $result['file'] . "</li>\n";
-  $out .= "     <li>OMDoc size: " . $result['omdoc'] . "</li>\n";
-  $out .= "     <li>Source size: " . $result['source'] . "</li>\n";
+  $out .= "     <li>OMDoc size: " . oaff_filter_size($result['omdoc']) . "</li>\n";
+  $out .= "     <li>Source size: " . oaff_filter_size($result['size']) . "</li>\n";
   $out .= "   </ul>\n";
   $out .= " </div>\n</div>\n";
   return $out;  
@@ -374,14 +376,14 @@ function oaff_update_archive_statistics($group, $archive) {
   $pid = $result['nid'];
   $file_nr = oaff_count_children($pid);
 
-  $archive_path = "/var/data/localmh/MathHub/$group/$archive/";
-  $omdoc_path = oaff_join_path(array($archive_path, 'content', 'http..mathhub.info', $group, $archive));
+  $archive_path = "/var/data/localmh/MathHub/$group/$archive/source/";
+  $omdoc_path = oaff_join_path(array("/var/data/localmh/MathHub", $group, $archive , 'content', 'http..mathhub.info', $group, $archive));
   $stat_tags = array('theory' => '', 'definition' => '', 'constant' => '', 'view' => '');
   foreach ($stat_tags as $key => $value) {
     $stat_tags[$key] = exec('cd ' . $omdoc_path . '; fgrep "</' . $key . '>" * -R | wc -l');  
   }
-  $source_size = exec("du -hs " . $archive_path . " | cut -f1");
-  $omdoc_size = exec("du -hs " . $omdoc_path . " | cut -f1");
+  $source_size = (int) exec("du -s " . $archive_path . " | cut -f1");
+  $omdoc_size = (int) exec("du -s " . $omdoc_path . " | cut -f1");
   db_merge('oaff_archive_stat')
     ->key(array(
       'mh_archive' => $archive,
@@ -394,7 +396,7 @@ function oaff_update_archive_statistics($group, $archive) {
       'constant' => $stat_tags['constant'],
       'file' => $file_nr,
       'omdoc' => $omdoc_size,
-      'source' => $source_size,
+      'size' => $source_size,
     ))
     ->execute();
 }
