@@ -316,29 +316,29 @@ function oaff_admin_crawl_nodes() {
 
 function oaff_admin_administrate() {
   $out  = '<h4>This page collects functionalities related to MathHub administration and maintenance</h4>';
-  $out .= '<table>';
-  $out .= '<tr><td style="padding:5px 10px 5px 0;"><button onclick="window.location = \'/mh/lmh-update\'" class="btn btn-primary btn-xs"> Lmh Update </button></td>';
-  $out .= '<td style="padding:5px 0;">Get the latest version of the source documents</td></tr>';
-  $out .= '<tr><td style="padding:5px 10px 5px 0;"><button onclick="window.location = \'/mh/libs-update\'" class="btn btn-primary btn-xs"> Update Libs </button></td>';
-  $out .= '<td style="padding:5px 0;">Update Libraries (sTeX, MMT)</td></tr>';
-  $out .= '<tr><td style="padding:5px 10px 5px 0;"><button onclick="window.location = \'/mh/touch-files\'" class="btn btn-primary btn-xs"> Touch Files </button></td>';
-  $out .= '<td style="padding:5px 0;">Touch Source Files (useful in case of compiler update to mark them as modified for crawler)</td></tr>';
-  $out .= '<tr><td style="padding:5px 10px 5px 0;"><button onclick="window.location = \'/mh/synchronize-nodes\'" class="btn btn-primary btn-xs"> Synchronize Nodes </button></td>';
-  $out .= '<td style="padding:5px 0;">Synchronize with disk (create/delete nodes for new/removed files)</td></tr>';
-  $out .= '<tr><td style="padding:5px 10px 5px 0;"><button onclick="window.location = \'/mh/crawl-nodes\'" class="btn btn-primary btn-xs"> Crawl Nodes </button></td>';
-  $out .= '<td style="padding:5px 0;">Crawl to update status info (errors logs) for nodes</td></tr>';
-  $out .= '<tr><td style="padding:5px 10px 5px 0;"><button onclick="window.location = \'/mh/generate-glossary\'" class="btn btn-primary btn-xs"> Regenerate </button></td>';
-  $out .= '<td style="padding:5px 0;">Regenerate Glossary</td></tr>';
-  $out .= '<tr><td style="padding:5px 10px 5px 0;"><button onclick="window.location = \'/mh/rebuild-libs\'" class="btn btn-primary btn-xs"> See Build Log </button><br />';
-  $out .= '<button onclick="window.location = \'/mh/rebuild-libs?action=update-build\'" class="btn btn-warning btn-xs"> Update Build </button><br />';
-  $out .= '<button onclick="window.location = \'/mh/rebuild-libs?action=clean-build\'" class="btn btn-warning btn-xs"> Clean Build </button></td>';
-  $out .= '<td style="padding:5px 0;">Rebuild Everything';
+  $out .= '<table class="table"><tbody>';
+  $out .= '<tr><td><button onclick="window.location = \'/mh/lmh-update\'" class="btn btn-primary btn-xs"> Lmh Update </button></td>';
+  $out .= '<td>Get the latest version of the source documents</td></tr>';
+  $out .= '<tr><td><button onclick="window.location = \'/mh/libs-update\'" class="btn btn-primary btn-xs"> Update Libs </button></td>';
+  $out .= '<td>Update Libraries (sTeX, MMT)</td></tr>';
+  $out .= '<tr><td><button onclick="window.location = \'/mh/touch-files\'" class="btn btn-primary btn-xs"> Touch Files </button></td>';
+  $out .= '<td>Touch Source Files (useful in case of compiler update to mark them as modified for crawler)</td></tr>';
+  $out .= '<tr><td><button onclick="window.location = \'/mh/synchronize-nodes\'" class="btn btn-primary btn-xs"> Synchronize Nodes </button></td>';
+  $out .= '<td>Synchronize with disk (create/delete nodes for new/removed files)</td></tr>';
+  $out .= '<tr><td><button onclick="window.location = \'/mh/crawl-nodes\'" class="btn btn-primary btn-xs"> Crawl Nodes </button></td>';
+  $out .= '<td>Crawl to update status info (errors logs) for nodes</td></tr>';
+  $out .= '<tr><td><button onclick="window.location = \'/mh/generate-glossary\'" class="btn btn-primary btn-xs"> Regenerate </button></td>';
+  $out .= '<td>Regenerate Glossary</td></tr>';
+  $out .= '<tr><td><p><button onclick="window.location = \'/mh/rebuild-libs\'" class="btn btn-primary btn-xs"> See Build Log </button></p>';
+  $out .= '<p><button onclick="window.location = \'/mh/rebuild-libs?action=update-build\'" class="btn btn-warning btn-xs"> Update Build </button></p>';
+  $out .= '<p><button onclick="window.location = \'/mh/rebuild-libs?action=clean-build\'" class="btn btn-warning btn-xs"> Clean Build </button></p></td>';
+  $out .= '<td>Rebuild Everything';
   $lock = oaff_admin_get_build_lock_path();
   if (!$lock) {
     $out .= '<span class="alert-danger">(Currently running) </span>';
   }
   $out .= '</td></tr>';
-  $out .= '</table>';
+  $out .= '</tbody></table>';
   //$out .= ' <button class="btn btn-primary " onclick="window.location = \'/mh/crawl-nodes\'"> Continue </button> </div> ';
   return $out;
 }
