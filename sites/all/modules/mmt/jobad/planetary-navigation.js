@@ -27,6 +27,14 @@ var planetaryNavigation = {
 			var uriEnc = planetary.relNavigate(uri);
 		}
 
+        //TODO temporary until html presenter gets updated attributes
+		if(target.hasAttribute("jobad:load") && target.hasClass('loadable')) {
+			console.log("got here");
+			var uri = target.attr("jobad:load");
+			var uriEnc = planetary.relNavigate(uri);
+		}
+
+
 		//disable this for now, context menu navigation should be enough
 		/*var flag = target.hasAttribute(mmtattr.symref);
 		if(target.parent().hasAttribute(mmtattr.symref)) {

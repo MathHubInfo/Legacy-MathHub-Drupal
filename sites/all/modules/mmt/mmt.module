@@ -279,7 +279,7 @@ function mmt_filter_compilation_process($text, $filter, $format, $langcode, $cac
   $dpath = oaff_get_path_info($fpath)['dpath'];
   $mmt_format = $filter->settings['mmt_format'];
   //TODO make mmt_format be $compiler or smth along those lines
-  mmt_get_compiled($nid, $fpath);
+  mmt_get_compiled($nid, $fpath, $mmt_format);
   return $text;
 }
 
@@ -366,7 +366,8 @@ function mmt_field_formatter_info() {
 }
 
 
-function mmt_get_compiled($nid, $location, $compiler = "stex-omdoc") {
+function mmt_get_compiled($nid, $location, $format = "stex") {
+  $compiler = $format . '-omdoc';
   //finding log filename
   $pathinfo = oaff_get_path_info($location);
   $base = oaff_join_path(array($pathinfo['group'], $pathinfo['archive']));
@@ -407,17 +408,17 @@ function mmt_get_presentation($nid, $location, $presenter = "planetary") {
   $basename = $pathinfo['module'];
   if (planetary_repo_is_dir($location)) { //folder
     $out_location = oaff_join_path(array($base, "export", $presenter, "narration", $rel_path, ".html"));
-    $log_location = oaff_join_path(array($base, "errors", $presenter . "_narration", $rel_path, ".err"));
+    $log_location = oaff_join_path(array($base, "errors", $presenter . "-narration", $rel_path, ".err"));
   } else { //file
     $mmt_input_ext = $pathinfo['extension']; //default
-    if ($presenter == 'planetary') {
-      $mmt_input_ext = 'omdoc';
+    if ($presenter == 'planetary' || $presenter == 'html') {
+      $mmt_input_ext = 'omdoc'; //apparently presenter have .omdoc extension from the narr/content files they present
     }
     $log_filename = $basename . '.' . $mmt_input_ext . '.err'; 
   
     $out_filename = $basename . '.html';  
     $out_location = oaff_join_path(array($base, "export", $presenter, "narration", $rel_parent, $out_filename));
-    $log_location = oaff_join_path(array($base, "errors", $presenter . "_narration", $rel_parent, $log_filename));
+    $log_location = oaff_join_path(array($base, "errors", $presenter . "-narration", $rel_parent, $log_filename));
   }
   if (planetary_repo_stat_file($out_location) == null) { //something failed
     oaff_log("MMT", "Could not find .html file for presenting $location with $presenter (generation failed)");
@@ -443,10 +444,20 @@ function mmt_get_presentation($nid, $location, $presenter = "planetary") {
       $mmt_status = array("conversion" => 3, "messages" => array(array('shortMsg' => "fatal error, conversion failed (no $presenter log)", 
                           'longMsg' => "expected log to be at $log_location", 'type' => "Fatal")));
     }
-    $content = planetary_repo_load_file($out_location); 
+    $content = mmt_get_pres_from_file($out_location);
   }
 
   oaff_save_error_status($nid, $presenter, $mmt_status);
+  return $content;
+}
+
+function mmt_get_pres_from_file($location) {
+  $content = planetary_repo_load_file($location);
+  //TODO: SimpleXML breaks on namespaces so hacked with regexes instead
+  preg_match('/<body>([\s\S]*)<\/body>/', $content, $matches); 
+  if (isset($matches[1])) {
+    $content = $matches[1];
+  }
   return $content;
 }
 

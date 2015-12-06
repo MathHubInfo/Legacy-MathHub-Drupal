@@ -330,7 +330,7 @@ function oaff_autogenerate_archive_doc($group, $archive) {
     $style = $filters['mmt-presentation']->settings['mmt_style'];
   }
   $content_path = oaff_join_path(array($group, $archive, 'export/' . $style . '/narration', '.html'));
-  $html .= "<div>" . planetary_repo_load_file($content_path) . "</div>";
+  $html .= "<div>" . mmt_get_pres_from_file($content_path) . "</div>";
   //$html .= "<ul><li><a href=\"/$group/$archive/source\">Content</a> </li>
   //             <li><a href=\"http://gl.mathhub.info/$group/$archive\" target=\"_blank\">Sources</a> </li>
   //              <li><a href=\"/mh/common-errors?&groups=$group&archives=$archive\">Errors</a> </li></ul>";
