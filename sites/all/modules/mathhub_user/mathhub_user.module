@@ -241,6 +241,8 @@ function mathhub_user_form_user_register_form_alter(&$form, &$form_state, $form_
     '#description' => 'Please give us your name, so people you know can recognize you.',
     '#required' => true,
     '#weight' => 5);
+  // Disabling this to simplify account creation
+  /*
   $form["account"]["reads_languages"] = array(
     '#type' => 'select', 
     '#title' => t('Select the languages you can read'), 
@@ -289,6 +291,7 @@ function mathhub_user_form_user_register_form_alter(&$form, &$form_state, $form_
     '#description' => 'Tell something about yourself, but use no more than 250 characters.',
     '#required' => false,
     '#weight' => 12);
+    */
 }
 
 /**
