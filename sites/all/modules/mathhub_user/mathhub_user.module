@@ -234,7 +234,8 @@ function mathhub_user_form_user_register_form_alter(&$form, &$form_state, $form_
   $form['#submit'][] = 'mathhub_user_user_register_submit';
 
   $form['account']['name']['#description'] = 'Punctuation is not allowed except for periods, hyphens, apostrophes, and underscores.';
-  $form['account']['pass']['#description'] = 'Provide a password for the new account in both fields. Minimum length is 8 characters.';
+  $form['account']['pass']['#description'] = '<div>After registering, your credentials can also be used for accessing the git sources on <a href="https://gl.mathhub.info">gl.mathhub.info</a></div>';
+  $form['account']['pass']['#title'] = 'Password (above) needs to be at least 8 characters long!';
   $form['account']['realname'] = array(
     '#type' => 'textfield',
     '#title' => 'Name',
@@ -443,7 +444,7 @@ function mathhub_user_register_user_form_validate($form, &$form_state) {
   if(!isset($form_state['input']['pass']) || 
       strlen($form_state['input']['pass']['pass1']) < 8 ||
       $form_state['input']['pass']['pass1'] !== $form_state['input']['pass']['pass2']) {
-    form_set_error('pass', t("The password needs to be atleast 8 characters long."));    
+    form_set_error('pass', t("The password needs to be at least 8 characters long."));
   }
   if(!isset($form_state['input']['realname'])) {
     form_set_error('realname', t("You need to provide us with your name."));  
