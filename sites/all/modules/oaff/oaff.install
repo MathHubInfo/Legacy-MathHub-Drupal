@@ -6,6 +6,7 @@
 * Copyright (c) 2015 by the KWARC group (http://kwarc.info)              *
 * Licensed under GPL3, see http://www.gnu.org/licenses/gpl.html          *
 **************************************************************************/
+require_once 'oaff.base.php';
 
 function oaff_add_vfs_field($node_type, $formatter = 'mmt_formatter') { // TODO replace with oaff_formatter
   // Check if our field is not already created.
@@ -101,57 +102,18 @@ function delete_node_type($node_type_name, $remove_type = true) {
 
 function oaff_install() {
   oaff_create_node_types();
+  // initializing oaff_config  -- i.e. in-memory state
   $oaff_config = array();
   $oaff_config['compiled_node_types'] = array('mmtdoc', 'glossary', 'oaff_doc', 'oaff_virtdoc');
   $oaff_config['all_node_types'] = array_merge($oaff_config['compiled_node_types'], array("oaff_helpdoc"));
-  
-  $oaff_config['latest_nodes'] = 0;
-  $oaff_config['deleted_nodes'] = 0;
   $oaff_config['crawl_nodes_offset'] = 0;
+  $oaff_config['crawler']['new_nodes'] = 0;
+  $oaff_config['crawler']['deleted_nodes'] = 0;
+  // to be incremented when a menu link or (non-oaff) node was created by oaff
+  $oaff_config['crawler']['mlids'] = array();
+  $oaff_config['crawler']['nids'] = array();
   $oaff_config['config_file'] = '/var/data/localmh/MathHub/meta/inf/config/MathHub/config';
-  $mlids = array();
-  $nids = array();
-  
-  //root menu entries
-  $libs_info = oaff_create_static_node('Explore', 'mh/explore', "", NULL, 1, 10);
-  $nids[] = $libs_info['nid'];
-  $mlids[] = $libs_info['mlid'];
-  $oaff_config['menus']['libs'] = $libs_info;
-
-  $serv_info = oaff_create_static_node("Applications", "mh/applications", "", NULL, 1, 13);
-  $nids[] = $serv_info['nid'];
-  $mlids[] = $serv_info['mlid'];
-  $oaff_config['menus']['serv'] = $serv_info;
-
-  $help_info = oaff_create_static_node("Help", "mh/help", "", NULL, 1, 15);
-  $nids[] = $help_info['nid'];
-  $mlids[] = $help_info['mlid'];
-  $oaff_config['menus']['help'] = $help_info;
-
-
-  $arch_info = oaff_create_help_node('Libraries', 'mh/libraries', 
-    oaff_join_path(array("meta/inf/doc/", "index.html")), array("promote" => 1, 'show_in_menu' => true, 'plid' => $libs_info['mlid']));
-  $oaff_config['libraries_nid'] = $arch_info['nid'];
-  $nids[] = $arch_info['nid'];
-  $mlids[] = $arch_info['mlid'];
-
-  $contr_info = oaff_create_static_node("Miscellaneous", "mh/contribute", 
-    file_get_contents(drupal_get_path('module', 'oaff') . '/contribute.xhtml'), $serv_info['mlid'], 0, 30);
-  $contr_info = oaff_create_static_node("Glossary", "mh/glossary", "", $serv_info['mlid']);
-  $nids[] = $contr_info['nid'];
-  $mlids[] = $contr_info['mlid'];
-  
-  //adding source menu item (pointing to gitlab)
-
-  $mlids[] = oaff_create_menu_link('http://gl.mathhub.info', "Git Sources", 20, $libs_info['mlid'], 0, array('attributes' => array('target' => '_blank')));
-  $mlids[] = oaff_create_menu_link('mailto:m.iancu@jacobs-university.de?Subject=[MathHub]', "Contact a Human", 
-    11, $help_info['mlid'], 0, array('attributes' => array('target' => '_blank')));
-
-  $oaff_config['mlids'] = $mlids;
-  $oaff_config['nids'] = $nids;
   $oaff_config['log'] = array(); //oaff log
-  $oaff_config['archives'] = array(); //archive properties
-  $oaff_config['groups'] = array(); //group properties
   $oaff_config['top_stat'] = array(
     'group' => 0,
     'archive' => 0, 
@@ -162,14 +124,30 @@ function oaff_install() {
     'file' => 0,
     'size' => 0,
   );
-
+  variable_set('oaff_config', $oaff_config);
+  // root nodes entries
+  $libs_info = oaff_base_make_static_doc('Explore', 'mh/explore', "", NULL, 1, 10);
+  $serv_info = oaff_base_make_static_doc("Applications", "mh/applications", "", NULL, 1, 13);
+  $help_info = oaff_base_make_static_doc("Help", "mh/help", "", NULL, 1, 15);
+  $arch_info = oaff_base_make_help_doc('Libraries', 'mh/libraries', 
+    oaff_base_join_path(array("meta/inf/doc/", "index.html")), array("promote" => 1, 'show_in_menu' => true, 'menu_plid' => $libs_info['mlid']));
+  $contr_info = oaff_base_make_static_doc("Miscellaneous", "mh/contribute", 
+    file_get_contents(drupal_get_path('module', 'oaff') . '/contribute.xhtml'), $serv_info['mlid'], 0, 30);
+  $gloss_info = oaff_base_make_static_doc("Glossary", "mh/glossary", "", $serv_info['mlid']);
+  
+  //adding root menu entires 
+  $oaff_config = variable_get('oaff_config');
+  $oaff_config['menus']['libs'] = $libs_info;
+  $oaff_config['menus']['serv'] = $serv_info;
+  $oaff_config['menus']['help'] = $help_info;
+  $oaff_config['libraries_nid'] = $arch_info['nid'];
+  $oaff_config['crawler']['mlids'][] = oaff_create_menu_link('http://gl.mathhub.info', "Git Sources", 20, $libs_info['mlid'], 0, 
+    array('attributes' => array('target' => '_blank')));
+  $oaff_config['crawler']['mlids'][]= oaff_create_menu_link('mailto:m.iancu@jacobs-university.de?Subject=[MathHub]', "Contact a Human", 
+    11, $help_info['mlid'], 0, array('attributes' => array('target' => '_blank')));
   variable_set('oaff_config', $oaff_config);
 
-  $formats_s = variable_get("oaff_archive_formats", '');
-  $node_types_s = variable_get("oaff_format_node_types", '');
-  $extensions_s = variable_get("oaff_format_extensions", '');
-  $logging = variable_get("oaff_logging_enabled", false);
-  oaff_config_set($formats_s, $node_types_s, $extensions_s, $logging);
+  oaff_crawler_sync_config_file();
   $stex_filters = array(
     'local-compilation' => array(
       'status' => 1,
@@ -207,8 +185,8 @@ function oaff_uninstall() {
   delete_node_type('mmtdoc', false);
  
   //deleting menu children also, otherwise they are orphaned
-  $tree = menu_build_tree('main-menu', array('expanded' => $oaff_config['mlids']));
-  $mlids = array_unique(array_merge($oaff_config['mlids'], oaff_mlids_gather($tree)));
+  $tree = menu_build_tree('main-menu', array('expanded' => $oaff_config['crawler']['mlids']));
+  $mlids = array_unique(array_merge($oaff_config['crawler']['mlids'], oaff_mlids_gather($tree)));
 
   foreach ($mlids as $mlid) {
     //menu_link_delete($mlid);
@@ -217,7 +195,7 @@ function oaff_uninstall() {
     db_delete("menu_links")->condition('mlid', $mlid)->execute();
   }
 
-  $nids = $oaff_config['nids'];
+  $nids = $oaff_config['crawler']['nids'];
   foreach ($nids as $nid) {
     node_delete($nid);
   }

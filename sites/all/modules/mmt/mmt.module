@@ -27,6 +27,8 @@ function mmt_node_view($node, $view_mode, $langcode) {
   }
 }
 
+// TODO replace functions below with one mmt_get function
+
 /**
  * function to get content from mmt (optionally presented with a style)
  * @param $dpath the path from where to get the content
@@ -254,9 +256,7 @@ function mmt_filter_presentation_process($text, $filter, $format, $langcode, $ca
   $args = explode(" ", $text);
   $nid = $args[0];
   $fpath = $args[1];
-  $dpath = oaff_get_path_info($fpath)['dpath'];
   $style = $filter->settings['mmt_style'];  
-  //$response = mmt_present($dpath, $text, $style);
   $result = mmt_get_presentation($nid, $fpath, $style);
   return $result;
 }
@@ -276,7 +276,6 @@ function mmt_filter_compilation_process($text, $filter, $format, $langcode, $cac
   $args = explode(" ", $text);
   $nid = $args[0];
   $fpath = $args[1];
-  $dpath = oaff_get_path_info($fpath)['dpath'];
   $mmt_format = $filter->settings['mmt_format'];
   //TODO make mmt_format be $compiler or smth along those lines
   mmt_get_compiled($nid, $fpath, $mmt_format);
@@ -339,7 +338,7 @@ function mmt_form_alter(&$form, &$form_state, $form_id) {
   if ($form_id == 'mmtdoc_node_form') { 
     if (array_key_exists('nid', $form_state['node'])) { // editing existing node
        $location = $form_state['node']->field_external['und']['0']['path']; 
-       $path_info = oaff_get_path_info($location);
+       $path_info = oaff_base_get_path_info($location);
        global $filter_context;
        $filter_context = array();
        $filter_context['mmt'] = $path_info;
@@ -369,16 +368,16 @@ function mmt_field_formatter_info() {
 function mmt_get_compiled($nid, $location, $format = "stex") {
   $compiler = $format . '-omdoc';
   //finding log filename
-  $pathinfo = oaff_get_path_info($location);
-  $base = oaff_join_path(array($pathinfo['group'], $pathinfo['archive']));
+  $pathinfo = oaff_base_get_path_info($location);
+  $base = oaff_base_join_path(array($pathinfo['group'], $pathinfo['archive']));
   $rel_parent = $pathinfo['rel_parent'];
-  $basename = $pathinfo['module'];
+  $basename = $pathinfo['title'];
   $mmt_input_ext = $pathinfo['extension']; //default
   if ($compiler == 'stex-omdoc') {
     $mmt_input_ext = 'omdoc';
   }
   $log_filename = $basename . '.' . $mmt_input_ext . '.err';    
-  $log_location = oaff_join_path(array($base, "errors", $compiler, $rel_parent, $log_filename));
+  $log_location = oaff_base_join_path(array($base, "errors", $compiler, $rel_parent, $log_filename));
   if (planetary_repo_stat_file($log_location)) { //log exists
     $mtime = planetary_repo_stat_file($log_location)['mtime'];
     $last_ran_time = oaff_get_mtime($nid, $log_location);
@@ -401,14 +400,14 @@ function mmt_get_compiled($nid, $location, $format = "stex") {
 }
 
 function mmt_get_presentation($nid, $location, $presenter = "planetary") {
-  $pathinfo = oaff_get_path_info($location);
-  $base = oaff_join_path(array($pathinfo['group'], $pathinfo['archive']));
+  $pathinfo = oaff_base_get_path_info($location);
+  $base = oaff_base_join_path(array($pathinfo['group'], $pathinfo['archive']));
   $rel_parent = $pathinfo['rel_parent'];
   $rel_path = $pathinfo['rel_path'];
-  $basename = $pathinfo['module'];
+  $basename = $pathinfo['title'];
   if (planetary_repo_is_dir($location)) { //folder
-    $out_location = oaff_join_path(array($base, "export", $presenter, "narration", $rel_path, ".html"));
-    $log_location = oaff_join_path(array($base, "errors", $presenter . "-narration", $rel_path, ".err"));
+    $out_location = oaff_base_join_path(array($base, "export", $presenter, "narration", $rel_path, ".html"));
+    $log_location = oaff_base_join_path(array($base, "errors", $presenter . "-narration", $rel_path, ".err"));
   } else { //file
     $mmt_input_ext = $pathinfo['extension']; //default
     if ($presenter == 'planetary' || $presenter == 'html') {
@@ -417,8 +416,8 @@ function mmt_get_presentation($nid, $location, $presenter = "planetary") {
     $log_filename = $basename . '.' . $mmt_input_ext . '.err'; 
   
     $out_filename = $basename . '.html';  
-    $out_location = oaff_join_path(array($base, "export", $presenter, "narration", $rel_parent, $out_filename));
-    $log_location = oaff_join_path(array($base, "errors", $presenter . "-narration", $rel_parent, $log_filename));
+    $out_location = oaff_base_join_path(array($base, "export", $presenter, "narration", $rel_parent, $out_filename));
+    $log_location = oaff_base_join_path(array($base, "errors", $presenter . "-narration", $rel_parent, $log_filename));
   }
   if (planetary_repo_stat_file($out_location) == null) { //something failed
     oaff_log("MMT", "Could not find .html file for presenting $location with $presenter (generation failed)");
