@@ -23,13 +23,6 @@ function oaff_features_menu(& $items) {
     'weight' => 15,
     'plid' => $oaff_config['menus']['libs']['mlid'],
   );
-
-  $items['mh/rerun-error'] = array(
-    'title' => "Rerun Error",
-    'page callback' => 'oaff_features_rerun_error',
-    'access callback' => 'oaff_admin_access',
-    'type' => MENU_CALLBACK,
-  );
   $items['mh/recrawl-error'] = array(
     'title' => "Recrawl Error",
     'page callback' => 'oaff_features_recrawl_errors',
@@ -290,41 +283,6 @@ function oaff_features_add_doc_callback($form, &$form_state) {
   drupal_set_message("Created document " . $title);
   $nid = oaff_create_oaff_doc($location, $archive);
   $form_state['redirect'] = 'node/'. $nid;
-}
-
-function oaff_features_rerun_error() {
-  if (isset($_GET['eid'])) {
-    $rerun_nids = array();
-    $paths=array();
-    $eid = $_GET['eid'];
-    $result = db_select('oaff_errors', 'e')
-      ->fields('e', array('short_msg'))
-      ->condition('eid', $eid)
-      ->execute()
-      ->fetchAssoc();
-    $error_msg = $result['short_msg'];
-    $rerun_nids = db_select('oaff_errors', 'e')
-      ->fields('e', array('nid'))
-      ->condition('short_msg', $error_msg, '=')
-      ->execute()
-      ->fetchAllAssoc('nid', PDO::FETCH_ASSOC);
-    foreach ($rerun_nids as $nid => $value) {
-        $node = node_load($nid);
-        $rel_path = $node->field_external['und'][0]['path'];
-        $location = planetary_repo_access_rel_path($rel_path);
-        $paths[] = $location;
-        //shell_exec("touch $location"); //marked for rerun
-        //node_view($node);
-    }
-    oaff_admin_nodes_rebuild($paths);
-    //$queue = DrupalQueue::get('oaff_crawl_nodes');
-    //$queue->createItem($rerun_nids);
-    $count = count($rerun_nids);
-    drupal_set_message("Re-crawled $count nodes and marked them for re-run. See <a href='/mh/rebuild-libs'> latest/current build log </a> for more details");    
-    drupal_goto('mh/common-errors');
-  } else {
-    drupal_set_message("No error given (to rerun)", "warning");
-  }
 }
 
 //show common errors
@@ -607,9 +565,7 @@ function oaff_features_common_errors() {
     $out .= '<li><a style="cursor:pointer;" onclick="if (jQuery(this).html() == \'Show All\') {jQuery(this).html(\'Hide All\')} else {jQuery(this).html(\'Show All\')}; jQuery(\'#oaff_error_log' . $i . '\' ).toggle( \'fold\' );" >Show All</a> </li>';
     if (user_access("administer mathhub")) {
       $eid = $error['eid'];
-      $out .= '<a href="/mh/recrawl-error?eid=' . $eid . '" class="btn btn-primary btn-xs" data-toggle="tooltip" data-placement="left" title="Recrawl errors"> <span class="glyphicon glyphicon-refresh"> </span></a> ';
-      $out .= '<a href="/mh/rerun-error?eid=' . $eid . '" class="btn btn-danger btn-xs" data-toggle="tooltip" data-placement="right" title="Rerun errors"> <span class="glyphicon glyphicon-refresh"> </span></a>';
-      
+      $out .= '<a href="/mh/recrawl-error?eid=' . $eid . '" class="btn btn-primary btn-xs" data-toggle="tooltip" data-placement="left" title="Recrawl errors"> <span class="glyphicon glyphicon-refresh"> </span></a> ';      
     }
 
     $out .= '<div id="oaff_error_log' . $i . '" style="display: none;"><ul>';

@@ -190,8 +190,14 @@ function oaff_base_get_path_info($location) {
   }
   $oaff_path_info['lang'] = $lang;
 
+  
   //alias (removing 'source' from file location and changing extension to .omdoc) 
-  $alias = oaff_base_join_path(array($oaff_path_info['group'], $oaff_path_info['archive'], $oaff_path_info['rel_parent'], $title . ".omdoc")); 
+  $aliasName = $title;
+  if ($title != $filename) { //otherwise no extension => nothing to change (probably folder)
+    $aliasName = $title . ".omdoc";
+  }
+
+  $alias = oaff_base_join_path(array($oaff_path_info['group'], $oaff_path_info['archive'], $oaff_path_info['rel_parent'], $aliasName)); 
   $oaff_path_info['alias'] = $alias;
   
   return $oaff_path_info;

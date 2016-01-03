@@ -29,12 +29,6 @@ function oaff_menu() {
     'access arguments' => array('access administration pages'),
     'type' => MENU_NORMAL_ITEM,
   );
-  $items['mh/synchronize-nodes'] = array(
-    'title' => "Synchronize Nodes",
-    'page callback' => 'oaff_sync_nodes',
-    'access callback' => 'oaff_admin_access',
-    'menu_name' => MENU_CALLBACK
-  );
   $items['node/%node/svg'] = array(
     'title' => 'SVG',
     'page callback' => 'oaff_node_svg',
@@ -328,16 +322,13 @@ function oaff_autogenerate_archive_doc($group, $archive) {
   $html .= $resp;
   $html .= oaff_autogenerate_archive_statistics($group, $archive);
   $style = 'planetary'; // default
-  $format = $oaff_config['formats'][$arch_info['id']];
+  $format = $oaff_config['config']['libs'][$group][$archive];
   $filters = filter_list_format($format);
   if (isset($filters['mmt-presentation'])) {
     $style = $filters['mmt-presentation']->settings['mmt_style'];
   }
   $content_path = oaff_base_join_path(array($group, $archive, 'export/' . $style . '/narration', '.html'));
   $html .= "<div>" . mmt_get_pres_from_file($content_path) . "</div>";
-  //$html .= "<ul><li><a href=\"/$group/$archive/source\">Content</a> </li>
-  //             <li><a href=\"http://gl.mathhub.info/$group/$archive\" target=\"_blank\">Sources</a> </li>
-  //              <li><a href=\"/mh/common-errors?&groups=$group&archives=$archive\">Errors</a> </li></ul>";
   return $html;
 }
 
@@ -387,7 +378,7 @@ function oaff_update_archive_statistics($group, $archive) {
   $file_nr = oaff_count_children($pid);
 
   $archive_path = "/var/data/localmh/MathHub/$group/$archive/source/";
-  $omdoc_path = oaff_base_join_path(array("/var/data/localmh/MathHub", $group, $archive , 'content', 'http..mathhub.info', $group, $archive));
+  $omdoc_path = oaff_base_join_path(array("/var/data/localmh/MathHub", $group, $archive , 'content'));
   $stat_tags = array('theory' => '', 'definition' => '', 'constant' => '', 'view' => '');
   foreach ($stat_tags as $key => $value) {
     $stat_tags[$key] = exec('cd ' . $omdoc_path . '; fgrep "</' . $key . '>" * -R | wc -l');  
@@ -687,16 +678,9 @@ function oaff_node_view($node, $view_mode, $langcode) {
   if (in_array($node->type, $compiled_node_types)) {
     //getting node data
     $location = $node->field_external['und']['0']['path'];
-    $pathinfo = oaff_base_get_path_info($location);
     $status = oaff_get_errors($node->nid);
 
     $fatals = oaff_get_errors($node->nid, array(3));
-    $omdoc_location = $pathinfo['alias'];
-    $omdoc = ""; //default
-    if (planetary_repo_stat_file($omdoc_location)) { //omdoc exists
-      $omdoc = planetary_repo_load_file($omdoc_location);
-    }
-      
   	if ($fatals) { // fatals exists for this node => time to report errors  
       $location = $node->field_external['und']['0']['path'];
       $source = planetary_repo_load_file($location);

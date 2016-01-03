@@ -8,7 +8,7 @@
 **************************************************************************/
 require_once 'oaff.base.php';
 
-define("MAX_NODES_PER_SYNC", 1000);
+define("MAX_NODES_PER_SYNC", 500);
 
 function oaff_crawler_menu(& $items) {
   $items['mh/sync-nodes'] = array(
@@ -24,7 +24,6 @@ function oaff_crawler_sync_nodes() {
   $oaff_config = variable_get("oaff_config");
   $oaff_config['crawler']['new_nodes'] = 0;
   $oaff_config['crawler']['deleted_nodes'] = 0;
-
   variable_set('oaff_config', $oaff_config);
   oaff_crawler_sync_help_docs(); //separate treatment for documentation in meta/inf (not standard mathhub content)
   oaff_crawler_sync_content();
@@ -42,9 +41,7 @@ function oaff_crawler_sync_nodes() {
   }
   $out = '<div> <button class="btn btn-primary " onclick="window.location = \'/mh/sync-nodes\'"> Continue </button> </div> ';
   return $out;
-  return "";
 }
-
 
 /**
  * Crawls the filesystem for documentation nodes (typically html files in meta/inf/help)
@@ -94,10 +91,11 @@ function oaff_crawler_sync_content() {
       $aids[] = $aid;
       $srcids = oaff_crawler_sync_archive($group, $archive, $oaff_config['config']['formats']);
       oaff_update_children($aid, $srcids);
-      oaff_update_archive_statistics($group, $archive);
+      //oaff_update_archive_statistics($group, $archive);
+      drupal_set_message("Synchronized archive $group/$archive ");
     }
     oaff_set_children($gid, $aids);
-    oaff_update_group_statistics($group);
+    //oaff_update_group_statistics($group);
   }
   oaff_set_children($rid, $gids);
 }
@@ -134,7 +132,6 @@ function oaff_crawler_sync_archive($group, $archive, $formats, $rel_path = "") {
       break;
     }
   }
-  drupal_set_message("Synchronized archive $group/$archive ");
   return $cids;
 }
 
@@ -223,12 +220,14 @@ function oaff_crawler_sync_config_file() {
   $content = planetary_repo_load_file($config_file);
   //adding relevant data to in-mermory state 
   $oaff_config = variable_get('oaff_config');
-  $oaff_config['config'] = array();
+  $oaff_config['config'] = array('libs' => array(), 'formats' => array(), 'profiles' => array());
   $lines = explode("\n", $content);
   $section = ""; //default
   foreach ($lines as $line) {
     $line = trim($line);
-    if ($line[0] == '#') {
+    if ($line == "") {
+      //nothing to do
+    } else if ($line[0] == '#') {
       $section = substr($line,1);
     } else if ($line[0] == "/" && $line[1] == "/") {
       //comment line ignoring

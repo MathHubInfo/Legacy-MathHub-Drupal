@@ -407,7 +407,7 @@ function mmt_get_presentation($nid, $location, $presenter = "planetary") {
   $basename = $pathinfo['title'];
   if (planetary_repo_is_dir($location)) { //folder
     $out_location = oaff_base_join_path(array($base, "export", $presenter, "narration", $rel_path, ".html"));
-    $log_location = oaff_base_join_path(array($base, "errors", $presenter . "-narration", $rel_path, ".err"));
+    $log_location = oaff_base_join_path(array($base, "errors", $presenter . "_narration", $rel_path, ".err"));
   } else { //file
     $mmt_input_ext = $pathinfo['extension']; //default
     if ($presenter == 'planetary' || $presenter == 'html') {
@@ -417,7 +417,7 @@ function mmt_get_presentation($nid, $location, $presenter = "planetary") {
   
     $out_filename = $basename . '.html';  
     $out_location = oaff_base_join_path(array($base, "export", $presenter, "narration", $rel_parent, $out_filename));
-    $log_location = oaff_base_join_path(array($base, "errors", $presenter . "-narration", $rel_parent, $log_filename));
+    $log_location = oaff_base_join_path(array($base, "errors", $presenter . "_narration", $rel_parent, $log_filename));
   }
   if (planetary_repo_stat_file($out_location) == null) { //something failed
     oaff_log("MMT", "Could not find .html file for presenting $location with $presenter (generation failed)");

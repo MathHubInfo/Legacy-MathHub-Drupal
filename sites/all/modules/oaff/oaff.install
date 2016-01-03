@@ -107,6 +107,7 @@ function oaff_install() {
   $oaff_config['compiled_node_types'] = array('mmtdoc', 'glossary', 'oaff_doc', 'oaff_virtdoc');
   $oaff_config['all_node_types'] = array_merge($oaff_config['compiled_node_types'], array("oaff_helpdoc"));
   $oaff_config['crawl_nodes_offset'] = 0;
+  $oaff_config['logging'] = true; //default
   $oaff_config['crawler']['new_nodes'] = 0;
   $oaff_config['crawler']['deleted_nodes'] = 0;
   // to be incremented when a menu link or (non-oaff) node was created by oaff
@@ -304,37 +305,6 @@ function oaff_schema() {
       ),
     ),
     'primary key' => array('rid'),  
-  );
-
-  $schema['oaff_node_lang_groups'] = array(
-    'description' => 'the base table for representing relations between oaff nodes ',
-    'fields' => array(
-    'gid' => array(
-      'description' => 'The primary identifier of a language group relation',
-        'type' => 'serial', 
-        'unsigned' => true,
-        'not null' => true,
-      ),
-    'bid' => array(
-      'description' => 'The id of base node',
-        'type' => 'int', 
-        'unsigned' => true,
-        'not null' => true,
-      ),
-    'lid' => array(
-        'description' => 'The id of the language variant',
-        'type' => 'int',
-        'unsigned' => true,
-        'not null' => true,
-      ),
-    'location' => array(
-        'description' => 'The file path',
-        'type' => 'varchar',
-        'length' => 511,
-        'not null' => true,
-      ),
-    ),
-    'primary key' => array('gid'),  
   );
   $schema['oaff_node_mtime'] = array(
     'description' => ' last modified time of a logfile for a compiler as known to the mathhub system',
