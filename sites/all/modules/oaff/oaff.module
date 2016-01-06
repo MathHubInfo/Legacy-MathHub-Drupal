@@ -139,6 +139,11 @@ function oaff_autogenerate_top_doc() {
 
     }
   }
+  $external_libs = $oaff_config['config']['external_libs'];
+  foreach ($external_libs as $ext_lib) {
+    $html .= '<li> <a target="_blank" href="' . $ext_lib['url'] . '">' . $ext_lib['name'] .  '</a>  <small> '. $ext_lib['teaser'] .
+             ' </small>(<span class="alert-warning">External</span>) </li>';
+  }
   $html .= "</ul>";
   
   return $html;
@@ -182,7 +187,7 @@ function oaff_autogenerate_top_statistics() {
   $out .= "</table>";
   $out .= " </div>\n</div>\n";
   return $out;  
-}
+} 
 
 function oaff_update_top_statistics() {
   $result = db_select('oaff_group_stat', 'g')
@@ -1085,20 +1090,34 @@ function oaff_update_children($pid, $ncids) {
   $ocids = oaff_get_children($pid);
   // get nids of nodes associated with deleted files/folders
   $deleted_ids = array_diff($ocids, $ncids);
-   
+  $del_nr = 0; 
   foreach ($deleted_ids as $key => $nid) {
-    node_delete($nid);
-    db_delete('oaff_node_parents')
-    ->condition('cid', $nid)
-    ->execute();
+    $del_nr += oaff_delete_nav_tree_node($nid);
   }
 
   $oaff_config = variable_get('oaff_config');
-  $oaff_config['crawler']['deleted_nodes'] += count($deleted_ids); // count deleted nodes
+  $oaff_config['crawler']['deleted_nodes'] += $del_nr; // count deleted nodes
   variable_set('oaff_config', $oaff_config);
 
   oaff_set_children($pid, $ncids);
 }
+
+function oaff_delete_nav_tree_node($nid) {
+  $del_nr = 1; //the orig node
+  //deleting children (if any)
+  $cids = oaff_get_children($nid);  
+  foreach ($cids as $cid) {
+    $del_nr += oaff_delete_nav_tree_node($cid);
+  }
+  //deleting node
+  node_delete($nid);
+  //deleting tree entry
+  db_delete('oaff_node_parents')
+    ->condition('cid', $nid)
+    ->execute();
+  return $del_nr;  
+}
+
 
 /**
  * Get children nids of the parent nid

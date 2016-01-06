@@ -113,7 +113,6 @@ function oaff_install() {
   // to be incremented when a menu link or (non-oaff) node was created by oaff
   $oaff_config['crawler']['mlids'] = array();
   $oaff_config['crawler']['nids'] = array();
-  $oaff_config['config_file'] = '/var/data/localmh/MathHub/meta/inf/config/MathHub/config';
   $oaff_config['log'] = array(); //oaff log
   $oaff_config['top_stat'] = array(
     'group' => 0,

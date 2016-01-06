@@ -94,10 +94,10 @@ function oaff_crawler_sync_content() {
       //oaff_update_archive_statistics($group, $archive);
       drupal_set_message("Synchronized archive $group/$archive ");
     }
-    oaff_set_children($gid, $aids);
+    oaff_update_children($gid, $aids);
     //oaff_update_group_statistics($group);
   }
-  oaff_set_children($rid, $gids);
+  oaff_update_children($rid, $gids);
 }
 
 function oaff_crawler_sync_archive($group, $archive, $formats, $rel_path = "") {
@@ -220,7 +220,8 @@ function oaff_crawler_sync_config_file() {
   $content = planetary_repo_load_file($config_file);
   //adding relevant data to in-mermory state 
   $oaff_config = variable_get('oaff_config');
-  $oaff_config['config'] = array('libs' => array(), 'formats' => array(), 'profiles' => array());
+  $config = array('libs' => array(), 'formats' => array(), 'profiles' => array(), 
+                                 'external_libs' => array());
   $lines = explode("\n", $content);
   $section = ""; //default
   foreach ($lines as $line) {
@@ -229,6 +230,10 @@ function oaff_crawler_sync_config_file() {
       //nothing to do
     } else if ($line[0] == '#') {
       $section = substr($line,1);
+      //section for single multi-line entry => initializing here
+      if ($section == "external_lib") { 
+        $config["external_libs"][] = array();
+      }
     } else if ($line[0] == "/" && $line[1] == "/") {
       //comment line ignoring
     } else {
@@ -237,7 +242,7 @@ function oaff_crawler_sync_config_file() {
         if (count($comps) == 2) {
           $segs = explode("/", $comps[0]);
           if (count($segs) == 2) {
-            $oaff_config['config']['libs'][$segs[0]][$segs[1]] = $comps[1];
+            $config['libs'][$segs[0]][$segs[1]] = $comps[1];
           } else {
             drupal_set_message("Ignoring invalid archives line (bad archive path): " . $line);
           }
@@ -248,19 +253,24 @@ function oaff_crawler_sync_config_file() {
         if (count($comps) == 3) {
           $importers = explode(",", $comps[1]);
           $exporters = explode(",", $comps[2]);
-          $oaff_config['config']['formats'][$comps[0]] = array_merge($importers, $exporters);
+          $config['formats'][$comps[0]] = array_merge($importers, $exporters);
         } else {
           drupal_set_message("Ignoring invalid formats line: " . $line);
         }
       } else if ($section == "profiles") {
         if (count($comps) == 2) {
           $prof_archs = explode(",", $comps[1]);
-          $oaff_config['config']['profiles'][$comps[0]] = $prof_archs;
+          $config['profiles'][$comps[0]] = $prof_archs;
         } else {
           drupal_set_message("Ignoring invalid profiles line: " . $line);
         }
+      } else if ($section == "external_lib") {
+        $value = implode(' ',array_slice($comps, 1));
+        $n = count($config['external_libs']) - 1;
+        $config['external_libs'][$n][$comps[0]] = $value;
       }
     }
   }
+  $oaff_config['config'] = $config;
   variable_set('oaff_config', $oaff_config);
 }
