@@ -80,22 +80,31 @@ function oaff_crawler_sync_content() {
   $gids = array();
   foreach ($libs as $group => $archs) {
     $group_help_fpath = oaff_base_join_path(array($group, 'meta-inf', 'index.html'));
-    oaff_crawler_sync_group_metadata($group); //info used to render group help node
-    $gid = oaff_base_make_help_doc($group, $group, $group_help_fpath)['nid'];
-    $gids[] = $gid;
-    foreach ($archs as $archive => $format) {
-      $archive_path = oaff_base_join_path(array($group, $archive));
-      $archive_help_fpath = oaff_base_join_path(array($group, $archive, 'META-INF', 'index.html'));
-      oaff_crawler_sync_archive_metadata($group, $archive); //info used to render group help node
-      $aid = oaff_base_make_help_doc($archive, $archive_path, $archive_help_fpath)['nid'];
-      $aids[] = $aid;
-      $srcids = oaff_crawler_sync_archive($group, $archive, $oaff_config['config']['formats']);
-      oaff_update_children($aid, $srcids);
-      //oaff_update_archive_statistics($group, $archive);
-      drupal_set_message("Synchronized archive $group/$archive ");
+    $status = oaff_crawler_sync_group_metadata($group); //info used to render group help node
+    if ($status) {
+      $gid = oaff_base_make_help_doc($group, $group, $group_help_fpath)['nid'];
+      $gids[] = $gid;
+      $aids = array();
+      foreach ($archs as $archive => $format) {
+        $archive_path = oaff_base_join_path(array($group, $archive));
+        $status = oaff_crawler_sync_archive_metadata($group, $archive); //info used to render group help node
+        if ($status) {
+          $archive_help_fpath = oaff_base_join_path(array($group, $archive, 'META-INF', 'index.html'));
+          $aid = oaff_base_make_help_doc($archive, $archive_path, $archive_help_fpath)['nid'];
+          $aids[] = $aid;
+          $srcids = oaff_crawler_sync_archive($group, $archive, $oaff_config['config']['formats']);
+          oaff_update_children($aid, $srcids);
+          //oaff_update_archive_statistics($group, $archive);
+          drupal_set_message("Synchronized archive '$group/$archive' ");
+        } else {
+          drupal_set_message("Failed to sync archive '$group/$archive', missing manifest file (perhaps archive misconfigured or not installed).", "error");
+        }
+      }
+      oaff_update_children($gid, $aids);
+      //oaff_update_group_statistics($group);
+    } else {
+      drupal_set_message("Failed to sync group '$group', missing manifest file (perhaps its meta-inf archive misconfigured or not installed).", "error");
     }
-    oaff_update_children($gid, $aids);
-    //oaff_update_group_statistics($group);
   }
   oaff_update_children($rid, $gids);
 }
@@ -164,53 +173,59 @@ function oaff_crawler_sync_group_metadata($group) {
   $oaff_config = variable_get('oaff_config');
   // getting info from manifest
   $mf_path = oaff_base_join_path(array($group, "meta-inf/MANIFEST.MF"));
-  $manifest = planetary_repo_load_file($mf_path);
-  $mf_lines = explode("\n", $manifest);
-  $props = array();//array of archive properties
-  foreach ($mf_lines as $line) {
-    $pair = explode(":", $line, 2);
-    if (count($pair) == 2) { //ignoring invalid (e.g empty) lines 
-      $props[$pair[0]] = $pair[1];
-      if ($pair[0] == 'description') {
-        $desc_file = trim($pair[1]);
-        $props[$pair[0]] = planetary_repo_load_file(oaff_base_join_path(array($group, "meta-inf", $desc_file)));
+  if (planetary_repo_stat_file($mf_path)) { //manifest file exists
+    $manifest = planetary_repo_load_file($mf_path);
+    $mf_lines = explode("\n", $manifest);
+    $props = array();//array of archive properties
+    foreach ($mf_lines as $line) {
+      $pair = explode(":", $line, 2);
+      if (count($pair) == 2) { //ignoring invalid (e.g empty) lines 
+        $props[$pair[0]] = $pair[1];
+        if ($pair[0] == 'description') {
+          $desc_file = trim($pair[1]);
+          $props[$pair[0]] = planetary_repo_load_file(oaff_base_join_path(array($group, "meta-inf", $desc_file)));
+        }
       }
     }
+    $oaff_config['metadata']['groups'][$group] = $props;
+    variable_set('oaff_config', $oaff_config);
+    return true; //success
+  } else {
+    return false; //failed to sync group
   }
-  $oaff_config['metadata']['groups'][$group] = $props;
-  variable_set('oaff_config', $oaff_config);
-  return $props;
 }
 
 function oaff_crawler_sync_archive_metadata($group, $archive) {
   $oaff_config = variable_get('oaff_config');
-  
   // getting info from manifest
   $mf_path = oaff_base_join_path(array($group, $archive, "META-INF/MANIFEST.MF"));
-  
-  $manifest = planetary_repo_load_file($mf_path);
-  $mf_lines = explode("\n", $manifest);
-  $docbase = 'http://docs.omdoc.org/default'; // default
-  $id = $group . '/' . $archive; // default
-  $props = array();//array of archive properties
-  foreach ($mf_lines as $line) {
-    $pair = explode(":", $line, 2);
-    if (count($pair) == 2) { //ignoring invalid (e.g empty) lines 
-      $props[$pair[0]] = trim($pair[1]);
-      if (trim($pair[0]) == "narration-base") {
-        $docbase = trim($pair[1]);
-      } elseif (trim($pair[0]) == "id") {
-        $id = trim($pair[1]);
-      } elseif ($pair[0] == 'description') {
-        $desc_file = trim($pair[1]);
-        $props[$pair[0]] = planetary_repo_load_file(oaff_base_join_path(array($group, $archive, "META-INF", $desc_file)));
+  if (planetary_repo_stat_file($mf_path)) { //manifest file exists
+    $manifest = planetary_repo_load_file($mf_path);
+    $mf_lines = explode("\n", $manifest);
+    $docbase = 'http://docs.omdoc.org/default'; // default
+    $id = $group . '/' . $archive; // default
+    $props = array();//array of archive properties
+    foreach ($mf_lines as $line) {
+      $pair = explode(":", $line, 2);
+      if (count($pair) == 2) { //ignoring invalid (e.g empty) lines 
+        $props[$pair[0]] = trim($pair[1]);
+        if (trim($pair[0]) == "narration-base") {
+          $docbase = trim($pair[1]);
+        } elseif (trim($pair[0]) == "id") {
+          $id = trim($pair[1]);
+        } elseif ($pair[0] == 'description') {
+          $desc_file = trim($pair[1]);
+          $props[$pair[0]] = planetary_repo_load_file(oaff_base_join_path(array($group, $archive, "META-INF", $desc_file)));
+        }
       }
     }
+    $all_props = array('docbase' => $docbase, 'id' => $id, 'props' => $props);
+    $oaff_config['metadata']['archives'][$group][$archive] = $props;
+    variable_set('oaff_config', $oaff_config);
+    return true; //success
+  } else {
+    return false; //failed to sync archive
   }
-  $all_props = array('docbase' => $docbase, 'id' => $id, 'props' => $props);
-  $oaff_config['metadata']['archives'][$group][$archive] = $props;
-  variable_set('oaff_config', $oaff_config);
-  return $all_props;
 }
 
 

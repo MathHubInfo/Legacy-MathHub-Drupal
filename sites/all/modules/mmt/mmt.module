@@ -451,13 +451,18 @@ function mmt_get_presentation($nid, $location, $presenter = "planetary") {
 }
 
 function mmt_get_pres_from_file($location) {
-  $content = planetary_repo_load_file($location);
-  //TODO: SimpleXML breaks on namespaces so hacked with regexes instead
-  preg_match('/<body>([\s\S]*)<\/body>/', $content, $matches); 
-  if (isset($matches[1])) {
-    $content = $matches[1];
+  if (planetary_repo_stat_file($location)) {
+    $content = planetary_repo_load_file($location);
+    //TODO: SimpleXML breaks on namespaces so hacked with regexes instead
+    preg_match('/<body>([\s\S]*)<\/body>/', $content, $matches); 
+    if (isset($matches[1])) {
+      $content = $matches[1];
+    }
+    return $content;
+  } else {
+    drupal_set_message("Cannot find MMT presentation file, perhaps library not built yet.", "error");
+    return "";
   }
-  return $content;
 }
 
 function _mmt_produce_status_msg($log) {
