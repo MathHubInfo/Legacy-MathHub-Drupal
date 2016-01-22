@@ -60,7 +60,7 @@ function oaff_crawler_sync_help_docs() {
     if (!$srcpath) {
       if (isset($pathinfo['extension']) && $pathinfo['extension'] == "html") {
         $options = array();
-        if ($fpath == "/meta/inf/doc/help/main.html") { //doc overview for frontpage
+        if (in_array($fpath, $oaff_config['config']['mainpage_help'])) { //doc overview for frontpage
           $options = array("promote" => 1, "sticky" => 1);
         }
         if ($fpath == "/meta/inf/doc/help/documentation.html") { //main entry point of documentation
@@ -236,7 +236,7 @@ function oaff_crawler_sync_config_file() {
   //adding relevant data to in-mermory state 
   $oaff_config = variable_get('oaff_config');
   $config = array('libs' => array(), 'formats' => array(), 'profiles' => array(), 
-                                 'external_libs' => array());
+                  'external_libs' => array(), 'mainpage_help' => array());
   $lines = explode("\n", $content);
   $section = ""; //default
   foreach ($lines as $line) {
@@ -283,6 +283,8 @@ function oaff_crawler_sync_config_file() {
         $value = implode(' ',array_slice($comps, 1));
         $n = count($config['external_libs']) - 1;
         $config['external_libs'][$n][$comps[0]] = $value;
+      } else if ($section == "mainpage_help") {
+        $config['mainpage_help'][] = trim($line);
       }
     }
   }
