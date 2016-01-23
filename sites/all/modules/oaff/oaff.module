@@ -663,7 +663,11 @@ function oaff_node_view($node, $view_mode, $langcode) {
   $all_node_types = $oaff_config['all_node_types'];
 
   if (drupal_get_path_alias("node/" . $node->nid) == 'mh/glossary') { //special handling for the glossary node
-    $markup = file_get_contents("/var/data/localmh/MathHub/glossary.html");
+    $glossary_location = "glossary.html"; //default
+    if (isset($oaff_config['config']['glossary'])) {
+      $glossary_location = $oaff_config['config']['glossary'];
+    }
+    $markup = planetary_repo_load_file($glossary_location);
     //loading js/css manually for the glossary, not using oaff initialize
     $mmt_path = drupal_get_path('module', 'mmt');
     $oaff_path = drupal_get_path('module', 'oaff');

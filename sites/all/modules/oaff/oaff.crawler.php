@@ -285,6 +285,8 @@ function oaff_crawler_sync_config_file() {
         $config['external_libs'][$n][$comps[0]] = $value;
       } else if ($section == "mainpage_help") {
         $config['mainpage_help'][] = trim($line);
+      } else if ($section == "glossary") {
+        $config['glossary'] = trim($line);
       }
     }
   }
