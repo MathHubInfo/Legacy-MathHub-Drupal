@@ -577,7 +577,7 @@ function oaff_contextual_info($form, &$form_state, $key) {
  * @param $location Path
  * @param $text_format Text format
  */
-function oaff_initialize($location = NULL, $text_format = "") {
+function oaff_initialize($location = NULL, $text_format = "", $aspect = "pres") {
     if ($location != NULL) {
       // oaff_initialize
       $pathinfo = oaff_base_get_path_info($location);
@@ -619,8 +619,12 @@ function oaff_initialize($location = NULL, $text_format = "") {
 
             if (isset($value->settings['mmt_style']) 
               && $value->settings['mmt_style'] == 'html') {
+              drupal_add_css($mmt_path . '/css/browser.css', array('weight' => PHP_INT_MAX, 'every_page' => false));
               jobad_add_module($mmt_path . '/jobad/interactive-viewing.js', "kwarc.mmt.intvw");
+            } else if ($aspect == "svg") {
+              drupal_add_css($mmt_path . '/css/browser.css', array('weight' => PHP_INT_MAX, 'every_page' => false));
             }
+
             break;
 
           case 'local-compilation':
@@ -1290,7 +1294,7 @@ function oaff_node_svg($node) {
   drupal_add_js($svg_script, 'file');
   
   // modules
-  $inst_id = oaff_initialize($location, oaff_get_node_filter_format($node));
+  $inst_id = oaff_initialize($location, oaff_get_node_filter_format($node), "svg");
 
   // activate zoom and pan of SVG
   $activate_pan_zoom = 
