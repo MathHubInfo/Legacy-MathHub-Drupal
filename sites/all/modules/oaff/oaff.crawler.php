@@ -90,7 +90,7 @@ function oaff_crawler_sync_content() {
         $status = oaff_crawler_sync_archive_metadata($group, $archive); //info used to render group help node
         if ($status) {
           $archive_help_fpath = oaff_base_join_path(array($group, $archive, 'META-INF', 'index.html'));
-          $aid = oaff_base_make_help_doc($archive, $archive_path, $archive_help_fpath)['nid'];
+          $aid = oaff_base_make_help_doc($archive, $archive_path, $archive_help_fpath, array("aspects" => array('svg')))['nid'];
           $aids[] = $aid;
           $srcids = oaff_crawler_sync_archive($group, $archive, $oaff_config['config']['formats']);
           oaff_update_children($aid, $srcids);

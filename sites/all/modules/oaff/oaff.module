@@ -34,7 +34,7 @@ function oaff_menu() {
     'page callback' => 'oaff_node_svg',
     'page arguments' => array(1),
     'access callback' => 'oaff_access_by_node_type',
-    'access arguments' => array(1, array(1=>'oaff_doc')),
+    'access arguments' => array(1, array('oaff_doc', 'oaff_virtdoc', 'oaff_helpdoc')),
     'weight' => 0,
     'type' => MENU_LOCAL_TASK,
     'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
@@ -1287,6 +1287,12 @@ function oaff_node_svg($node) {
   $nid = $node->nid;
   $location = $node->field_external['und']['0']['path'];
   $alias = oaff_base_get_path_info($location)['alias'];
+  $format = oaff_get_node_filter_format($node);
+  if ($node->type == "oaff_helpdoc") {
+    $segs = explode("/", $location);
+    $format = "stex"; //TODO fix this with svg filter instead of format/aspect in oaff_initialize
+    $location = oaff_base_join_path(array($segs[0], $segs[1], "source"));
+  }
   oaff_set_breadcrumb($nid, array($nid));
   // script for zoom and pan
   $oaff_path = drupal_get_path('module', 'oaff');
@@ -1294,7 +1300,7 @@ function oaff_node_svg($node) {
   drupal_add_js($svg_script, 'file');
   
   // modules
-  $inst_id = oaff_initialize($location, oaff_get_node_filter_format($node), "svg");
+  $inst_id = oaff_initialize($location, $format, "svg");
 
   // activate zoom and pan of SVG
   $activate_pan_zoom = 
@@ -1322,8 +1328,7 @@ function oaff_node_svg($node) {
   if (isset($_GET['view'])) {
     oaff_generate_blank_page(($node->title) . ' | SVG' , $content);
   } else {
-    $out = "<a class=\"btn btn-default btn-sm\" target=\"_blank\" href=\"/" . 
-          $alias . "%21svg?view=full\" role=\"button\">Full screen</a>" . $content;
+    $out = "<a class=\"btn btn-default btn-sm\" target=\"_blank\" href=\"?view=full\" role=\"button\">Full screen</a>" . $content;
    ; 
     return $out;
   }
@@ -1350,8 +1355,16 @@ function oaff_svg_clean($svg) {
 * @param $node_types Array of node types that can be accessed
 */
 function oaff_access_by_node_type($node, $node_types) {
-  if (array_search($node->type, $node_types) != false) 
+  if (array_search($node->type, $node_types) !== false) {
+    if ($node->type == "oaff_helpdoc") {
+      $path = $node->field_external['und'][0]['path'];
+      $segs = explode("/", $path);
+      if ($segs[0] == 'meta' || $segs[1] == 'meta-inf') {
+        return false;
+      } 
+    }
     return true;
+  }
   return false;
 }
 
