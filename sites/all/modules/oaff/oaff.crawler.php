@@ -14,7 +14,7 @@ function oaff_crawler_menu(& $items) {
   $items['mh/sync-nodes'] = array(
     'title' => "Sync Nodes",
     'page callback' => 'oaff_crawler_sync_nodes',
-    'access callback' => 'oaff_admin_access',
+    'access callback' => true, //'oaff_admin_access',
     'menu_name' => MENU_CALLBACK
   );
   return $items;

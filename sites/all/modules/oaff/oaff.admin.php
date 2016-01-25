@@ -57,6 +57,12 @@ function oaff_admin_menu(& $items) {
     'access callback' => 'oaff_admin_access', //needs public for providing builder API?
     'menu_name' => MENU_CALLBACK,
   );
+  $items['mh/smart-update'] = array(
+    'title' => "Smart Update",
+    'page callback' => 'oaff_admin_smart_update',
+    'access callback' => 'oaff_admin_access', //needs public for providing builder API?
+    'menu_name' => MENU_CALLBACK,
+  );
   $items['mh/view-mbt-log'] = array(
     'title' => "Latest Build Log",
     'page callback' => 'oaff_admin_view_mbt_log',
@@ -320,7 +326,13 @@ function oaff_admin_crawl_nodes() {
 }
 
 function oaff_admin_administrate() {
-  $out  = '<h4>This page collects functionalities related to MathHub administration and maintenance</h4>';
+  $out  = '<p>This page collects functionalities related to MathHub administration and maintenance</p>';
+  $out .= '<h4>Basic Commands</h4>';
+  $out .= '<table class="table"><tbody>';
+  $out .= '<tr><td><button onclick="window.location = \'/mh/smart-update\'" class="btn btn-primary btn-xs"> Update and rebuild </button></td>';
+  $out .= '<td>Updated from GitLab and rebuild what\'s needed </td></tr>';
+  $out .= '</tbody></table>';
+  $out .= '<h4>Fine-grained Command</h4>';
   $out .= '<table class="table"><tbody>';
   $out .= '<tr><td><button onclick="window.location = \'/mh/lmh-update\'" class="btn btn-primary btn-xs"> Lmh Update </button></td>';
   $out .= '<td>Get the latest version of the source documents</td></tr>';
@@ -344,6 +356,17 @@ function oaff_admin_administrate() {
   }
   $out .= '</td></tr>';
   $out .= '</tbody></table>';
+  return $out;
+}
+
+function oaff_admin_smart_update() {
+  //updating from GitLab
+  oaff_admin_lmh_update();
+  //creating mock request for update-building everything
+  $mock_req = array('modifier' => "Update"); //rest defaults to the right value
+  //rebuilding everything
+  oaff_admin_mbt_act($mock_req);
+  $out = "<p> Content will auto-update once building is finished </p>";
   return $out;
 }
 
@@ -400,7 +423,8 @@ function oaff_admin_mbt_act($req) {
   $script .= 'loadConfig("' . $conf_path . "\")\n";
   $script .= $mbt_command;
   planetary_repo_save_file($conf_rel_path . $inst_name . "/build.tmp.mbt", $script);
-  exec($script_path . " " . $inst_name . " &");
+  $base_url = $GLOBALS['base_url'];
+  exec($script_path . " " . $inst_name . " " . $base_url . " &");
   drupal_set_message("Started build with MMT command: `" . $mbt_command . "`. See build log <a target=\"_blank\" href=\"/mh/view-mbt-log\">here</a>.");
 }
 
