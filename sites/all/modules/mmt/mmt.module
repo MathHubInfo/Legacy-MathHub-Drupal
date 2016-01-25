@@ -428,6 +428,10 @@ function mmt_get_presentation($nid, $location, $presenter = "planetary") {
     $mmt_status = array("conversion" => 0, "messages" => array());
     if (planetary_repo_stat_file($log_location)) { //log exists
       $mtime = planetary_repo_stat_file($log_location)['mtime'];
+      $source_mtime = planetary_repo_stat_file($location)['mtime'];
+      if ($mtime < $source_mtime) {
+        drupal_set_message("This file is out of date, update & build to get the latest version", "warning");
+      }
       $last_ran_time = oaff_get_mtime($nid, $log_location);
       if ($last_ran_time == $mtime) { //no change
         $mmt_status = array("conversion" => -1, "messages" => array()); // -1 means log not changed  
