@@ -337,7 +337,7 @@ function oaff_admin_administrate() {
   $out .= '<tr><td><button onclick="window.location = \'/mh/lmh-update\'" class="btn btn-primary btn-xs"> Lmh Update </button></td>';
   $out .= '<td>Get the latest version of the source documents</td></tr>';
   $out .= '<tr><td><button onclick="window.location = \'/mh/libs-update\'" class="btn btn-primary btn-xs"> Update Libs </button></td>';
-  $out .= '<td>Update Libraries (sTeX, MMT)</td></tr>';
+  $out .= '<td>Update System Software (sTeX, MMT, LaTeXML, ...)</td></tr>';
   $out .= '<tr><td><button onclick="window.location = \'/mh/touch-files\'" class="btn btn-primary btn-xs"> Touch Files </button></td>';
   $out .= '<td>Touch Source Files (useful in case of compiler update to mark them as modified for crawler)</td></tr>';
   $out .= '<tr><td><button onclick="window.location = \'/mh/sync-nodes\'" class="btn btn-primary btn-xs"> Synchronize Nodes </button></td>';
