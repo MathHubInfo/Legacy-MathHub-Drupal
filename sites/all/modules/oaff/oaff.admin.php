@@ -327,12 +327,12 @@ function oaff_admin_crawl_nodes() {
 
 function oaff_admin_administrate() {
   $out  = '<p>This page collects functionalities related to MathHub administration and maintenance</p>';
-  $out .= '<h4>Basic Commands</h4>';
+  $out .= '<h4>Complex Workflows</h4>';
   $out .= '<table class="table"><tbody>';
   $out .= '<tr><td><button onclick="window.location = \'/mh/smart-update\'" class="btn btn-primary btn-xs"> Update and rebuild </button></td>';
   $out .= '<td>Updated from GitLab and rebuild what\'s needed </td></tr>';
   $out .= '</tbody></table>';
-  $out .= '<h4>Fine-grained Command</h4>';
+  $out .= '<h4>Atomic/Fine-Grained Commands</h4>';
   $out .= '<table class="table"><tbody>';
   $out .= '<tr><td><button onclick="window.location = \'/mh/lmh-update\'" class="btn btn-primary btn-xs"> Lmh Update </button></td>';
   $out .= '<td>Get the latest version of the source documents</td></tr>';
