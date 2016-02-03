@@ -44,7 +44,7 @@ function latexml_update_errors($nid, $location) {
       oaff_log("OAFF(LATEXML)", "No change for compiler latexml, no need to re-process errors");
     } else {  
       if ($comp = 'mmt') {
-        $latexml_status = _mmt_produce_status_msg($log);
+        $latexml_status = _mmt_produce_status_msg($log_location);
       } else {  //$comp = 'ltx'  
         $latexml_status = _latexml_produce_status_msg($log, $location);
       }
