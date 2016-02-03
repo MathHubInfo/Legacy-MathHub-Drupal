@@ -348,6 +348,7 @@ function oaff_autogenerate_archive_doc($group, $archive) {
   if (isset($filters['mmt-presentation'])) {
     $style = $filters['mmt-presentation']->settings['mmt_style'];
   }
+  $style = 'planetary';
   $content_path = oaff_base_join_path(array($group, $archive, 'export/' . $style . '/narration', '.html'));
   $html .= "<div>" . mmt_get_pres_from_file($content_path) . "</div>";
   return $html;
@@ -618,7 +619,7 @@ function oaff_initialize($location = NULL, $text_format = "", $aspect = "pres") 
             jobad_add_module($mmt_path . '/jobad/planetary-gitlab.js', "kwarc.mmt.planetary.gitlab");
 
             if (isset($value->settings['mmt_style']) 
-              && $value->settings['mmt_style'] == 'html') {
+              && $value->settings['mmt_style'] == 'mh-html') {
               drupal_add_css($mmt_path . '/css/browser.css', array('weight' => PHP_INT_MAX, 'every_page' => false));
               jobad_add_module($mmt_path . '/jobad/interactive-viewing.js', "kwarc.mmt.intvw");
             } else if ($aspect == "svg") {

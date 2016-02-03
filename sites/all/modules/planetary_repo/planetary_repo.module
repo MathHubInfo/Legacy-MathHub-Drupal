@@ -1,5 +1,7 @@
 <?php
 
+define("PLANETARY_REPO_MAX_FILE_SIZE", 5000000);
+
 /**
  * This function is to replace PHP's extremely buggy realpath().
  * @param string The original path, can be relative etc.
@@ -74,7 +76,7 @@ function planetary_repo_local_save($path, $content) {
 function planetary_repo_local_load($path) {
   $full_path = planetary_repo_local_access_path($path);
   $f = fopen($full_path, "r");
-  $content = fread($f, 1000000);
+  $content = fread($f, PLANETARY_REPO_MAX_FILE_SIZE);
   fclose($f);
   return $content;
 }
@@ -170,7 +172,7 @@ function planetary_repo_git_load($path) {
   planetary_repo_git_pull($path);
   $full_path = planetary_repo_git_access_path($path);
   $f = fopen($full_path, "r");
-  $content = fread($f, 1000000);
+  $content = fread($f, PLANETARY_REPO_MAX_FILE_SIZE);
   fclose($f);
   return $content;
 }
