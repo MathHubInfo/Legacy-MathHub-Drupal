@@ -7,6 +7,87 @@
 * Licensed under GPL3, see http://www.gnu.org/licenses/gpl.html          *
 **************************************************************************/
 
+/**
+ * Function to setup OAFF-specific functionality (CSS & JS) on page
+ * OAFF-feature modules (e.g. MMT) define their own initialize methods 
+ * to load further features (e.g. JOBAD modules)
+ * Typically called from hook_node_view (i.e. for OAFF, oaff_node_view)
+ * @param $location Path
+ * @param $text_format Text format
+ */
+function oaff_base_initialize($location = NULL, $text_format = "", $aspect = "pres") {
+    if ($location != NULL) {
+      // oaff_initialize
+      $pathinfo = oaff_base_get_path_info($location);
+      $archive = $pathinfo['archive'];
+      $group = $pathinfo['group'];
+      $rel_path = $pathinfo['rel_path'];
+      
+      //adding data as js variables (used by JS/JOBAD modules)
+      drupal_add_js("var oaff_node_group = '$group';", "inline");
+      drupal_add_js("var oaff_node_archive = '$archive';", "inline");
+      drupal_add_js("var oaff_node_rel_path = '$rel_path';", "inline");      
+
+      /* CSS */
+      $mmt_path = drupal_get_path('module', 'mmt');
+      $mmt_config = variable_get('mmt_config');
+      $mmt_url = $mmt_config['mmturl'];  
+      $oaff_config = variable_get('oaff_config');
+      $compilers = array(); //default
+      if (isset($oaff_config['config']['formats'][$text_format])) {
+        $compilers = $oaff_config['config']['formats'][$text_format]['importers'];
+        $exporters = $oaff_config['config']['formats'][$text_format]['exporters'];
+        if (in_array($aspect, $exporters)) {
+          $compilers[] = $aspect;
+        } else {
+          $compilers[] = $exporters[0]; // defaulting to first exporter as default aspect
+        }
+      }
+
+      // common JS+CSS
+      drupal_add_css($mmt_path . '/css/mmt.css', array('weight' => PHP_INT_MAX, 'every_page' => false));
+      drupal_add_js($mmt_path . '/utils/mmt-html.js', 'file', array('cache' => false));
+      drupal_add_js($mmt_path . '/utils/mmt-planetary.js', 'file', array('cache' => false));
+      drupal_add_js($mmt_path . '/utils/planetary-localization.js', 'file', array('cache' => false));
+      drupal_add_js($mmt_path . '/utils/mathml.js', 'file', array('cache' => false));
+      jobad_add_module($mmt_path . '/jobad/planetary-navigation.js', "kwarc.mmt.planetary.navigation");
+      jobad_add_module($mmt_path . '/jobad/ontology-navigation.js', "kwarc.mmt.ontology.navigation");
+      jobad_add_module($mmt_path . '/jobad/hovering.js', "kwarc.mmt.hovering");
+
+      foreach ($compilers as $compiler) {
+        switch ($compiler) {
+          case 'mh-html': 
+              drupal_add_css($mmt_path . '/css/browser.css', array('weight' => PHP_INT_MAX, 'every_page' => false));
+              jobad_add_module($mmt_path . '/jobad/interactive-viewing.js', "kwarc.mmt.intvw");
+              jobad_add_module($mmt_path . '/jobad/planetary-gitlab.js', "kwarc.mmt.planetary.gitlab"); 
+            break;
+         case 'planetary':
+            jobad_add_module($mmt_path . '/jobad/planetary-gitlab.js', "kwarc.mmt.planetary.gitlab");
+            break;
+          case 'svg':
+              drupal_add_css($mmt_path . '/css/browser.css', array('weight' => PHP_INT_MAX, 'every_page' => false));
+            break;
+          case 'latexml':
+            drupal_add_css($mmt_path . '/css/latexml.css', array('weight' => PHP_INT_MAX, 'every_page' => false));
+            break;
+          default:
+            break;
+        }
+      }
+      /* JavaScript */
+      drupal_add_js('var mmtUrl = "' . $mmt_url . '";', 'inline');
+      // if search enabled
+      // jobad_add_module($mmt_path . '/jobad/search.js', "kwarc.mmt.search");
+    }  
+
+    libraries_load("jobad");
+    // modules are loaded in specific oaff extensions (e.g. MMT)
+    jobad_add_module("/sites/all/libraries/jobad/modules/core/mathjax.mathjax.js", "mathjax.mathjax");
+    
+    $inst_name = jobad_initialize();
+    return $inst_name; 
+}
+
 
 /** Node Creation Utilities */
 function oaff_base_make_oaff_doc($group, $archive, $rel_path, $item, $format) {

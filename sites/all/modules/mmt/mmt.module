@@ -9,24 +9,6 @@
 
 // -------------------------- API FUNCTIONS --------------------------- \\
 
-
-/**
- * implements hook_node_view
- * initializes mmt (loads CSS and JS files) 
- * @param $node The node that is being assembled for rendering.
- * @param $view_mode The $view_mode parameter from node_view() (e.g. "full").
- * @param $langcode The language code used for rendering.
- */
-function mmt_node_view($node, $view_mode, $langcode) {
-  if ($view_mode != "full")
-    return;
-  if ($node->type == 'mmtdoc') {
-    $mmt_path = drupal_get_path('module', 'mmt');
-    drupal_add_js($mmt_path . '/mmtdocjs/html.js', 'file', array('cache' => false));
-    drupal_add_css($mmt_path . '/mmtdocjs/html.css', array('weight' => PHP_INT_MAX, 'every_page' => false));
-  }
-}
-
 // TODO replace functions below with one mmt_get function
 
 /**
@@ -256,8 +238,13 @@ function mmt_filter_presentation_process($text, $filter, $format, $langcode, $ca
   $args = explode(" ", $text);
   $nid = $args[0];
   $fpath = $args[1];
-  $style = $filter->settings['mmt_style'];  
-  $result = mmt_get_presentation($nid, $fpath, $style);
+  $exporters = explode(" ", $filter->settings['mmt_style']); 
+  //first exporter acts as default presenter 
+  $result = mmt_get_presentation($nid, $fpath, $exporters[0], true);    
+  //for rest, just check errors
+  foreach (array_slice($exporters, 1) as $exporter) {
+    mmt_get_presentation($nid, $fpath, $exporter);
+  }
   return $result;
 }
 
@@ -276,9 +263,10 @@ function mmt_filter_compilation_process($text, $filter, $format, $langcode, $cac
   $args = explode(" ", $text);
   $nid = $args[0];
   $fpath = $args[1];
-  $mmt_format = $filter->settings['mmt_format'];
-  //TODO make mmt_format be $compiler or smth along those lines
-  mmt_get_compiled($nid, $fpath, $mmt_format);
+  $compilers = explode(" ", $filter->settings['mmt_format']);
+  foreach ($compilers as $compiler) {
+    mmt_get_compiled($nid, $fpath, $compiler);
+  }
   return $text;
 }
 
@@ -364,9 +352,14 @@ function mmt_field_formatter_info() {
   );
 }
 
-
-function mmt_get_compiled($nid, $location, $format = "stex") {
-  $compiler = $format . '-omdoc';
+/**
+ * retrieves compilation log from the archive to update error info
+ * @param $nid the id of the node to be presented 
+ * @param $location the file path of the node source
+ * @param $compiler the mmt compiler whose log is to be retrieved
+ * @return the parsed log as a nested array
+ */
+function mmt_get_compiled($nid, $location, $compiler = "stex-omdoc") {
   //finding log filename
   $pathinfo = oaff_base_get_path_info($location);
   $base = oaff_base_join_path(array($pathinfo['group'], $pathinfo['archive']));
@@ -398,30 +391,40 @@ function mmt_get_compiled($nid, $location, $format = "stex") {
   return $mmt_status;
 }
 
-function mmt_get_presentation($nid, $location, $presenter = "planetary") {
+/**
+ * retrieves presentation from the archive and reads the log to update error info
+ * @param $nid the id of the node to be presented 
+ * @param $location the file path of the node source
+ * @param $presenter the mmt presenter whose result is to be retrieved
+ * @param $return_result boolean, return presentation if true, otherwise just update error info and return nothing
+ * @return the presentation as string if $return_result is true, otherwise empty string
+ */
+function mmt_get_presentation($nid, $location, $presenter = "planetary", $return_result = false) {
   $pathinfo = oaff_base_get_path_info($location);
   $base = oaff_base_join_path(array($pathinfo['group'], $pathinfo['archive']));
   $rel_parent = $pathinfo['rel_parent'];
   $rel_path = $pathinfo['rel_path'];
   $basename = $pathinfo['title'];
+  $ext_map = array("svg" => "svg");
+  $extension = "html";
+  if (isset($ext_map[$presenter])) {
+    $extension = $ext_map[$presenter];
+  }
   if (planetary_repo_is_dir($location)) { //folder
-    $out_location = oaff_base_join_path(array($base, "export", $presenter, "narration", $rel_path, ".html"));
+    $out_location = oaff_base_join_path(array($base, "export", $presenter, "narration", $rel_path, "." . $extension));
     $log_location = oaff_base_join_path(array($base, "errors", $presenter . "_narration", $rel_path, ".err"));
   } else { //file
-    $mmt_input_ext = $pathinfo['extension']; //default
-    if ($presenter == 'planetary' || $presenter == "mh-html") {
-      $mmt_input_ext = 'omdoc'; //apparently presenter have .omdoc extension from the narr/content files they present
-    }
+    $mmt_input_ext = 'omdoc';//presenters use as input the extension of narration files ('.omdoc')
     $log_filename = $basename . '.' . $mmt_input_ext . '.err';  
-    $out_filename = $basename . '.html';  
+    $out_filename = $basename . '.' . $extension;  
     $out_location = oaff_base_join_path(array($base, "export", $presenter, "narration", $rel_parent, $out_filename));
     $log_location = oaff_base_join_path(array($base, "errors", $presenter . "_narration", $rel_parent, $log_filename));
   }
+  $content = "";//default
   if (planetary_repo_stat_file($out_location) == null) { //something failed
     oaff_log("MMT", "Could not find .html file for presenting $location with $presenter (generation failed)");
     $mmt_status = array("conversion" => 3, "messages" => array(array('shortMsg' => "fatal error, conversion failed (no $presenter output)", 
                         'longMsg' => "expected output to be at $out_location", 'type' => "Fatal"))); 
-    $content = ""; 
   } else { //conversion succeded getting log info
     $mmt_status = array("conversion" => 0, "messages" => array());
     if (planetary_repo_stat_file($log_location)) { //log exists
@@ -444,9 +447,10 @@ function mmt_get_presentation($nid, $location, $presenter = "planetary") {
       $mmt_status = array("conversion" => 3, "messages" => array(array('shortMsg' => "fatal error, conversion failed (no $presenter log)", 
                           'longMsg' => "expected log to be at $log_location", 'type' => "Fatal")));
     }
-    $content = mmt_get_pres_from_file($out_location);
+    if ($return_result) {
+      $content = mmt_get_pres_from_file($out_location);
+    }
   }
-
   oaff_save_error_status($nid, $presenter, $mmt_status);
   return $content;
 }

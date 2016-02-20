@@ -25,6 +25,7 @@ function oaff_crawler_sync_nodes() {
   $oaff_config['crawler']['new_nodes'] = 0;
   $oaff_config['crawler']['deleted_nodes'] = 0;
   variable_set('oaff_config', $oaff_config);
+  oaff_crawler_sync_text_formats();
   oaff_crawler_sync_help_docs(); //separate treatment for documentation in meta/inf (not standard mathhub content)
   oaff_crawler_sync_content();
   $oaff_config = variable_get("oaff_config");
@@ -41,6 +42,131 @@ function oaff_crawler_sync_nodes() {
   }
   $out = '<div> <button class="btn btn-primary " onclick="window.location = \'/mh/sync-nodes\'"> Continue </button> </div> ';
   return $out;
+}
+
+/**
+ * creates the text formats needed for archives based on the data in the MathHub config file
+ * each MMT format gets a corresponding MathHub format with two filters: 
+ *    a compilation filter that aggregates the importers in order
+ *    a presentation filter that aggregates the exporters(e.g. presenters)
+ * Formats are used for presentation (first exporter is default presenter), 
+ * generating node aspects, error viewing and build management 
+ */
+function oaff_crawler_sync_text_formats() {
+  $oaff_config = variable_get("oaff_config");
+  $all_formats = $oaff_config['config']['formats'];
+  $created_formats  = $oaff_config['crawler']['formats'];
+
+  //creating the special folder format (if doesn't exist yet)
+  if (!in_array("folder", $created_formats)) { 
+    $filters = array(
+      'mmt-presentation' => array(
+        'status' => 1,
+        'settings' => array(
+          'mmt_style' => "planetary",
+        ),
+        'weight' => -46,
+      ),
+    );
+    oaff_crawler_create_text_format("folder", $filters, array(3));
+    $oaff_config['crawler']['formats'][] = "folder";
+  }
+  //creating all other formats (declared in the config file)
+  foreach ($all_formats as $format => $comps) {
+    if (!in_array($format, $created_formats)) { // new format
+      $importers = $comps['importers'];
+      $exporters = $comps['exporters'];
+      $filters = array(
+        'mmt-compilation' => array(
+          'status' => 1,
+          'settings' => array(
+            'mmt_format' => implode(" ", $importers),
+          ),
+          'weight' => -47,
+        ),
+        'mmt-presentation' => array(
+          'status' => 1,
+          'settings' => array(
+            'mmt_style' => implode(" ", $exporters),
+          ),
+          'weight' => -46,
+        ),
+      );
+      oaff_crawler_create_text_format($format, $filters, array(3));
+      $oaff_config['crawler']['formats'][] = $format;
+    }
+  }
+  variable_set('oaff_config', $oaff_config);
+}
+
+
+/**
+* Create text format 
+* @param $format_name The name of text format to create
+* @param $filters Filters to activate for this format, array(filter name => params)
+*   params -- associative array
+*     status => integer -- 0 - inactive, 1 - active
+*     weigth => integer -- (optional) 
+*     settings => array -- params depending on filter
+* @param $roles Array of rids of user roles who will have access to this format
+*/
+function oaff_crawler_create_text_format($format_name, $filters, $roles) {
+  $format_format = str_replace(' ', '_', strtolower($format_name));
+  $format = array(
+    'format' => $format_format,
+    'name' => $format_name,
+    'filters' => $filters,
+  );
+  $format = (object) $format;
+  // save format
+  filter_format_save($format);
+  
+  // give permission to allowed users
+  // use direct access to database due to 
+  // absence of drupal built in function
+  foreach ($roles as $key => $role) {
+    db_merge('role_permission')
+    ->key(array(
+      'rid' => $role,
+      'permission' => 'use text format ' . $format_format,
+    ))
+    ->fields(array(
+      'module' => 'filter',
+    ))
+    ->execute();
+  }
+
+  drupal_set_message(t('A <a href="@php-code">' 
+    . $format->name . '</a> text format has been created.', 
+    array('@php-code' => url('admin/config/content/formats/' . $format->format))));
+}
+
+/**
+* Delete text format
+* @param $format_name Text format name to delete
+*/
+function oaff_crawler_delete_text_format($format_name) {
+  $format_format = str_replace(' ', '_', strtolower($format_name));
+  
+  // use direct access to database due to 
+  // absence of drupal built in functions
+
+  // delete filters activated for this format
+  db_delete('filter')
+    ->condition('format', $format_format)
+    ->execute();
+
+  // delete format
+  db_delete('filter_format')
+    ->condition('format', $format_format)
+    ->execute();
+
+  //delete user permissions
+  db_delete('role_permission')
+    ->condition('permission', 'use text format ' . $format_format)
+    ->execute();
+
+  drupal_set_message(t('A ' . $format_name . ' text format has been deleted.'));
 }
 
 /**
@@ -126,7 +252,7 @@ function oaff_crawler_sync_archive($group, $archive, $formats, $rel_path = "") {
       } else {
         $curr_format = ''; //default
         foreach ($formats as $format => $compilers) { //checking if first compiler was run
-          $log_path = oaff_base_join_path(array($group, $archive, "errors", $compilers[0], $rel_path, $fname . ".err"));          
+          $log_path = oaff_base_join_path(array($group, $archive, "errors", $compilers['importers'][0], $rel_path, $fname . ".err"));          
           if (planetary_repo_stat_file($log_path)) {// this is the right format
             $curr_format = $format;
           }
@@ -146,7 +272,6 @@ function oaff_crawler_sync_archive($group, $archive, $formats, $rel_path = "") {
 
 
 /** Utilities for syncing meta-data */
-
 function oaff_crawler_sync_top_metadata() {
   $oaff_config = variable_get('oaff_config');
  // getting info from manifest
@@ -268,7 +393,10 @@ function oaff_crawler_sync_config_file() {
         if (count($comps) == 3) {
           $importers = explode(",", $comps[1]);
           $exporters = explode(",", $comps[2]);
-          $config['formats'][$comps[0]] = array_merge($importers, $exporters);
+          $config['formats'][$comps[0]] = array(
+            'importers' => $importers,
+            'exporters' => $exporters,
+          );
         } else {
           drupal_set_message("Ignoring invalid formats line: " . $line);
         }
