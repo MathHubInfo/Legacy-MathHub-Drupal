@@ -63,12 +63,6 @@ function oaff_admin_menu(& $items) {
     'access callback' => 'oaff_admin_access', //needs public for providing builder API?
     'menu_name' => MENU_CALLBACK,
   );
-  $items['mh/view-mbt-log'] = array(
-    'title' => "Latest Build Log",
-    'page callback' => 'oaff_admin_view_mbt_log',
-    'access callback' => 'oaff_admin_access', //needs public for providing builder API?
-    'menu_name' => MENU_CALLBACK,
-  );
   return $items;
 }
 
@@ -325,6 +319,10 @@ function oaff_admin_crawl_nodes() {
   return $out;
 }
 
+/**
+ * Entry point to all administrative tasks implemented
+ * @return a html5 table with each row being a admin task 
+ */
 function oaff_admin_administrate() {
   $out  = '<p>This page collects functionalities related to MathHub administration and maintenance</p>';
   $out .= '<h4>Complex Workflows</h4>';
@@ -350,15 +348,17 @@ function oaff_admin_administrate() {
   $out .= '<p><button onclick="window.location = \'/mh/mbt-rebuild\'" class="btn btn-warning btn-xs"> Configure Build </button></p>';
   $out .= '</td>';
   $out .= '<td>View the latest build log or go to the MBT (Scala-based) build page ';
-  $lock = oaff_admin_get_build_lock_path();
-  if (!$lock) {
-    $out .= '<span class="alert-danger">(Currently running) </span>';
-  }
   $out .= '</td></tr>';
   $out .= '</tbody></table>';
   return $out;
 }
 
+/**
+ * one-button update function, aggregates other functions with sensible defaults
+ * Currently: 
+ *  1. updates repos
+ *  2. re-builds changed files
+ */
 function oaff_admin_smart_update() {
   //updating from GitLab
   oaff_admin_lmh_update();
@@ -370,21 +370,12 @@ function oaff_admin_smart_update() {
   return $out;
 }
 
-function oaff_admin_view_mbt_log() {
-  $inst_name = variable_get("site_name", "MathHub");
-  $log_file = "meta/inf/config/" . $inst_name . "/build.log";
-  $log = planetary_repo_load_file($log_file);
-  $out = "<h4> See current build log below: </h4>";
-  $out .= '<pre >' . check_plain($log) . '</pre>';
-  return $out;
-}
-
+/**
+ * Adds items to the build queue to be rebuilt
+ * forms an MMT build action and sends it to the MMT server
+ * @param $req the request with the build configuration as a nested array
+ */
 function oaff_admin_mbt_act($req) {
-  $lock = oaff_admin_get_build_lock_path();
-  if (!$lock) {
-    drupal_set_message("Failed to get lock, build already running. See build log <a target=\"_blank\" href=\"/mh/view-mbt-log\">here</a>.", 'error');
-    return;
-  }
   //getting arg values
   $modifier = 'Build'; //default
   if (isset($req['modifier'])) {
@@ -394,77 +385,65 @@ function oaff_admin_mbt_act($req) {
   if (isset($req['profile'])) {
     $profile = $req['profile'];
   }
-  $compilers = array();
+  $comp_arr = array();
   foreach($req as $arg => $val) {
     if (substr($arg, 0, 5) == "comp_" && $val == "on") {
       $compilers[] = substr($arg, 5);
     }
   }
+  $compilers = '[' . implode(',', $compilers) . ']';
   //getting instance base
-  $inst_name = variable_get('site_name', "MathHub");
-  $base = "/var/data/localmh/MathHub/";
-  $conf_rel_path = "meta/inf/config/";
-  $conf_base = $base . $conf_rel_path;
-  $conf_path = $conf_base . $inst_name . "/config.mcf";
-  $script_path = $conf_base . "build.sh";
-  //generating main scala command
-  $mod_to_string = array("Build" => "Build", "Clean" => "Clean", "Update" => "UpdateOnError(Level.Error)");
-  $modS = $mod_to_string[$modifier];
-
-  $profileS = '"' . $profile . '"';
-  $compsS = "Nil"; // default
-  if (count($compilers) > 0) {
-    $compsS = 'List("' . implode('","', $compilers) . '")';
-  }
-  $mbt_command = "smartBuild($modS, $profileS, $compsS)";
-  //creating scala script
-  $script = "logToConsole()\n";
-  $script .= "logModule(\"archive\")\n";
-  $script .= 'loadConfig("' . $conf_path . "\")\n";
-  $script .= $mbt_command;
-  planetary_repo_save_file($conf_rel_path . $inst_name . "/build.tmp.mbt", $script);
-  $base_url = $GLOBALS['base_url'];
-  exec($script_path . " " . $inst_name . " " . $base_url . " &");
-  drupal_set_message("Started build with MMT command: `" . $mbt_command . "`. See build log <a target=\"_blank\" href=\"/mh/view-mbt-log\">here</a>.");
+  $mmt_config = variable_get('mmt_config');
+  $mmt_url = $mmt_config['mmturl'];  
+  $mmt_action = "cbuild $modifier $compilers $profile";
+  file_get_contents($mmt_url . "/:action?" . urlencode($mmt_action));
+  drupal_set_message("Started build with MMT command: `" . $mmt_action . "`. See build log <a target=\"_blank\" href=\"/mh/view-mbt-log\">here</a>.");
 }
 
+/**
+ * Displays the configuration form for a build task
+ * after submitting the form_state is sent to oaff_admin_mbt_act
+ * which in turns sends it to the MMT server
+ * @return the html5 form
+ */
 function oaff_admin_mbt_rebuild() {
-  $lock = oaff_admin_get_build_lock_path();
   $form_state = "";
-  if (!$lock) { //failed to get lock -> build already running)
-    drupal_set_message("A build task is already running. See build log <a href=\"/mh/view-mbt-log\">here</a>.", 'warning');
-    $form_state = "disabled";
-  }
   if (isset($_GET['act'])) {
     oaff_admin_mbt_act($_GET);
     $form_state = "disabled";
   }
+
+  /* Building Form */
   $oaff_config = variable_get('oaff_config');
   $form = '<form class="col-md-10">';
   //adding modifier choice
   $modifiers = array("Update" => "Rebuild all new/changed files", "Build" => "Rebuild all files", "Clean" => "Clean generated files for selected target(s)");
   $form .= '<div class="form-group">';
   $form .= '<h4> Build Modifier <span class="small" style="color:gray"> Select <i>how</i> to build.</span></h4>  ';
+  $form .= '<div id="mh_build_mod_row" class="row">';
   foreach ($modifiers as $mod => $desc) {
     $form .= '<div class="col-md-4">';
     $form .= '<label class="radio-inline"> <input ' . $form_state . ' type="radio" name="modifier" value="'. $mod . '"> '. $mod .' </label>';
     $form .= '<p class="help-block">' . $desc .'</p>';  
     $form .= '</div>';
-  } 
-  $form .= '</div><hr class="col-md-12">';
+  }
+  $form .= '</div></div><div class="row"><hr class="col-md-12"></div>';
   //adding compiler choice
   $compilers = array();
   foreach ($oaff_config['config']['formats'] as $format => $form_comps) {
-    $compilers = array_merge($compilers, $form_comps);
+    $compilers = array_merge($compilers, $form_comps['importers'], $form_comps['exporters']);
   }
   $compilers = array_unique($compilers);
   $form .= '<div class="form-group">';
   $form .= '<h4>Build targets <span class="small" style="color:gray">Select which (if any) compilers changed </span></h4>';
+  $form .= '<div id="mh_comp_row" class="row">';
   foreach ($compilers as $comp) {
-    $form .='<label class="checkbox-inline"><input ' . $form_state .' type="checkbox" name="comp_'. $comp . '"> '. $comp .'</label>';
+    $form .= '<div class="col-md-2">';
+    $form .='<label class="checkbox-inline"><input ' . $form_state .' type="checkbox" name="comp_'. $comp . '">'. $comp .'</label>';
+    $form .= '</div>';
   }
-  $form .= '<span class="help-block">Will rebuild selected target as well as dependent ones. If none are selected will rebuild everything </span>';  
-  $form .= '</div><hr class="col-md-12">';
+  $form .= '</div><span class="help-block">Will rebuild selected target as well as dependent ones. If none are selected will rebuild everything </span>';  
+  $form .= '</div><div class="row"><hr class="col-md-12"></div>';
   //adding archive choice
   $form .= '<div class="form-group">';
   $form .= '<h4> Profiles <span class="small" style="color:gray"> Select which archives to build </span></h4>';
@@ -473,31 +452,22 @@ function oaff_admin_mbt_rebuild() {
   foreach ($profiles as $prof => $archs) {
     $profile_descs[$prof] = "Contains " . implode(',', $archs);
   }
+  $form .= '<div id="mh_profile_row" class="row">';
   foreach ($profile_descs as $profile => $desc) {
     $form .= '<div class="col-md-4">';
     $form .= '<label class="radio-inline"> <input ' . $form_state . ' type="radio" name="profile" value="' . $profile . '"> ' . $profile . '</label>';
     $form .= '<p class="help-block">' . $desc . '</p>';  
     $form .= '</div>';
   }
-  $form .= '</div><hr class="col-md-12">';
+  $form .= '</div></div><div class="row"><hr class="col-md-12"></div>';
   $form .= '
+    <div class="row"> 
     <div class="col-md-12"> 
     <input type="hidden" name="act"/>
     <input class="btn btn-primary" ' . $form_state . ' type="submit" value="Submit">
-    </div>';
+    </div></div>';
   $form .= '</form>';
   return $form;
-}
-
-function oaff_admin_get_build_lock_path() {
-  $site_name = variable_get("site_name", "MathHub");
-  $rel_lock = "meta/inf/config/" . $site_name . "/build.lock";
-  $lock = planetary_repo_access_rel_path($rel_lock);
-  if (planetary_repo_stat_file($rel_lock)) {
-    return false;
-  } else {
-    return $lock;
-  }
 }
 
 function oaff_admin_lmh_update() {
