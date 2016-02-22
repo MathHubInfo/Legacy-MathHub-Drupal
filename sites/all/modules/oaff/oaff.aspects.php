@@ -17,7 +17,7 @@ require_once 'oaff.base.php';
  */
 function oaff_aspects_menu(& $items) {
   $items['node/%node/svg'] = array(
-    'title' => 'SVG',
+    'title' => 'Graph',
     'page callback' => 'oaff_aspects_node_svg',
     'page arguments' => array(1),
     'access callback' => 'oaff_aspects_access_node_by_comp',

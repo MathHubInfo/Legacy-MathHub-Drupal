@@ -431,7 +431,7 @@ function mmt_get_presentation($nid, $location, $presenter = "planetary", $return
       $mtime = planetary_repo_stat_file($log_location)['mtime'];
       $source_mtime = planetary_repo_stat_file($location)['mtime'];
       if ($mtime < $source_mtime) {
-        drupal_set_message("This file is out of date, update & build to get the latest version", "warning");
+        drupal_set_message("This $presenter exporter output is out of date, <a href='/mh/mbt-rebuild' target='_blank'>build</a> to get the latest version", "warning");
       }
       $last_ran_time = oaff_get_mtime($nid, $log_location);
       if ($last_ran_time == $mtime) { //no change

@@ -26,6 +26,12 @@ function oaff_admin_menu(& $items) {
     'access callback' => 'oaff_admin_access',
     'type' => MENU_CALLBACK,
   );
+  $items['mh/restart-mmt'] = array(
+    'title' => "Restart MMT",
+    'page callback' => 'oaff_admin_restart_mmt',
+    'access callback' => 'oaff_admin_access',
+    'type' => MENU_CALLBACK,
+  );
   $items['mh/libs-update'] = array(
     'title' => "Update Libraries",
     'page callback' => 'oaff_admin_libs_update',
@@ -324,6 +330,7 @@ function oaff_admin_crawl_nodes() {
  * @return a html5 table with each row being a admin task 
  */
 function oaff_admin_administrate() {
+  $mmt_url = variable_get("mmt_config")['mmturl'];
   $out  = '<p>This page collects functionalities related to MathHub administration and maintenance</p>';
   $out .= '<h4>Complex Workflows</h4>';
   $out .= '<table class="table"><tbody>';
@@ -342,12 +349,14 @@ function oaff_admin_administrate() {
   $out .= '<td>Synchronize with disk (create/delete nodes for new/removed files)</td></tr>';
   $out .= '<tr><td><button onclick="window.location = \'/mh/crawl-nodes\'" class="btn btn-primary btn-xs"> Crawl Nodes </button></td>';
   $out .= '<td>Crawl to update status info (errors logs) for nodes</td></tr>';
+  $out .= '<tr><td><button onclick="window.location = \'/mh/restart-mmt\'" class="btn btn-primary btn-xs"> (Re)start MMT </button></td>';
+  $out .= '<td> Restart the background MMT server if not already running (check <a target="_blank" href="' . $mmt_url . '">here</a>)</td></tr>';
   $out .= '<tr><td><button onclick="window.location = \'/mh/generate-glossary\'" class="btn btn-primary btn-xs"> Regenerate </button></td>';
   $out .= '<td>Regenerate Glossary</td></tr>';
-  $out .= '<tr><td><p><button onclick="window.location = \'/mh/view-mbt-log\'" class="btn btn-primary btn-xs"> See Build Log </button></p>';
+  $out .= '<tr><td><p><a target="_blank" href="'. $mmt_url . '/buildqueue.html" class="btn btn-primary btn-xs"> See Build Queue </a></p>';
   $out .= '<p><button onclick="window.location = \'/mh/mbt-rebuild\'" class="btn btn-warning btn-xs"> Configure Build </button></p>';
   $out .= '</td>';
-  $out .= '<td>View the latest build log or go to the MBT (Scala-based) build page ';
+  $out .= '<td>View current MMT build queue or go to the MBT (Scala-based) build page ';
   $out .= '</td></tr>';
   $out .= '</tbody></table>';
   return $out;
@@ -397,7 +406,9 @@ function oaff_admin_mbt_act($req) {
   $mmt_url = $mmt_config['mmturl'];  
   $mmt_action = "cbuild $modifier $compilers $profile";
   file_get_contents($mmt_url . "/:action?" . urlencode($mmt_action));
-  drupal_set_message("Started build with MMT command: `" . $mmt_action . "`. See build log <a target=\"_blank\" href=\"/mh/view-mbt-log\">here</a>.");
+
+  drupal_set_message("Started build with MMT command: `" . $mmt_action . 
+    "`. See current build queue <a target=\"_blank\" href=\"" . $mmt_url . "/buildqueue.html\">here</a>.");
 }
 
 /**
@@ -407,10 +418,9 @@ function oaff_admin_mbt_act($req) {
  * @return the html5 form
  */
 function oaff_admin_mbt_rebuild() {
-  $form_state = "";
   if (isset($_GET['act'])) {
     oaff_admin_mbt_act($_GET);
-    $form_state = "disabled";
+    drupal_goto("mh/mbt-rebuild");
   }
 
   /* Building Form */
@@ -423,7 +433,7 @@ function oaff_admin_mbt_rebuild() {
   $form .= '<div id="mh_build_mod_row" class="row">';
   foreach ($modifiers as $mod => $desc) {
     $form .= '<div class="col-md-4">';
-    $form .= '<label class="radio-inline"> <input ' . $form_state . ' type="radio" name="modifier" value="'. $mod . '"> '. $mod .' </label>';
+    $form .= '<label class="radio-inline"> <input type="radio" name="modifier" value="'. $mod . '"> '. $mod .' </label>';
     $form .= '<p class="help-block">' . $desc .'</p>';  
     $form .= '</div>';
   }
@@ -439,7 +449,7 @@ function oaff_admin_mbt_rebuild() {
   $form .= '<div id="mh_comp_row" class="row">';
   foreach ($compilers as $comp) {
     $form .= '<div class="col-md-2">';
-    $form .='<label class="checkbox-inline"><input ' . $form_state .' type="checkbox" name="comp_'. $comp . '">'. $comp .'</label>';
+    $form .='<label class="checkbox-inline"><input type="checkbox" name="comp_'. $comp . '">'. $comp .'</label>';
     $form .= '</div>';
   }
   $form .= '</div><span class="help-block">Will rebuild selected target as well as dependent ones. If none are selected will rebuild everything </span>';  
@@ -455,7 +465,7 @@ function oaff_admin_mbt_rebuild() {
   $form .= '<div id="mh_profile_row" class="row">';
   foreach ($profile_descs as $profile => $desc) {
     $form .= '<div class="col-md-4">';
-    $form .= '<label class="radio-inline"> <input ' . $form_state . ' type="radio" name="profile" value="' . $profile . '"> ' . $profile . '</label>';
+    $form .= '<label class="radio-inline"> <input type="radio" name="profile" value="' . $profile . '"> ' . $profile . '</label>';
     $form .= '<p class="help-block">' . $desc . '</p>';  
     $form .= '</div>';
   }
@@ -464,10 +474,27 @@ function oaff_admin_mbt_rebuild() {
     <div class="row"> 
     <div class="col-md-12"> 
     <input type="hidden" name="act"/>
-    <input class="btn btn-primary" ' . $form_state . ' type="submit" value="Submit">
+    <input class="btn btn-primary" type="submit" value="Submit">
     </div></div>';
   $form .= '</form>';
   return $form;
+}
+
+/**
+ * Runs a shell script to restart MMT server 
+ * script checks for and bails if MMT server already running
+ * @return the sanitized output of the shell script inside `pre` tags  
+ */
+function oaff_admin_restart_mmt() {
+  $mmt_url = variable_get("mmt_config")['mmturl'];
+  $mbt_path = planetary_repo_access_rel_path("meta/inf/config/def-build.mbt");
+  $mmt_path = planetary_repo_access_rel_path("") . "/../ext/MMT/deploy/mmt.jar";
+  $kill_old_command = $mmt_path . " :send " . $mmt_url . " exit";
+  $start_new_command = $mmt_path . " --keepalive --mbt " . $mbt_path . " > /dev/null 2>&1 &";
+  @shell_exec($kill_old_command);
+  @shell_exec($start_new_command);
+  drupal_set_message('Success, MMT should is starting up at <a target="_blank" href="' . $mmt_url . '"> ' . $mmt_url . ' </a>.');
+  return "";
 }
 
 function oaff_admin_lmh_update() {

@@ -452,6 +452,9 @@ function oaff_features_common_errors() {
     ', 'inline');
   $out = '<div>'; //main div
   //adding err filter and statistics accordion
+  $mmt_url = variable_get("mmt_config")['mmturl'];
+  $out .= '<p> Explore the current build errors in the active libraries. For the developer version
+           of the error viewer go <a href="' . $mmt_url . '/errorview.html" target="_blank">here</a></p>';
   $out .= '<div class="panel-group" id="accordion" role="tablist" aria-multiselectable="true">';
   $out .= '<div class="panel panel-default">
 

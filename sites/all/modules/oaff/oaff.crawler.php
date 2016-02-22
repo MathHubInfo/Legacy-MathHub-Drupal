@@ -57,40 +57,27 @@ function oaff_crawler_sync_text_formats() {
   $all_formats = $oaff_config['config']['formats'];
   $created_formats  = $oaff_config['crawler']['formats'];
 
-  //creating the special folder format (if doesn't exist yet)
-  if (!in_array("folder", $created_formats)) { 
-    $filters = array(
-      'mmt-presentation' => array(
-        'status' => 1,
-        'settings' => array(
-          'mmt_style' => "planetary",
-        ),
-        'weight' => -46,
-      ),
-    );
-    oaff_crawler_create_text_format("folder", $filters, array(3));
-    $oaff_config['crawler']['formats'][] = "folder";
-  }
-  //creating all other formats (declared in the config file)
+  //creating formats (declared in the config file)
   foreach ($all_formats as $format => $comps) {
     if (!in_array($format, $created_formats)) { // new format
       $importers = $comps['importers'];
       $exporters = $comps['exporters'];
-      $filters = array(
-        'mmt-compilation' => array(
+      $filters = array();
+      if ($importers) {
+        $filters['mmt-compilation'] = array(
           'status' => 1,
           'settings' => array(
             'mmt_format' => implode(" ", $importers),
           ),
           'weight' => -47,
+        );
+      }
+      $filters['mmt-presentation'] = array(
+        'status' => 1,
+        'settings' => array(
+          'mmt_style' => implode(" ", $exporters),
         ),
-        'mmt-presentation' => array(
-          'status' => 1,
-          'settings' => array(
-            'mmt_style' => implode(" ", $exporters),
-          ),
-          'weight' => -46,
-        ),
+        'weight' => -46,
       );
       oaff_crawler_create_text_format($format, $filters, array(3));
       $oaff_config['crawler']['formats'][] = $format;
@@ -252,9 +239,11 @@ function oaff_crawler_sync_archive($group, $archive, $formats, $rel_path = "") {
       } else {
         $curr_format = ''; //default
         foreach ($formats as $format => $compilers) { //checking if first compiler was run
-          $log_path = oaff_base_join_path(array($group, $archive, "errors", $compilers['importers'][0], $rel_path, $fname . ".err"));          
-          if (planetary_repo_stat_file($log_path)) {// this is the right format
-            $curr_format = $format;
+          if ($compilers['importers']) { //non-empty importer array
+            $log_path = oaff_base_join_path(array($group, $archive, "errors", $compilers['importers'][0], $rel_path, $fname . ".err"));          
+            if (planetary_repo_stat_file($log_path)) {// this is the right format
+              $curr_format = $format;
+            }
           }
         }
         if ($curr_format != '') { //if some format found
@@ -362,6 +351,9 @@ function oaff_crawler_sync_config_file() {
   $oaff_config = variable_get('oaff_config');
   $config = array('libs' => array(), 'formats' => array(), 'profiles' => array(), 
                   'external_libs' => array(), 'mainpage_help' => array());
+  //creating the special folder format
+  $config['formats']['folder'] = array("importers" => array(), "exporters" => array("planetary")); 
+
   $lines = explode("\n", $content);
   $section = ""; //default
   foreach ($lines as $line) {
