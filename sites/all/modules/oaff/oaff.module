@@ -16,6 +16,8 @@ require_once 'oaff.aspects.php';
 require_once 'oaff.html_utils.php';
 
 /**
+ * Declares the menu links added by this module
+ * Aggregates links from several source files
  * Implements hook_menu
  */
 function oaff_menu() {

@@ -286,7 +286,7 @@ function oaff_crawler_sync_top_metadata() {
 function oaff_crawler_sync_group_metadata($group) {
   $oaff_config = variable_get('oaff_config');
   // getting info from manifest
-  $mf_path = oaff_base_join_path(array($group, "meta-inf/MANIFEST.MF"));
+  $mf_path = oaff_base_join_path(array($group, "meta-inf/GROUP_MANIFEST.MF"));
   if (planetary_repo_stat_file($mf_path)) { //manifest file exists
     $manifest = planetary_repo_load_file($mf_path);
     $mf_lines = explode("\n", $manifest);
