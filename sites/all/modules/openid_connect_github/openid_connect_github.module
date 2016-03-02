@@ -1,0 +1,14 @@
+<?php
+/**
+ * @file
+ * OpenID Connect GitHub module.
+ */
+
+/**
+ * Implements hook_ctools_plugin_directory().
+ */
+function openid_connect_github_ctools_plugin_directory($owner, $plugin_type) {
+  if ($owner == 'openid_connect') {
+    return 'plugins/' . $plugin_type;
+  }
+}
