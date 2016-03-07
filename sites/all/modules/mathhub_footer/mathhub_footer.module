@@ -24,10 +24,10 @@ function mathhub_footer_block_view($delta = '') {
       $block['content'] = "
 	<div style=\"text-align:center\"> 
 		<a href=\"https://kwarc.info/\">
-			<img width=\"75px\" height=\"75px\" src=\"http://search.mathweb.org/img/kwarc_logo.png\"/>
+			<img width=\"75px\" height=\"75px\" src=\"sites/all/modules/mathhub_footer/images/kwarc_logo.png\"/>
 		</a>
 		<a href=\"http://www.jacobs-university.de/\">
-			<img width=\"75px\" height=\"75px\" src=\"http://search.mathweb.org/img/jacobs_logo.png\"/>
+			<img width=\"75px\" height=\"75px\" src=\"sites/all/modules/mathhub_footer/images/jacobs_logo.png\"/>
 		</a>
 	</div>";
   }
