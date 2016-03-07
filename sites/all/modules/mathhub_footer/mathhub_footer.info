@@ -1,0 +1,4 @@
+name = "Logo Footer"
+description = "Adds the footer with logo of KWARC and Jacobs University Bremen"
+package = "MathHub"
+core = 7.x

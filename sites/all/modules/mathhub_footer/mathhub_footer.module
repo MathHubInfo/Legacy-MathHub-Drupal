@@ -1,0 +1,36 @@
+<?php
+
+/*************************************************************************
+* This file is part of the MathHub.info System  (http://mathhub.info).   *
+* It is hosted at https://github.com/KWARC/MathHub                       *
+* Copyright (c) 2015 by the KWARC group (http://kwarc.info)              *
+* Licensed under GPL3, see http://www.gnu.org/licenses/gpl.html          *
+**************************************************************************/
+
+
+function mathhub_footer_block_info() {
+  $blocks['mh_footer'] = array(
+    'info' => t('MathHub Footer'),
+    'cache' => DRUPAL_NO_CACHE
+  );
+
+  return $blocks;
+}
+
+
+function mathhub_footer_block_view($delta = '') {
+  $block = array();
+  if ($delta == "mh_footer") {
+      $block['content'] = "
+	<div style=\"text-align:center\"> 
+		<a href=\"https://kwarc.info/\">
+			<img width=\"75px\" height=\"75px\" src=\"http://search.mathweb.org/img/kwarc_logo.png\"/>
+		</a>
+		<a href=\"http://www.jacobs-university.de/\">
+			<img width=\"75px\" height=\"75px\" src=\"http://search.mathweb.org/img/jacobs_logo.png\"/>
+		</a>
+	</div>";
+  }
+
+  return $block;
+}
