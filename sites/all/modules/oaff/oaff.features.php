@@ -550,13 +550,13 @@ function oaff_features_common_errors() {
     $pagen = (int)$_GET['page'];  
   }
   $nerrors = count($errors);
-  $errperpage = 10; // number of error per page
+  $errperpage = 10; // number of errors per page
   $start = ($pagen - 1) * $errperpage;
   $finish = $nerrors;
   if ($finish - $start > $errperpage) {
     $finish = $start + $errperpage;
   }
-  $npage = floor($nerrors / $errperpage);
+  $npage = floor($nerrors / $errperpage); // total amount of pages (with errors)
   if ($nerrors % $errperpage != 0) {
     $npage++;
   }
@@ -618,13 +618,22 @@ function oaff_features_common_errors() {
   <nav style="display: table;margin: 0 auto;">
   <ul class="pagination">';
   $pagelink .= 'page=';
-  if ($pagen - 1 > 0) {
-    $out .= '<li><a href="'.$pagelink.($pagen - 1).'" aria-label="Previous"><span aria-hidden="false">&laquo;</span></a></li>';
-  } else {
-    $out .= '<li class="disabled"><a href="#" aria-label="Previous"><span aria-hidden="false">&laquo;</span></a></li>';
+  if ($pagen - 1 > 0) { // pagen = page number
+    $out .= '<li><a href="'.$pagelink.'1'.'" aria-label="First"><span aria-hidden="false">&laquo;</span></a></li>';
+    $out .= '<li><a href="'.$pagelink.($pagen - 1).'" aria-label="Previous"><span aria-hidden="false">&lt;</span></a></li>';
   }
-
-  for ($j = 1; $j <= $npage; $j++) {
+  $number_of_links = 18; // number of page-links to show
+  if ($pagen  - floor($number_of_links/2) > 0){
+    $start_link = $pagen  - floor($number_of_links/2); // where the for-loop (below) will start
+  } else {
+    $start_link = 1;
+  }
+  if (($pagen + floor($number_of_links/2)) < $npage){
+    $end_link = $pagen + floor($number_of_links/2); // where the for-loop (below) will end
+  } else{
+    $end_link = $npage;
+  }
+  for ($j = $start_link; $j <= $end_link; $j++) {
     if ($j == $pagen) {
       $out .= '<li class="active"><a href="'.$pagelink.$j.'">'.$j.'<span class="sr-only">(current)</span></a></li>';
     } else {
@@ -632,10 +641,9 @@ function oaff_features_common_errors() {
     }
   }
 
-  if ($pagen < $npage) {
-    $out .= '<li><a href="'.$pagelink.($pagen + 1).'" aria-label="Previous"><span aria-hidden="true">&raquo;</span></a></li>';
-  } else {
-    $out .= '<li class="disabled"><a href="#" aria-label="Previous"><span aria-hidden="true">&raquo;</span></a></li>';
+  if ($pagen < $npage) { //npage is total amount of pages
+    $out .= '<li><a href="'.$pagelink.($pagen + 1).'" aria-label="Previous"><span aria-hidden="true">&gt;</span></a></li>';
+    $out .= '<li><a href="'.$pagelink.$npage.'" aria-label="Last"><span aria-hidden="true">&raquo;</span></a></li>';
   }
   $out .= '</ul>
   </nav>';
