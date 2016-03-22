@@ -1,0 +1,882 @@
+<?php
+
+/**
+ * @file
+ * A pluggable client implementation for the OpenID Connect protocol.
+ */
+
+/**
+ * Base path where to login providers can redirect in the OAuth2 flow.
+ */
+define('OPENID_CONNECT_REDIRECT_PATH_BASE', 'openid-connect');
+
+/**
+ * Implements hook_menu().
+ */
+function openid_connect_menu() {
+  $items = array();
+  $items['admin/config/services/openid-connect'] = array(
+    'title' => 'OpenID Connect',
+    'description' => 'Config OpenID Connect, choose active OpenID Connect clients etc.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('openid_connect_admin_form'),
+    'access arguments' => array('configure openid connect clients'),
+    'file' => 'includes/openid_connect.admin.inc',
+  );
+  $items[OPENID_CONNECT_REDIRECT_PATH_BASE . '/%'] = array(
+    'title' => 'OpenID Connect redirect page',
+    'page callback' => 'openid_connect_redirect_page',
+    'page arguments' => array(1),
+    'access callback' => 'openid_connect_redirect_access',
+    'type' => MENU_CALLBACK,
+    'file' => 'includes/openid_connect.pages.inc'
+  );
+  $items['user/%user/connected-accounts'] = array(
+    'title' => 'Connected accounts',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('openid_connect_connect_form', 1),
+    'access callback' => 'openid_connect_connected_accounts_access',
+    'access arguments' => array(1),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 5,
+    'file' => 'includes/openid_connect.forms.inc'
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function openid_connect_permission() {
+  return array(
+    'configure openid connect clients' => array(
+      'title' => t('Configure OpenID Connect clients'),
+    ),
+    'manage own openid_connect accounts' => array(
+      'title' => t('Manage own connected accounts'),
+    ),
+    'openid_connect set own password' => array(
+      'title' => t('Set a password for local authentication'),
+      'description' => t('If the account is connected with an external provider, the user needs this permission in order to set their own password.'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_ctools_plugin_directory().
+ */
+function openid_connect_ctools_plugin_directory($module, $plugin) {
+  if ($module == 'openid_connect') {
+    return 'plugins/' . $plugin;
+  }
+}
+
+/**
+ * Implements hook_ctools_plugin_type().
+ */
+function openid_connect_ctools_plugin_type() {
+  $plugins['openid_connect_client'] = array(
+    'classes' => array('class'),
+  );
+  return $plugins;
+}
+
+/**
+ * Returns a client instance.
+ *
+ * @param string $client_name
+ *   The name of the client to instantiate.
+ *
+ * @return OpenIDConnectClientInterface
+ */
+function openid_connect_get_client($client_name) {
+  $clients = &drupal_static(__FUNCTION__);
+  if (!isset($clients[$client_name])) {
+    $plugin = openid_connect_get_plugin($client_name);
+    if ($plugin) {
+      $settings = variable_get('openid_connect_client_' . $client_name, array());
+      $clients[$client_name] = new $plugin['class']($client_name, $plugin['title'], $settings);
+    }
+    else {
+      $clients[$client_name] = FALSE;
+    }
+  }
+
+  return $clients[$client_name];
+}
+
+/**
+ * Returns an OpenID Connect client plugin.
+ *
+ * @param string $client_name
+ *   Name of the plugin.
+ *
+ * @return array
+ *   An array with information about the requested operation type plugin.
+ */
+function openid_connect_get_plugin($client_name) {
+  ctools_include('plugins');
+  return ctools_get_plugins('openid_connect', 'openid_connect_client', $client_name);
+}
+
+/**
+ * Returns the available OpenID Connect client plugins.
+ *
+ * @param $enabled_only
+ *   Whether to return only the plugins enabled by the administrator.
+ */
+function openid_connect_get_plugins($enabled_only = FALSE) {
+  ctools_include('plugins');
+  $plugins = ctools_get_plugins('openid_connect', 'openid_connect_client');
+  $plugins_enabled = variable_get('openid_connect_clients_enabled', array());
+  foreach ($plugins as $key => $plugin) {
+    if (!class_exists($plugin['class']) || ($enabled_only && empty($plugins_enabled[$plugin['name']]))) {
+      // Invalid class specified or client is not enabled and we only suppose to
+      // return those that are active.
+      unset($plugins[$key]);
+      continue;
+    }
+  }
+  uasort($plugins, 'ctools_plugin_sort');
+  return $plugins;
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function openid_connect_block_info() {
+  return array(
+    'openid_connect_login' => array(
+      'info' => t('OpenID Connect login'),
+      'cache' => DRUPAL_CACHE_PER_ROLE | DRUPAL_CACHE_PER_PAGE,
+    ),
+  );
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function openid_connect_block_view($delta = '') {
+  if ($delta == 'openid_connect_login' && user_is_anonymous()) {
+    module_load_include('inc', 'openid_connect', 'includes/openid_connect.forms');
+
+    return array(
+      'subject' => t('Log in'),
+      'content' => drupal_get_form('openid_connect_login_form'),
+    );
+  }
+}
+
+/**
+ * Creates a state token and stores it in the session for later validation.
+ *
+ * @return string
+ *   A state token that later can be validated to prevent request forgery.
+ */
+function openid_connect_create_state_token() {
+  $state = md5(rand());
+  $_SESSION['openid_connect_state'] = $state;
+
+  return $state;
+}
+
+/**
+ * Confirms anti-forgery state token.
+ *
+ * @param string $state_token
+ *   The state token that is used for validation.
+ *
+ * @return bool
+ *   Whether the state token matches the previously created one that is stored
+ *   in the session.
+ */
+function openid_connect_confirm_state_token($state_token) {
+  return isset($_SESSION['openid_connect_state']) && $state_token == $_SESSION['openid_connect_state'];
+}
+
+/**
+ * Access callback: Redirect page.
+ */
+function openid_connect_redirect_access() {
+  // Confirm anti-forgery state token. This round-trip verification helps to
+  // ensure that the user, not a malicious script, is making the request.
+  return !empty($_GET['state']) && openid_connect_confirm_state_token($_GET['state']);
+}
+
+/**
+ * Access callback: Connected accounts page.
+ */
+function openid_connect_connected_accounts_access($account) {
+  global $user;
+  if (user_access('administer users')) {
+    return TRUE;
+  }
+
+  return $user->uid && $user->uid === $account->uid && user_access('manage own openid_connect accounts');
+}
+
+/**
+ * Saves user profile information into a user account.
+ */
+function openid_connect_save_userinfo($account, $userinfo) {
+  $account_wrapper = entity_metadata_wrapper('user', $account);
+  $properties = $account_wrapper->getPropertyInfo();
+  $properties_skip = _openid_connect_user_properties_to_skip();
+  foreach ($properties as $property_name => $property) {
+    if (isset($properties_skip[$property_name])) {
+      continue;
+    }
+    $claim = variable_get('openid_connect_userinfo_mapping_property_' . $property_name, NULL);
+    if ($claim && isset($userinfo[$claim])) {
+      $account_wrapper->{$property_name} = $userinfo[$claim];
+    }
+  }
+
+  // Save the display name additionally in the user account 'data', for use in
+  // openid_connect_username_alter().
+  if (isset($userinfo['name'])) {
+    $account->data['oidc_name'] = $userinfo['name'];
+  }
+
+  $account_wrapper->save();
+
+  // Fetch and save user picture from the login provider.
+  if (variable_get('user_pictures') && variable_get('openid_connect_user_pictures', TRUE) && !empty($userinfo['picture'])) {
+    openid_connect_save_user_picture($account, $userinfo['picture']);
+  }
+}
+
+/**
+ * Save an image as the user picture.
+ *
+ * @param object $account
+ *   The user account.
+ * @param string $picture_url
+ *   The URL to a user picture.
+ */
+function openid_connect_save_user_picture($account, $picture_url) {
+  $picture_directory = file_default_scheme() . '://' . variable_get('user_picture_path', 'pictures');
+  if (!file_prepare_directory($picture_directory, FILE_CREATE_DIRECTORY)) {
+    return;
+  }
+
+  $response = drupal_http_request($picture_url);
+  if ($response->code != 200) {
+    watchdog('openid_connect', 'The user picture could not be fetched from URL: @url', array('@url' => $picture_url));
+    return;
+  }
+
+  // Skip saving if the remote picture has not changed.
+  $hash = md5($response->data);
+  if (!empty($account->picture) && isset($account->data['oidc_picture_hash']) && $account->data['oidc_picture_hash'] === $hash) {
+    return;
+  }
+
+  $picture_path = file_stream_wrapper_uri_normalize($picture_directory . '/picture-' . $account->uid . '-' . REQUEST_TIME . '.jpg');
+  $picture_file = file_save_data($response->data, $picture_path, FILE_EXISTS_REPLACE);
+
+  // Check to make sure the picture isn't too large for the site settings.
+  // Suppress the status message that Drupal sets after a successful resizing.
+  $status_messages = isset($_SESSION['messages']['status']) ? $_SESSION['messages']['status'] : NULL;
+  file_validate_image_resolution($picture_file, variable_get('user_picture_dimensions', '1024x1024'));
+  if (isset($status_messages)) {
+    $_SESSION['messages']['status'] = $status_messages;
+  }
+  else {
+    unset($_SESSION['messages']['status']);
+  }
+
+  // Update the user account object.
+  $account->picture = $picture_file;
+  $account->data['oidc_picture_hash'] = $hash;
+  user_save($account);
+}
+
+/**
+ * Logs in a user.
+ *
+ * @param object $account
+ *   The user account.
+ * @param string|array &$destination
+ *   The path to redirect to after login.
+ */
+function openid_connect_login_user($account, &$destination) {
+  $form_state['uid'] = $account->uid;
+  $form = array();
+
+  // TFA integration.
+  if (module_exists('tfa')) {
+    // The 'code' and 'state' parameters have now been used.
+    unset($_GET['code'], $_GET['state']);
+
+    // TFA will preserve the initial redirect if it is set in the $form_state.
+    $form_state['redirect'] = $destination;
+
+    tfa_login_submit($form, $form_state);
+    tfa_login_form_redirect($form, $form_state);
+
+    // TFA may want to change the redirect destination.
+    if (isset($form_state['redirect']) && $form_state['redirect'] != 'user/' . $form_state['uid']) {
+      $destination = $form_state['redirect'];
+    }
+  }
+  else {
+    user_login_submit($form, $form_state);
+  }
+}
+
+/**
+ * Save the current path in the session, for redirecting after authorization.
+ */
+function openid_connect_save_destination() {
+  $destination = drupal_get_destination();
+  $destination = $destination['destination'] == 'user/login' ? 'user' : $destination['destination'];
+
+  // The destination could contain query parameters. Ensure that they are
+  // preserved.
+  $parsed = drupal_parse_url($destination);
+  $_SESSION['openid_connect_destination'] = array(
+    $parsed['path'], array('query' => $parsed['query']),
+  );
+}
+
+/**
+ * Creates a user indicating sub-id and login provider.
+ *
+ * @param string $sub
+ *   The subject identifier.
+ * @param array $userinfo
+ *   The user claims, containing at least 'email'.
+ * @param string $client_name
+ *   The machine name of the client.
+ *
+ * @return object|FALSE
+ *   The user object or FALSE on failure.
+ */
+function openid_connect_create_user($sub, $userinfo, $client_name) {
+  $edit = array(
+    'name' => openid_connect_generate_username($sub, $userinfo, $client_name),
+    'pass' => user_password(),
+    'mail' => $userinfo['email'],
+    'init' => $userinfo['email'],
+    'status' => 1,
+    'openid_connect_client' => $client_name,
+    'openid_connect_sub' => $sub,
+  );
+
+  return user_save(NULL, $edit);
+}
+
+/**
+ * Generate a username for a new account.
+ *
+ * @param array $userinfo
+ *   The user claims.
+ *
+ * @return string
+ *   A unique username.
+ */
+function openid_connect_generate_username($sub, $userinfo, $client_name) {
+  $name = 'oidc_' . $client_name . '_' . $sub;
+  $candidates = array('preferred_username', 'name');
+  foreach ($candidates as $candidate) {
+    if (!empty($userinfo[$candidate])) {
+      $name = trim($userinfo[$candidate]);
+      break;
+    }
+  }
+
+  // Ensure there are no duplicates.
+  for ($original = $name, $i = 1; openid_connect_username_exists($name); $i++) {
+    $name = $original . '_' . $i;
+  }
+
+  return $name;
+}
+
+/**
+ * Check if a user name already exists.
+ *
+ * @param string $name
+ *   A name to test.
+ *
+ * @return bool
+ *   TRUE if a user exists with the given name, FALSE otherwise.
+ */
+function openid_connect_username_exists($name) {
+  return db_query('SELECT COUNT(*) FROM {users} WHERE name = :name', array(
+    ':name' => $name
+  ))->fetchField() > 0;
+}
+
+/**
+ * Implements hook_username_alter().
+ */
+function openid_connect_username_alter(&$name, $account) {
+  // Ensure that usernames are not displayed if they are email addresses, or if
+  // they are generated names starting with 'oidc_'.
+  if (!empty($account->data['oidc_name']) && (strpos($name, 'oidc_') === 0 || strpos($name, '@'))) {
+    $name = $account->data['oidc_name'];
+  }
+}
+
+/**
+ * Implements hook_user_insert().
+ */
+function openid_connect_user_insert(&$edit, $account, $category) {
+  if (isset($edit['openid_connect_client'])) {
+    openid_connect_connect_account($account, $edit['openid_connect_client'], $edit['openid_connect_sub']);
+  }
+}
+
+/**
+ * Deletes a user's authmap entries.
+ */
+function openid_connect_authmap_delete($uid) {
+  db_delete('authmap')
+    ->condition('uid', $uid)
+    ->condition('module', db_like('openid_connect_') . '%', 'LIKE')
+    ->execute();
+}
+
+/**
+ * Implements hook_user_delete().
+ */
+function openid_connect_user_delete($account) {
+  openid_connect_authmap_delete($account->uid);
+}
+
+/**
+ * Implements hook_user_cancel().
+ */
+function openid_connect_user_cancel($edit, $account, $method) {
+  openid_connect_authmap_delete($account->uid);
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function openid_connect_form_user_profile_form_alter(&$form, &$form_state) {
+  if (isset($form['account'])) {
+    $account_form = &$form['account'];
+  }
+  else {
+    $account_form = &$form;
+  }
+
+  if (!empty($account_form['pass']['#access']) && !openid_connect_set_password_access($form['#user'])) {
+    $account_form['current_pass']['#access'] = FALSE;
+    $account_form['current_pass_required_values']['#value'] = array();
+    $account_form['pass']['#access'] = FALSE;
+  }
+}
+
+/**
+ * Find whether the user is allowed to change their own password.
+ *
+ * @param object $account
+ *   A user account object.
+ *
+ * @return bool
+ *   TRUE if access is granted, FALSE otherwise.
+ */
+function openid_connect_set_password_access($account) {
+  if (user_access('openid_connect set own password', $account)) {
+    return TRUE;
+  }
+
+  $connected_accounts = openid_connect_get_connected_accounts($account);
+
+  return empty($connected_accounts);
+}
+
+/**
+ * Loads a user based on a sub-id and a login provider.
+ */
+function openid_connect_user_load_by_sub($sub, $client_name) {
+  $result = db_select('authmap', 'a')
+    ->fields('a', array('uid', 'module'))
+    ->condition('authname', $sub)
+    ->condition('module', 'openid_connect_' . $client_name)
+    ->execute()
+    ->fetchAssoc();
+  if ($result) {
+    $account = user_load($result['uid']);
+    if (is_object($account)) {
+      return $account;
+    }
+  }
+  return FALSE;
+}
+
+/**
+ * Returns OpenID Connect claims.
+ *
+ * This defines the standard claims, and allows them to be extended via an
+ * alter hook.
+ *
+ * @see http://openid.net/specs/openid-connect-core-1_0.html#StandardClaims
+ * @see http://openid.net/specs/openid-connect-core-1_0.html#ScopeClaims
+ *
+ * @return array
+ */
+function openid_connect_claims() {
+  $claims = array(
+    'name' => array(
+      'scope' => 'profile',
+    ),
+    'family_name' => array(
+      'scope' => 'profile',
+    ),
+    'given_name' => array(
+      'scope' => 'profile',
+    ),
+    'middle_name' => array(
+      'scope' => 'profile',
+    ),
+    'nickname' => array(
+      'scope' => 'profile',
+    ),
+    'preferred_username' => array(
+      'scope' => 'profile',
+    ),
+    'profile' => array(
+      'scope' => 'profile',
+    ),
+    'picture' => array(
+      'scope' => 'profile',
+    ),
+    'website' => array(
+      'scope' => 'profile',
+    ),
+    'gender' => array(
+      'scope' => 'profile',
+    ),
+    'birthdate' => array(
+      'scope' => 'profile',
+    ),
+    'zoneinfo' => array(
+      'scope' => 'profile',
+    ),
+    'locale' => array(
+      'scope' => 'profile',
+    ),
+    'updated_at' => array(
+      'scope' => 'profile',
+    ),
+    'email' => array(
+      'scope' => 'email',
+    ),
+    'email_verified' => array(
+      'scope' => 'email',
+    ),
+    'address' => array(
+      'scope' => 'address',
+    ),
+    'phone_number' => array(
+      'scope' => 'phone',
+    ),
+    'phone_number_verified' => array(
+      'scope' => 'phone',
+    ),
+  );
+  drupal_alter(__FUNCTION__, $claims);
+  return $claims;
+}
+
+/**
+ * Returns OpenID Connect standard Claims as a Form API options array.
+ */
+function openid_connect_claims_options() {
+  $options = array();
+  foreach (openid_connect_claims() as $claim_name => $claim) {
+    $options[$claim['scope']][$claim_name] = $claim_name;
+  }
+  return $options;
+}
+
+/**
+ * Returns scopes that have to be requested based on the configured claims.
+ *
+ * @see http://openid.net/specs/openid-connect-core-1_0.html#ScopeClaims
+ *
+ * @return string
+ *   Space delimited case sensitive list of ASCII scope values.
+ */
+function openid_connect_get_scopes() {
+  $claims = variable_get('openid_connect_userinfo_mapping_claims', array());
+  $scopes = array('openid', 'email');
+  $claims_info = openid_connect_claims();
+  foreach ($claims as $claim) {
+    if (isset($claims_info[$claim]) && !isset($scopes[$claims_info[$claim]['scope']]) && $claim != 'email') {
+      $scopes[$claims_info[$claim]['scope']] = $claims_info[$claim]['scope'];
+    }
+  }
+
+  return implode(' ', $scopes);
+}
+
+/**
+ * Returns user properties that can be skipped when mapping user profile info.
+ */
+function _openid_connect_user_properties_to_skip() {
+  $properties_to_skip = array('name', 'mail', 'uid', 'url', 'edit_url', 'last_access', 'last_login', 'created', 'roles', 'status', 'theme');
+  return drupal_map_assoc($properties_to_skip);
+}
+
+/**
+ * Logs an error occured during a request towards a login provider.
+ */
+function openid_connect_log_request_error($method, $client_name, $response) {
+  switch ($method) {
+    case 'retrieveTokens':
+      $message = 'Could not retrieve tokens';
+      break;
+
+    case 'retrieveUserInfo':
+      $message = 'Could not retrieve user profile information';
+      break;
+
+    default:
+      return;
+  }
+
+  // Some error responses don't have a data key set.
+  $details = '';
+  if (!empty($response->data)) {
+    $details = print_r(drupal_json_decode($response->data), TRUE);
+  }
+  $variables = array(
+    '@error' => $response->error,
+    '@code' => $response->code,
+    '@details' => $details,
+  );
+  watchdog('openid_connect_' . $client_name, $message . ' (@code @error). Details: @details', $variables, WATCHDOG_ERROR);
+}
+
+/**
+ * Implements hook_entity_property_info_alter().
+ *
+ * Adds the missing timezone property.
+ */
+function openid_connect_entity_property_info_alter(&$info) {
+  $properties = &$info['user']['properties'];
+  if (!isset($properties['timezone'])) {
+    $properties['timezone'] = array(
+      'label' => t('Time zone'),
+      'description' => t("The user's time zone."),
+      'options list' => 'system_time_zones',
+      'getter callback' => 'entity_property_verbatim_get',
+      'setter callback' => 'entity_property_verbatim_set',
+      'schema field' => 'timezone',
+    );
+  }
+}
+
+/**
+ * Get a list of external OIDC accounts connected to this Drupal account.
+ *
+ * @param object $account
+ *   A Drupal user entity.
+ *
+ * @return array
+ *   An array of 'sub' properties keyed by the client name.
+ */
+function openid_connect_get_connected_accounts($account) {
+  $auth_maps = db_query(
+    "SELECT module, authname FROM {authmap} WHERE uid = :uid AND module LIKE 'openid_connect_%'",
+    array(':uid' => $account->uid)
+  );
+  $module_offset = strlen('openid_connect_');
+  $results = array();
+  foreach ($auth_maps as $auth_map) {
+    $client = substr($auth_map->module, $module_offset);
+    $sub = $auth_map->authname;
+    $results[$client] = $sub;
+  }
+
+  return $results;
+}
+
+/**
+ * Connect an external OpenID Connect account to a Drupal user account.
+ *
+ * @param object $account
+ *   The Drupal user object.
+ * @param string $client_name
+ *   The client machine name.
+ * @param string $sub
+ *   The 'sub' property identifying the external account.
+ */
+function openid_connect_connect_account($account, $client_name, $sub) {
+  user_set_authmaps($account, array('authname_openid_connect_' . $client_name => $sub));
+}
+
+/**
+ * Disconnect an external OpenID Connect account from a Drupal user account.
+ *
+ * @param object $account
+ *   The Drupal user object.
+ * @param string $client_name
+ *   The client machine name.
+ * @param string $sub
+ *   The 'sub' property identifying the external account (optional).
+ */
+function openid_connect_disconnect_account($account, $client_name, $sub = NULL) {
+  $query = db_delete('authmap');
+  $query->condition('uid', $account->uid)
+    ->condition('module', 'openid_connect_' . $client_name);
+  if ($sub !== NULL) {
+    $query->condition('authname', $sub);
+  }
+  $query->execute();
+}
+
+/**
+ * Get the 'sub' property from the user data and/or user claims.
+ *
+ * The 'sub' (Subject Identifier) is a unique ID for the external provider to
+ * identify the user.
+ *
+ * @param array $user_data
+ *   The user data as returned from
+ *   OpenIDConnectClientInterface::decodeIdToken().
+ * @param array $userinfo
+ *   The user claims as returned from
+ *   OpenIDConnectClientInterface::retrieveUserInfo().
+ *
+ * @return string|FALSE
+ *   The sub, or FALSE if there was an error.
+ */
+function openid_connect_extract_sub($user_data, $userinfo) {
+  if (!isset($user_data['sub']) && !isset($userinfo['sub'])) {
+    return FALSE;
+  }
+  elseif (!isset($user_data['sub'])) {
+    return $userinfo['sub'];
+  }
+  elseif (isset($userinfo['sub']) && $user_data['sub'] != $userinfo['sub']) {
+    return FALSE;
+  }
+  else {
+    return $user_data['sub'];
+  }
+}
+
+/**
+ * Complete the authorization after tokens have been retrieved.
+ *
+ * @param OpenIDConnectClientInterface $client
+ *   The client.
+ * @param array $tokens
+ *   The tokens as returned from OpenIDConnectClientInterface::retrieveTokens().
+ * @param string|array &$destination
+ *   The path to redirect to after authorization.
+ *
+ * @return bool
+ *   TRUE on success, FALSE on failure.
+ */
+function openid_connect_complete_authorization($client, $tokens, &$destination) {
+  if (user_is_logged_in()) {
+    throw new \RuntimeException('User already logged in');
+  }
+
+  $user_data = $client->decodeIdToken($tokens['id_token']);
+  $userinfo = $client->retrieveUserInfo($tokens['access_token']);
+
+  if ($userinfo && empty($userinfo['email'])) {
+    watchdog('openid_connect', 'No e-mail address provided by @provider', array('@provider' => $client->getLabel()), WATCHDOG_ERROR);
+
+    return FALSE;
+  }
+
+  $sub = openid_connect_extract_sub($user_data, $userinfo);
+  if (empty($sub)) {
+    watchdog('openid_connect', 'No "sub" found from @provider', array('@provider' => $client->getLabel()), WATCHDOG_ERROR);
+
+    return FALSE;
+  }
+
+  $account = openid_connect_user_load_by_sub($sub, $client->getName());
+  if ($account) {
+    // An existing account was found. Save user claims.
+    if (variable_get('openid_connect_always_save_userinfo', TRUE)) {
+      openid_connect_save_userinfo($account, $userinfo);
+    }
+  }
+  else {
+    // Check whether there is an e-mail address conflict.
+    if (user_load_by_mail($userinfo['email'])) {
+      drupal_set_message(t('The e-mail address is already taken: @email', array('@email' => $userinfo['email'])), 'error');
+
+      return FALSE;
+    }
+
+    // Create a new account.
+    $account = openid_connect_create_user($sub, $userinfo, $client->getName());
+    openid_connect_save_userinfo($account, $userinfo);
+  }
+
+  openid_connect_login_user($account, $destination);
+
+  module_invoke_all('openid_connect_post_authorize', $tokens, $account, $userinfo, $client->getName());
+
+  return TRUE;
+}
+
+/**
+ * Connect the current user's account to an external provider.
+ *
+ * @param OpenIDConnectClientInterface $client
+ *   The client.
+ * @param array $tokens
+ *   The tokens as returned from OpenIDConnectClientInterface::retrieveTokens().
+ *
+ * @return bool
+ *   TRUE on success, FALSE on failure.
+ */
+function openid_connect_connect_current_user($client, $tokens) {
+  global $user;
+  if (!$user->uid) {
+    throw new \RuntimeException('User not logged in');
+  }
+
+  $user_data = $client->decodeIdToken($tokens['id_token']);
+  $userinfo = $client->retrieveUserInfo($tokens['access_token']);
+
+  $provider_param = array('@provider' => $client->getLabel());
+
+  if ($userinfo && empty($userinfo['email'])) {
+    watchdog('openid_connect', 'No e-mail address provided by @provider', $provider_param, WATCHDOG_ERROR);
+
+    return FALSE;
+  }
+
+  $sub = openid_connect_extract_sub($user_data, $userinfo);
+  if (empty($sub)) {
+    watchdog('openid_connect', 'No "sub" found from @provider', $provider_param, WATCHDOG_ERROR);
+
+    return FALSE;
+  }
+
+  $account = openid_connect_user_load_by_sub($sub, $client->getName());
+  if ($account && $account->uid !== $user->uid) {
+    drupal_set_message(t('Another user is already connected to this @provider account.', $provider_param), 'error');
+
+    return FALSE;
+  }
+
+  if (!$account) {
+    $account = $user;
+    openid_connect_connect_account($account, $client->getName(), $sub);
+  }
+
+  if (variable_get('openid_connect_always_save_userinfo', TRUE)) {
+    openid_connect_save_userinfo($account, $userinfo);
+  }
+
+  module_invoke_all('openid_connect_post_authorize', $tokens, $account, $userinfo, $client->getName());
+
+  return TRUE;
+}

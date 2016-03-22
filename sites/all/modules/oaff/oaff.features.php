@@ -81,8 +81,9 @@ function oaff_multi_dictionary() {
     color: #999
 }
 
-.tt-dropdown-menu {
+.tt-menu {
     width: 422px;
+    max-height: 200 px;
     margin-top: 12px;
     padding: 8px 0;
     background-color: #fff;
@@ -107,16 +108,16 @@ function oaff_multi_dictionary() {
 .tt-suggestion p {
     margin: 0;
 }
+
     ', "inline");
   
   $html = '<p>The math dictionary on this page is a service based on the <a href="https://mathhub.info/smglom">SMGloM</a> terminology. 
           To translate mathematical terms, select the source and target languages and enter them in the text window on the left (autocompletion). 
           The translations are hyperlinked to their respective definitions for convenience.</p>';
   $html .= '<div class="form-group">
-    <div class="row"> 
-      <div > 
+    <div class="row">
         <div class="col-md-1">From:</div>
-        <div class="input-group col-md-2">
+        <div class="col-md-2">
           <select id="tr_from_lang" onchange="th_auto()" class="form-control">
             <option>de</option>
             <option selected>en</option>
@@ -124,10 +125,8 @@ function oaff_multi_dictionary() {
             <option>tr</option>
           </select>
         </div>
-      </div>
-      <div> 
         <div class="col-md-1">To:</div>
-        <div class="input-group col-md-2">
+        <div class="col-md-2">
           <select id="tr_to_lang" onchange="th_auto()" class="form-control">
             <option>de</option>
             <option>en</option>
@@ -135,18 +134,17 @@ function oaff_multi_dictionary() {
             <option>tr</option>
           </select>
         </div>
-      </div>
-      <div class="col-mod-2">
+      <div class="col-md-2">
         <button id="btn_translate" onclick="on_translate()" type="submit" class="btn btn-primary">Translate</button>
       </div>
     </div>
     <br/>
     <div class="row">
-      <div class="input-group col-md-6">
-        <input id="tr_term" type="text" class="form-control col-md-5" placeholder="Math Term">
+      <div class="col-md-6">
+        <input id="tr_term" type="text" class="form-control" placeholder="Math Term">
       </div>
-      <div class="input-group col-md-6" >
-        <div id="tr_out_term" type="text" class="form-control col-md-5" placeholder="Translation" disabled> </div>
+      <div class="col-md-6" >
+        <div id="tr_out_term" type="text" class="form-control" placeholder="Translation" disabled> </div>
       </div>
     </div>
     
@@ -174,6 +172,15 @@ function oaff_multi_dictionary() {
       return keys;
     }
     ','inline');
+  drupal_add_js('
+  jQuery(document).ready(function () {
+    jQuery("#tr_term").keypress(function(e) {
+      if (e.which==13) {
+        on_translate();
+      }
+    })
+  });
+  	','inline');
 
   drupal_add_js('
     var substringMatcher = function() {
@@ -214,18 +221,18 @@ function oaff_multi_dictionary() {
       var tr_term = jQuery("#tr_term").val();
       var tr_from_lang = jQuery("#tr_from_lang").val();
       var tr_to_lang = jQuery("#tr_to_lang").val();
-      console.log(dict_json);
-      console.log(tr_from_lang);
-      console.log(dict_json[tr_from_lang][tr_to_lang]);
-      console.log(dict_json[tr_from_lang][tr_to_lang][tr_term]);
-      
+
       var res = dict_json[tr_from_lang][tr_to_lang][tr_term];
-      console.log(res);
       var html = "";
       for (var i = 0; i < res.length; i++) {
         var name = res[i];
         var link = links_json[name];
-        html = html + "<a href=\"" + link + "\">" + name + "<a/>, ";
+        html = html + "<a href=\"" + link + "\">" + name + "<a/>";
+        if (i+1==res.length) {
+        	html = html + " ";
+        } else {
+        	html = html + ", ";
+        }
       }
       jQuery("#tr_out_term").html(html);
       };
