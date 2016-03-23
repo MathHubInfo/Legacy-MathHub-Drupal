@@ -452,6 +452,7 @@ function oaff_features_common_errors() {
       if (archives != "") {
         path += "archives=" + archives + "&";
       }
+      path += "errppage=" + jQuery("#errperpage").val() + "&"; // number of errors per page
       path = path.substring(0, path.length -1);
       //console.log(path);
       window.location = path;
@@ -461,7 +462,6 @@ function oaff_features_common_errors() {
   //adding err filter and statistics accordion
   $out .= '<div class="panel-group" id="accordion" role="tablist" aria-multiselectable="true">';
   $out .= '<div class="panel panel-default">
-
    <div class="panel-heading" role="tab" id="filterHeading">
       <h4 class="panel-title">
         <a data-toggle="collapse" data-parent="#accordion" href="#filterBody" aria-expanded="false" aria-controls="filterBody">
@@ -480,8 +480,30 @@ function oaff_features_common_errors() {
       <label class="checkbox-inline"><input type="checkbox" id="mh_error_fatal" ' .  err_lvl_str(3, $err_checked, "checked") . '> Fatal Error </label>
     </div>
     </div>
-    
     <div class="form-group">
+    <label for="mh_levels"> Errors per page</label> 
+    <select name="errperpage" id="errperpage">';
+    $map_err = array(0 => '10', 1 => '15', 2 => '20', 3 => '25', 4 => '50', 5 => '100'); // options to select the amount of errors per page
+    foreach ($map_err as $key => $value) {
+      if (isset($_GET['errppage'])){
+        if ($_GET['errppage'] == $value){
+          $out .= '<option selected="selected" value="'.$value.'">'.$value.'</option>';
+        }
+        else{
+          $out .= '<option value="'.$value.'">'.$value.'</option>';
+        }
+      } else{
+        if ($value == '25'){ // default amount of errors per page is 25
+          $out .= '<option  selected="selected" value="'.$value.'">'.$value.'</option>';
+        }
+        else{
+          $out .= '<option value="'.$value.'">'.$value.'</option>';
+        }
+      }
+    }
+    $out .= '</select>
+    </div>';
+    $out .= '<div class="form-group">
       <label for="mh_compilers"> Compilers </label>
       <input type="text" class="form-control" id="mh_compilers" placeholder="Enter Compilers (comma separated)" ' . $err_fields['compilers'] . '>
       <p class="help-block">Leave empty to select all compilers </p>
@@ -550,7 +572,11 @@ function oaff_features_common_errors() {
     $pagen = (int)$_GET['page'];  
   }
   $nerrors = count($errors);
-  $errperpage = 10; // number of errors per page
+  if (isset($_GET['errppage'])){
+    $errperpage = (int)$_GET['errppage']; // number of errors per page
+  } else {
+    $errperpage = 25; 
+  }
   $start = ($pagen - 1) * $errperpage;
   $finish = $nerrors;
   if ($finish - $start > $errperpage) {
