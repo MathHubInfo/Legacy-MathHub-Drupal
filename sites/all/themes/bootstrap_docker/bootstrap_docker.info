@@ -1,0 +1,40 @@
+name = Bootstrap offline
+description = Bootstrap theme for offline dev work
+core = 7.x
+base theme = bootstrap
+
+
+;;;;;;;;;;;;;;;;;;;;;
+;; Regions
+;;;;;;;;;;;;;;;;;;;;;
+
+regions[navigation]     = 'Navigation'
+regions[header]         = 'Top Bar'
+regions[highlighted]    = 'Highlighted'
+regions[help]           = 'Help'
+regions[content]        = 'Content'
+regions[sidebar_first]  = 'Primary'
+regions[sidebar_second] = 'Secondary'
+regions[footer]         = 'Footer'
+regions[page_top]       = 'Page top'
+regions[page_bottom]    = 'Page bottom'
+
+
+;;;;;;;;;;;;;;;;;;;;;
+;; Stylesheets
+;;;;;;;;;;;;;;;;;;;;;
+
+;; stylesheets[all][] = css/style.css
+stylesheets[all][] = css/bootstrap.css
+scripts[] = js/bootstrap.js
+
+
+
+
+settings[bootstrap_cdn_provider] = 'other'
+settings[bootstrap_cdn_custom_css] = 'none'
+settings[bootstrap_cdn_custom_css_min] = 'none'
+settings[bootstrap_cdn_custom_js] = 'none'
+settings[bootstrap_cdn_custom_js_min] = 'none'
+settings[bootstrap_cdn_jsdelivr_version] = '3.3.5'
+settings[bootstrap_cdn_jsdelivr_theme] = 'bootstrap'
