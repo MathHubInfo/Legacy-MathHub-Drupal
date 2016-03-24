@@ -489,9 +489,12 @@ function oaff_admin_restart_mmt() {
   $mmt_url = variable_get("mmt_config")['mmturl'];
   $mbt_path = planetary_repo_access_rel_path("meta/inf/config/def-build.mbt");
   $mmt_path = planetary_repo_access_rel_path("") . "/../ext/MMT/deploy/mmt.jar";
-  $kill_old_command = $mmt_path . " :send " . $mmt_url . " exit";
-  $start_new_command = $mmt_path . " --keepalive --mbt " . $mbt_path . " > /dev/null 2>&1 &";
-  @shell_exec($kill_old_command);
+  //TODO exit command in mmt server sometimes fails, killing process instead
+  //$kill_old_command = $mmt_path . " :send " . $mmt_url . " exit";
+  //@shell_exec($kill_old_command);
+  $base_command = $mmt_path . " --keepalive --mbt " . $mbt_path;
+  $start_new_command = $base_command . " > /dev/null 2>&1 &";
+  @shell_exec('pkill -f "' . $base_command . '"');
   @shell_exec($start_new_command);
   drupal_set_message('Success, MMT should is starting up at <a target="_blank" href="' . $mmt_url . '"> ' . $mmt_url . ' </a>.');
   return "";
