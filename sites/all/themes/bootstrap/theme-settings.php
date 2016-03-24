@@ -38,13 +38,14 @@ function bootstrap_form_system_theme_settings_alter(&$form, $form_state, $form_i
 
     // Ensure the jQuery version is >= 1.9.
     if (!$jquery_version || !version_compare($jquery_version, '1.9', '>=')) {
-      drupal_set_message(t('jQuery Update is not enabled, Bootstrap requires a minimum jQuery version of 1.9 or higher. Please enable the <a href="!jquery_update_project_url">jQuery Update</a> module. If you are seeing this message, then you must <a href="!jquery_update_configure">manually configuration</a> this setting or optionally <a href="!bootstrap_suppress_jquery_error">suppress this message</a> instead.', array(
-        '!jquery_update_project_url' => 'https://www.drupal.org/project/jquery_update',
-        '!jquery_update_configure' => url('admin/config/development/jquery_update'),
-        '!bootstrap_suppress_jquery_error' => url('admin/appearance/settings/' . $theme, array(
+      $message = t('jQuery Update is not enabled, Bootstrap requires a minimum jQuery version of 1.9 or higher. Please enable the <a href="!jquery_update_project_url">jQuery Update</a> module. If you are seeing this message, then you must <a href="!jquery_update_configure">manually configuration</a> this setting or optionally <a href="!bootstrap_suppress_jquery_error">suppress this message</a> instead.', array(
+        '!jquery_update_project_url' => check_plain('https://www.drupal.org/project/jquery_update'),
+        '!jquery_update_configure' => check_plain(url('admin/config/development/jquery_update')),
+        '!bootstrap_suppress_jquery_error' => check_plain(url('admin/appearance/settings/' . $theme, array(
           'fragment' => 'edit-bootstrap-toggle-jquery-error',
-        )),
-      )), 'error', FALSE);
+        ))),
+      ));
+      drupal_set_message($message, 'error', FALSE);
     }
   }
 
@@ -76,7 +77,9 @@ function bootstrap_form_system_theme_settings_alter(&$form, $form_state, $form_i
     '#type' => 'checkbox',
     '#title' => t('Fluid container'),
     '#default_value' => bootstrap_setting('fluid_container', $theme),
-    '#description' => t('Use <code>.container-fluid</code> class. See <a href="http://getbootstrap.com/css/#grid-example-fluid">Fluid container</a>'),
+    '#description' => t('Use <code>.container-fluid</code> class. See <a href="!url">Fluid container</a>', array(
+      '!url' => 'http://getbootstrap.com/css/#grid-example-fluid',
+    )),
   );
 
   // Buttons.
@@ -234,41 +237,52 @@ function bootstrap_form_system_theme_settings_alter(&$form, $form_state, $form_i
   $form['components']['breadcrumbs'] = array(
     '#type' => 'fieldset',
     '#title' => t('Breadcrumbs'),
-    '#collapsible' => TRUE,
-    '#collapsed' => TRUE,
   );
-  $form['components']['breadcrumbs']['bootstrap_breadcrumb'] = array(
-    '#type' => 'select',
-    '#title' => t('Breadcrumb visibility'),
-    '#default_value' => bootstrap_setting('breadcrumb', $theme),
-    '#options' => array(
-      0 => t('Hidden'),
-      1 => t('Visible'),
-      2 => t('Only in admin areas'),
-    ),
-  );
-  $form['components']['breadcrumbs']['bootstrap_breadcrumb_home'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Show "Home" breadcrumb link'),
-    '#default_value' => bootstrap_setting('breadcrumb_home', $theme),
-    '#description' => t('If your site has a module dedicated to handling breadcrumbs already, ensure this setting is enabled.'),
-    '#states' => array(
-      'invisible' => array(
-        ':input[name="bootstrap_breadcrumb"]' => array('value' => 0),
+
+  // Show message for Path Breadcrumbs module support.
+  if (_bootstrap_use_path_breadcrumbs($theme)) {
+    $form['components']['breadcrumbs']['#description'] = t('The <a href="!path_breadcrumbs" target="_blank">Path Breadcrumbs</a> module is being used to manage this site\'s breadcrumbs display and cannot be configured via theme settings. To configure this site\'s breadcrumbs display, enable the <a href="!enable">Path Breadcrumbs UI</a> sub-module and then visit <a href="!settings">Path Breadcrumbs Settings</a>.', array(
+      '!path_breadcrumbs' => 'https://www.drupal.org/project/path_breadcrumbs',
+      '!enable' => url('admin/modules', array('fragment' => 'edit-modules-path-breadcrumbs')),
+      '!settings' => url('admin/structure/path-breadcrumbs/settings'),
+    ));
+  }
+  else {
+    $form['components']['breadcrumbs']['#collapsible'] = TRUE;
+    $form['components']['breadcrumbs']['#collapsed'] = TRUE;
+    $form['components']['breadcrumbs']['bootstrap_breadcrumb'] = array(
+      '#type' => 'select',
+      '#title' => t('Breadcrumb visibility'),
+      '#default_value' => bootstrap_setting('breadcrumb', $theme),
+      '#options' => array(
+        0 => t('Hidden'),
+        1 => t('Visible'),
+        2 => t('Only in admin areas'),
       ),
-    ),
-  );
-  $form['components']['breadcrumbs']['bootstrap_breadcrumb_title'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Show current page title at end'),
-    '#default_value' => bootstrap_setting('breadcrumb_title', $theme),
-    '#description' => t('If your site has a module dedicated to handling breadcrumbs already, ensure this setting is disabled.'),
-    '#states' => array(
-      'invisible' => array(
-        ':input[name="bootstrap_breadcrumb"]' => array('value' => 0),
+    );
+    $form['components']['breadcrumbs']['bootstrap_breadcrumb_home'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Show "Home" breadcrumb link'),
+      '#default_value' => bootstrap_setting('breadcrumb_home', $theme),
+      '#description' => t('If your site has a module dedicated to handling breadcrumbs already, ensure this setting is enabled.'),
+      '#states' => array(
+        'invisible' => array(
+          ':input[name="bootstrap_breadcrumb"]' => array('value' => 0),
+        ),
       ),
-    ),
-  );
+    );
+    $form['components']['breadcrumbs']['bootstrap_breadcrumb_title'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Show current page title at end'),
+      '#default_value' => bootstrap_setting('breadcrumb_title', $theme),
+      '#description' => t('If your site has a module dedicated to handling breadcrumbs already, ensure this setting is disabled.'),
+      '#states' => array(
+        'invisible' => array(
+          ':input[name="bootstrap_breadcrumb"]' => array('value' => 0),
+        ),
+      ),
+    );
+  }
 
   // Navbar.
   $form['components']['navbar'] = array(
@@ -321,8 +335,8 @@ function bootstrap_form_system_theme_settings_alter(&$form, $form_state, $form_i
   $form['components']['region_wells'] = array(
     '#type' => 'fieldset',
     '#title' => t('Region wells'),
-    '#description' => t('Enable the <code>.well</code>, <code>.well-sm</code> or <code>.well-lg</code> classes for specified regions. See: documentation on !wells.', array(
-      '!wells' => l(t('Bootstrap Wells'), 'http://getbootstrap.com/components/#wells'),
+    '#description' => t('Enable the <code>.well</code>, <code>.well-sm</code> or <code>.well-lg</code> classes for specified regions. See: documentation on <a href="!wells" target="_blank">Bootstrap Wells</a>.', array(
+      '!wells' => 'http://getbootstrap.com/components/#wells',
     )),
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
@@ -405,19 +419,13 @@ function bootstrap_form_system_theme_settings_alter(&$form, $form_state, $form_i
   $form['javascript']['popovers']['bootstrap_popover_enabled'] = array(
     '#type' => 'checkbox',
     '#title' => t('Enable popovers.'),
-    '#description' => t('Elements that have the !code attribute set will automatically initialize the popover upon page load. !warning', array(
-      '!code' => '<code>data-toggle="popover"</code>',
-      '!warning' => '<strong class="error text-error">WARNING: This feature can sometimes impact performance. Disable if pages appear to "hang" after initial load.</strong>',
-    )),
+    '#description' => t('Elements that have the <code>data-toggle="popover"</code> attribute set will automatically initialize the popover upon page load. <strong class="error text-error">WARNING: This feature can sometimes impact performance. Disable if pages appear to "hang" after initial load.</strong>'),
     '#default_value' => bootstrap_setting('popover_enabled', $theme),
   );
   $form['javascript']['popovers']['options'] = array(
     '#type' => 'fieldset',
     '#title' => t('Options'),
-    '#description' => t('These are global options. Each popover can independently override desired settings by appending the option name to !data. Example: !data-animation.', array(
-      '!data' => '<code>data-</code>',
-      '!data-animation' => '<code>data-animation="false"</code>',
-    )),
+    '#description' => t('These are global options. Each popover can independently override desired settings by appending the option name to <code>data-</code>. Example: <code>data-animation="false"</code>.'),
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
     '#states' => array(
@@ -458,9 +466,9 @@ function bootstrap_form_system_theme_settings_alter(&$form, $form_state, $form_i
   $form['javascript']['popovers']['options']['bootstrap_popover_selector'] = array(
     '#type' => 'textfield',
     '#title' => t('selector'),
-    '#description' => t('If a selector is provided, tooltip objects will be delegated to the specified targets. In practice, this is used to enable dynamic HTML content to have popovers added. See !this and !example.', array(
-      '!this' => l(t('this'), 'https://github.com/twbs/bootstrap/issues/4215'),
-      '!example' => l(t('an informative example'), 'http://jsfiddle.net/fScua/'),
+    '#description' => t('If a selector is provided, tooltip objects will be delegated to the specified targets. In practice, this is used to enable dynamic HTML content to have popovers added. See <a href="!this" target="_blank">this</a> and <a href="!example" target="_blank">an informative example</a>.', array(
+      '!this' => 'https://github.com/twbs/bootstrap/issues/4215',
+      '!example' => 'http://jsfiddle.net/fScua/',
     )),
     '#default_value' => bootstrap_setting('popover_selector', $theme),
   );
@@ -511,8 +519,8 @@ function bootstrap_form_system_theme_settings_alter(&$form, $form_state, $form_i
   $form['javascript']['tooltips'] = array(
     '#type' => 'fieldset',
     '#title' => t('Tooltips'),
-    '#description' => t("Inspired by the excellent jQuery.tipsy plugin written by Jason Frame; Tooltips are an updated version, which don't rely on images, use CSS3 for animations, and data-attributes for local title storage. See !link for more documentation.", array(
-      '!link' => l(t('Bootstrap tooltips'), 'http://getbootstrap.com/javascript/#tooltips'),
+    '#description' => t('Inspired by the excellent jQuery.tipsy plugin written by Jason Frame; Tooltips are an updated version, which don\'t rely on images, use CSS3 for animations, and data-attributes for local title storage. See <a href="!url" target="_blank">Bootstrap tooltips</a> for more documentation.', array(
+      '!url' => 'http://getbootstrap.com/javascript/#tooltips',
     )),
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
@@ -520,19 +528,13 @@ function bootstrap_form_system_theme_settings_alter(&$form, $form_state, $form_i
   $form['javascript']['tooltips']['bootstrap_tooltip_enabled'] = array(
     '#type' => 'checkbox',
     '#title' => t('Enable tooltips'),
-    '#description' => t('Elements that have the !code attribute set will automatically initialize the tooltip upon page load. !warning', array(
-      '!code' => '<code>data-toggle="tooltip"</code>',
-      '!warning' => '<strong class="error text-error">WARNING: This feature can sometimes impact performance. Disable if pages appear to "hang" after initial load.</strong>',
-    )),
+    '#description' => t('Elements that have the <code>data-toggle="tooltip"</code> attribute set will automatically initialize the tooltip upon page load. <strong class="error text-error">WARNING: This feature can sometimes impact performance. Disable if pages appear to "hang" after initial load.</strong>'),
     '#default_value' => bootstrap_setting('tooltip_enabled', $theme),
   );
   $form['javascript']['tooltips']['options'] = array(
     '#type' => 'fieldset',
     '#title' => t('Options'),
-    '#description' => t('These are global options. Each tooltip can independently override desired settings by appending the option name to !data. Example: !data-animation.', array(
-      '!data' => '<code>data-</code>',
-      '!data-animation' => '<code>data-animation="false"</code>',
-    )),
+    '#description' => t('These are global options. Each tooltip can independently override desired settings by appending the option name to <code>data-</code>. Example: <code>data-animation="false"</code>.'),
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
     '#states' => array(
