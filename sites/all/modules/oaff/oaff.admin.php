@@ -334,6 +334,8 @@ function oaff_admin_administrate() {
   $out .= '</tbody></table>';
   $out .= '<h4>Atomic/Fine-Grained Commands</h4>';
   $out .= '<table class="table"><tbody>';
+  $out .= '<tr><td><button onclick="window.location = \'/sites/all/themes/bootstrap_docker/update.php\'" class="btn btn-primary btn-xs"> bootstrap Update </button></td>';
+  $out .= '<td>Update local bootstrap copies needed for "Offline dev mode"</td></tr>';
   $out .= '<tr><td><button onclick="window.location = \'/mh/lmh-update\'" class="btn btn-primary btn-xs"> Lmh Update </button></td>';
   $out .= '<td>Get the latest version of the source documents</td></tr>';
   $out .= '<tr><td><button onclick="window.location = \'/mh/libs-update\'" class="btn btn-primary btn-xs"> Update Libs </button></td>';
