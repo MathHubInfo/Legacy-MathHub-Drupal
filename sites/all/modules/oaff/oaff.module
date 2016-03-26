@@ -63,16 +63,6 @@ function oaff_permission() {
   );
 }
 
-function oaff_boot() {
-  #dirty fix, as it ignores warnings
-  if(strpos(@get_headers('http://cdn.jsdelivr.net/bootstrap/3.3.5/css/bootstrap.css')[0],"200")){
-    //echo "string";
-  } else {
-    drupal_add_js('/sites/all/docker/bootstrap.js', 'file');
-    drupal_add_css('/sites/all/docker/bootstrap.css', array('type' => 'file', 'every_page' => TRUE));
-  }
-}
-
 /**
  * implements hook_field_formatter_info, declares the formatter types implemented 
  * by this module.

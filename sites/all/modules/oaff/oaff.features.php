@@ -348,6 +348,12 @@ function oaff_features_common_errors() {
     $query->condition('e.mh_archive', $archives, "IN");
     $pagelink .= 'archives='.$_GET['archives'].'&';
   }
+  if (isset($_GET['errppage'])) {
+    $pagelink .= 'errppage='.$_GET['errppage'].'&';
+  }
+  if (isset($_GET['linksppage'])) {
+    $pagelink .= 'linksppage='.$_GET['linksppage'].'&';
+  }
 
   // execute query
   $results = $query->execute()
@@ -452,6 +458,8 @@ function oaff_features_common_errors() {
       if (archives != "") {
         path += "archives=" + archives + "&";
       }
+      path += "errppage=" + jQuery("#errperpage").val() + "&"; // number of errors per page
+      path += "linksppage=" + jQuery("#linksppage").val() + "&"; // number of page links tp show
       path = path.substring(0, path.length -1);
       //console.log(path);
       window.location = path;
@@ -464,7 +472,6 @@ function oaff_features_common_errors() {
            of the error viewer go <a href="' . $mmt_url . '/errorview.html" target="_blank">here</a></p>';
   $out .= '<div class="panel-group" id="accordion" role="tablist" aria-multiselectable="true">';
   $out .= '<div class="panel panel-default">
-
    <div class="panel-heading" role="tab" id="filterHeading">
       <h4 class="panel-title">
         <a data-toggle="collapse" data-parent="#accordion" href="#filterBody" aria-expanded="false" aria-controls="filterBody">
@@ -483,8 +490,61 @@ function oaff_features_common_errors() {
       <label class="checkbox-inline"><input type="checkbox" id="mh_error_fatal" ' .  err_lvl_str(3, $err_checked, "checked") . '> Fatal Error </label>
     </div>
     </div>
-    
     <div class="form-group">
+    <label for="mh_levels"> Errors per page: </label> 
+    <select name="errperpage" id="errperpage">';
+    $nerrors = count($errors);
+    $map_err = array(10 => '10', 15 => '15', 20 => '20', 25 => '25', 50 => '50', 100 => '100', $nerrors => 'all'); // options to select the amount of errors per page
+    foreach ($map_err as $key => $value) {
+      if (isset($_GET['errppage'])){
+        if ($_GET['errppage'] == $key){
+          $out .= '<option selected="selected" value="'.$key.'">'.$value.'</option>';
+        }
+        else{
+          $out .= '<option value="'.$key.'">'.$value.'</option>';
+        }
+      } else{
+        if ($key == 25){ // default amount of errors per page is 25
+          $out .= '<option  selected="selected" value="'.$key.'">'.$value.'</option>';
+        }
+        else{
+          $out .= '<option value="'.$key.'">'.$value.'</option>';
+        }
+      }
+    }
+    $out .= '</select>
+    <label for="mh_levels">Number of page links to show: </label> 
+    <select name="linksppage" id="linksppage">';
+    if (isset($_GET['errppage']) && ($_GET['errppage'] > 0)){
+      $errperpage = (int)$_GET['errppage']; // number of errors per page
+    } else {
+      $errperpage = 25; 
+    }
+    $npage = floor($nerrors / $errperpage); // total amount of pages (with errors)
+    if ($nerrors % $errperpage != 0) {
+      $npage++;
+    }
+    $map_link = array(10 => '10', 15 => '15', 20 => '20', 25 => '25', 50 => '50', 100 => '100', $npage => 'all'); // options to select the amount of errors per page
+    foreach ($map_link as $key => $value) {
+      if (isset($_GET['linksppage'])){
+        if ($_GET['linksppage'] == $key){
+          $out .= '<option selected="selected" value="'.$key.'">'.$value.'</option>';
+        }
+        else{
+          $out .= '<option value="'.$key.'">'.$value.'</option>';
+        }
+      } else{
+        if ($key == 10){ // default amount of errors per page is 25
+          $out .= '<option  selected="selected" value="'.$key.'">'.$value.'</option>';
+        }
+        else{
+          $out .= '<option value="'.$key.'">'.$value.'</option>';
+        }
+      }
+    }
+    $out .= '</select>
+    </div>';
+    $out .= '<div class="form-group">
       <label for="mh_compilers"> Compilers </label>
       <input type="text" class="form-control" id="mh_compilers" placeholder="Enter Compilers (comma separated)" ' . $err_fields['compilers'] . '>
       <p class="help-block">Leave empty to select all compilers </p>
@@ -552,16 +612,57 @@ function oaff_features_common_errors() {
   if (!isset($_GET['page']) == "") {
     $pagen = (int)$_GET['page'];  
   }
-  $nerrors = count($errors);
-  $errperpage = 10; // number of error per page
   $start = ($pagen - 1) * $errperpage;
   $finish = $nerrors;
   if ($finish - $start > $errperpage) {
     $finish = $start + $errperpage;
   }
-  $npage = floor($nerrors / $errperpage);
-  if ($nerrors % $errperpage != 0) {
-    $npage++;
+  if (isset($_GET['linksppage']) && ($_GET['linksppage'] > 0)){
+    $number_of_links = (int)$_GET['linksppage']; // number of page-links to show
+  } else {
+    $number_of_links = 10; 
+  }
+  // pagination links
+  if ($npage > 1){
+    $out .= '
+    <nav style="display: table;margin: 0 auto;">
+    <ul class="pagination">';
+    $pagelink .= 'page=';
+    if ($pagen - 1 > 0) { // pagen = page number
+      $out .= '<li><a href="'.$pagelink.'1'.'" aria-label="First"><span aria-hidden="false">&laquo;</span></a></li>';
+      $out .= '<li><a href="'.$pagelink.($pagen - 1).'" aria-label="Previous"><span aria-hidden="false">&lt;</span></a></li>';
+    }
+    if ($number_of_links >= $npage){
+      $start_link = 1;
+      $end_link = $npage;
+    } else if (($pagen  - floor($number_of_links/2) < 1) && ($pagen + floor($number_of_links/2) <= $npage)){
+      $start_link = 1;
+      $end_link = $number_of_links;
+    } else if (($pagen  - floor($number_of_links/2) >= 1) && ($pagen + floor($number_of_links/2) > $npage)){
+      $end_link = $npage;
+      $start_link = $npage - $number_of_links + 1;
+    } else {
+      $start_link = $pagen - floor($number_of_links/2);
+      $end_link = $pagen + floor($number_of_links/2);
+      if ($number_of_links % 2 == 0){
+        $end_link--;
+      }
+    }
+    for ($j = $start_link; $j <= $end_link; $j++) {
+      if ($j == $pagen) {
+        $out .= '<li class="active"><a href="'.$pagelink.$j.'">'.$j.'<span class="sr-only">(current)</span></a></li>';
+      } else {
+        $out .= '<li><a href="'.$pagelink.$j.'">'.$j.'<span class="sr-only">(current)</span></a></li>';
+      }
+    }
+
+    if ($pagen < $npage) { //npage is total amount of pages
+      $out .= '<li><a href="'.$pagelink.($pagen + 1).'" aria-label="Previous"><span aria-hidden="true">&gt;</span></a></li>';
+      $out .= '<li><a href="'.$pagelink.$npage.'" aria-label="Last"><span aria-hidden="true">&raquo;</span></a></li>';
+    }
+    $out .= '</ul>
+    </nav>';
+    $out .= '</div>'; 
   }
   //starting error list
   $i = 0;
@@ -617,33 +718,46 @@ function oaff_features_common_errors() {
     $i += 1;
   }
   // pagination links
-  $out .= '
-  <nav style="display: table;margin: 0 auto;">
-  <ul class="pagination">';
-  $pagelink .= 'page=';
-  if ($pagen - 1 > 0) {
-    $out .= '<li><a href="'.$pagelink.($pagen - 1).'" aria-label="Previous"><span aria-hidden="false">&laquo;</span></a></li>';
-  } else {
-    $out .= '<li class="disabled"><a href="#" aria-label="Previous"><span aria-hidden="false">&laquo;</span></a></li>';
-  }
-
-  for ($j = 1; $j <= $npage; $j++) {
-    if ($j == $pagen) {
-      $out .= '<li class="active"><a href="'.$pagelink.$j.'">'.$j.'<span class="sr-only">(current)</span></a></li>';
-    } else {
-      $out .= '<li><a href="'.$pagelink.$j.'">'.$j.'<span class="sr-only">(current)</span></a></li>';
+  if ($npage > 1){
+    $out .= '
+    <nav style="display: table;margin: 0 auto;">
+    <ul class="pagination">';
+    if ($pagen - 1 > 0) { // pagen = page number
+      $out .= '<li><a href="'.$pagelink.'1'.'" aria-label="First"><span aria-hidden="false">&laquo;</span></a></li>';
+      $out .= '<li><a href="'.$pagelink.($pagen - 1).'" aria-label="Previous"><span aria-hidden="false">&lt;</span></a></li>';
     }
-  }
+    if ($number_of_links >= $npage){
+      $start_link = 1; // where the for-loop will start
+      $end_link = $npage; // where the for-loop will end
+    } else if (($pagen  - floor($number_of_links/2) < 1) && ($pagen + floor($number_of_links/2) <= $npage)){
+      $start_link = 1;
+      $end_link = $number_of_links;
+    } else if (($pagen  - floor($number_of_links/2) >= 1) && ($pagen + floor($number_of_links/2) > $npage)){
+      $end_link = $npage;
+      $start_link = $npage - $number_of_links + 1;
+    } else {
+      $start_link = $pagen - floor($number_of_links/2);
+      $end_link = $pagen + floor($number_of_links/2);
+      if ($number_of_links % 2 == 0){
+        $end_link--;
+      }
+    }
+    for ($j = $start_link; $j <= $end_link; $j++) {
+      if ($j == $pagen) {
+        $out .= '<li class="active"><a href="'.$pagelink.$j.'">'.$j.'<span class="sr-only">(current)</span></a></li>';
+      } else {
+        $out .= '<li><a href="'.$pagelink.$j.'">'.$j.'<span class="sr-only">(current)</span></a></li>';
+      }
+    }
 
-  if ($pagen < $npage) {
-    $out .= '<li><a href="'.$pagelink.($pagen + 1).'" aria-label="Previous"><span aria-hidden="true">&raquo;</span></a></li>';
-  } else {
-    $out .= '<li class="disabled"><a href="#" aria-label="Previous"><span aria-hidden="true">&raquo;</span></a></li>';
+    if ($pagen < $npage) { //npage is total amount of pages
+      $out .= '<li><a href="'.$pagelink.($pagen + 1).'" aria-label="Previous"><span aria-hidden="true">&gt;</span></a></li>';
+      $out .= '<li><a href="'.$pagelink.$npage.'" aria-label="Last"><span aria-hidden="true">&raquo;</span></a></li>';
+    }
+    $out .= '</ul>
+    </nav>';
+    $out .= '</div>'; 
   }
-  $out .= '</ul>
-  </nav>';
-  $out .= '</div>'; 
-
   return $out;
 }
 
