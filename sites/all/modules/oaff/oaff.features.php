@@ -23,12 +23,6 @@ function oaff_features_menu(& $items) {
     'weight' => 15,
     'plid' => $oaff_config['menus']['libs']['mlid'],
   );
-  $items['mh/recrawl-error'] = array(
-    'title' => "Recrawl Error",
-    'page callback' => 'oaff_features_recrawl_errors',
-    'access callback' => 'oaff_admin_access',
-    'type' => MENU_CALLBACK,
-  );
   $items['mh/add-document'] = array(
     'title' => "Add Document",
     'page callback' => 'oaff_features_add_doc',
@@ -294,6 +288,9 @@ function oaff_features_add_doc_callback($form, &$form_state) {
 
 //show common errors
 function oaff_features_common_errors() {
+  if (isset($_GET['eid'])){
+    oaff_features_recrawl_errors();
+  }
   // query for database
   $query = db_select('oaff_errors', 'e')
              ->fields('e', array('eid', 'nid', 'type', 'compiler', 'mh_group', 'mh_archive', 'short_msg'));
@@ -622,6 +619,7 @@ function oaff_features_common_errors() {
   } else {
     $number_of_links = 10; 
   }
+  $pagelink_copy = $pagelink; //used in the error recrawling part
   // pagination links
   if ($npage > 1){
     $out .= '
@@ -666,6 +664,9 @@ function oaff_features_common_errors() {
   }
   //starting error list
   $i = 0;
+  if (isset($_GET['page'])){
+    $pagelink_copy .= 'page='.$_GET['page'].'&';
+  }
   for ($j = $start; $j < $finish; $j++) {
     $error = $errors[$j];
     $out .= '<div class="node-teaser">';
@@ -676,7 +677,7 @@ function oaff_features_common_errors() {
     $out .= '<li><a style="cursor:pointer;" onclick="if (jQuery(this).html() == \'Show All\') {jQuery(this).html(\'Hide All\')} else {jQuery(this).html(\'Show All\')}; jQuery(\'#oaff_error_log' . $i . '\' ).toggle( \'fold\' );" >Show All</a> </li>';
     if (user_access("administer mathhub")) {
       $eid = $error['eid'];
-      $out .= '<a href="/mh/recrawl-error?eid=' . $eid . '" class="btn btn-primary btn-xs" data-toggle="tooltip" data-placement="left" title="Recrawl errors"> <span class="glyphicon glyphicon-refresh"> </span></a> ';      
+      $out .= '<a href="'.$pagelink_copy.'eid=' . $eid . '" class="btn btn-primary btn-xs" data-toggle="tooltip" data-placement="left" title="Recrawl errors"> <span class="glyphicon glyphicon-refresh"> </span></a> ';
     }
 
     $out .= '<div id="oaff_error_log' . $i . '" style="display: none;"><ul>';
@@ -857,7 +858,6 @@ function oaff_features_recrawl_errors() {
     }
     $count = count($rerun_nids);
     drupal_set_message("Re-crawled errors in $count nodes.");    
-    drupal_goto('mh/common-errors');
   } else {
     drupal_set_message("No error given (to recrawl)", "warning");
   }
