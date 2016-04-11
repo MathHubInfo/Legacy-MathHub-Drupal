@@ -1,0 +1,14 @@
+<?php
+/**
+ * @file
+ * OpenID Connect GitLab module for mathhub.
+ */
+
+/**
+ * Implements hook_ctools_plugin_directory().
+ */
+function openid_connect_gitlab_ctools_plugin_directory($owner, $plugin_type) {
+  if ($owner == 'openid_connect') {
+    return 'plugins/' . $plugin_type;
+  }
+}
