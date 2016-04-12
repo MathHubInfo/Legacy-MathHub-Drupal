@@ -517,8 +517,8 @@ function oaff_admin_lmh_update() {
 }
 
 function oaff_admin_libs_update() {
-  $git_log = shell_exec('lmh setup --update sTeX MMT 2>&1');
-  oaff_log("OAFF.ADMIN", "`lmh setup --update sTeX MMT 2>&1` returned: <pre>$git_log</pre>");
+  $git_log = shell_exec('lmh setup --update sTeX MMT LaTeXMLsTeX 2>&1');
+  oaff_log("OAFF.ADMIN", "`lmh setup --update sTeX MMT LaTeXMLsTeX` returned: <pre>$git_log</pre>");
   drupal_set_message('Success');
   return '';
 }
