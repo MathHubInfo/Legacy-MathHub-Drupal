@@ -333,24 +333,31 @@ function oaff_admin_administrate() {
   $mmt_url = variable_get("mmt_config")['mmturl'];
   $out  = '<p>This page collects functionalities related to MathHub administration and maintenance</p>';
   $out .= '<h4>Complex Workflows</h4>';
-  $out .= '<table class="table"><tbody>';
+  $out .= '<table class="table table-striped"><tbody>';
   $out .= '<tr><td><button onclick="window.location = \'/mh/smart-update\'" class="btn btn-primary btn-xs"> Update and rebuild </button></td>';
   $out .= '<td>Updated from GitLab and rebuild what\'s needed </td></tr>';
   $out .= '</tbody></table>';
   $out .= '<h4>Atomic/Fine-Grained Commands</h4>';
-  $out .= '<table class="table"><tbody>';
-  $out .= '<tr><td><button onclick="window.location = \'/sites/all/themes/bootstrap_docker/update.php\'" class="btn btn-primary btn-xs"> bootstrap Update </button></td>';
-  $out .= '<td>Update local bootstrap copies needed for "Offline dev mode"</td></tr>';
-  $out .= '<tr><td><button onclick="window.location = \'/mh/lmh-update\'" class="btn btn-primary btn-xs"> Lmh Update </button></td>';
+  $out .= '<h5> Localmh (manage content data and libraries) </h5>';
+  $out .= '<table class="table table-striped"><tbody>';
+  $out .= '<tr><td><button onclick="window.location = \'/mh/lmh-update\'" class="btn btn-primary btn-xs"> Pull Content </button></td>';
   $out .= '<td>Get the latest version of the source documents</td></tr>';
   $out .= '<tr><td><button onclick="window.location = \'/mh/libs-update\'" class="btn btn-primary btn-xs"> Update Libs </button></td>';
   $out .= '<td>Update System Software (sTeX, MMT, LaTeXML, ...)</td></tr>';
   $out .= '<tr><td><button onclick="window.location = \'/mh/touch-files\'" class="btn btn-primary btn-xs"> Touch Files </button></td>';
   $out .= '<td>Touch Source Files (useful in case of compiler update to mark them as modified for crawler)</td></tr>';
+  $out .= '</tbody></table>';
+  $out .= '<h5> MathHub (manage web frontend and sync with filesystem) </h5>';
+  $out .= '<table class="table table-striped"><tbody>';
   $out .= '<tr><td><button onclick="window.location = \'/mh/sync-nodes\'" class="btn btn-primary btn-xs"> Synchronize Nodes </button></td>';
   $out .= '<td>Synchronize with disk (create/delete nodes for new/removed files)</td></tr>';
   $out .= '<tr><td><button onclick="window.location = \'/mh/crawl-nodes\'" class="btn btn-primary btn-xs"> Crawl Nodes </button></td>';
   $out .= '<td>Crawl to update status info (errors logs) for nodes</td></tr>';
+  $out .= '<tr><td><button onclick="window.location = \'/sites/all/themes/bootstrap_docker/update.php\'" class="btn btn-primary btn-xs"> Bootstrap Update </button></td>';
+  $out .= '<td>Update local bootstrap copies needed for "Offline dev mode"</td></tr>';
+  $out .= '</tbody></table>';
+  $out .= '<h5> MMT (manage the semantic database and build system) </h5>';
+  $out .= '<table class="table table-striped"><tbody>';
   $out .= '<tr><td><button onclick="window.location = \'/mh/restart-mmt\'" class="btn btn-primary btn-xs"> (Re)start MMT </button></td>';
   $out .= '<td> Restart the background MMT server if not already running (check <a target="_blank" href="' . $mmt_url . '">here</a>)</td></tr>';
   $out .= '<tr><td><button onclick="window.location = \'/mh/generate-glossary\'" class="btn btn-primary btn-xs"> Regenerate </button></td>';
@@ -503,14 +510,14 @@ function oaff_admin_restart_mmt() {
 }
 
 function oaff_admin_lmh_update() {
-  $lmh_status = shell_exec('lmh update --all 2>&1');
-  oaff_log("OAFF.ADMIN", "`lmh update --all` returned: <pre>$lmh_status</pre>");
+  $lmh_status = shell_exec('lmh pull --all 2>&1');
+  oaff_log("OAFF.ADMIN", "`lmh pull --all` returned: <pre>$lmh_status</pre>");
   drupal_set_message('Success');
   return '';
 }
 
 function oaff_admin_libs_update() {
-  $git_log = shell_exec('cd /var/data/localmh/ext/sTeX/ && git pull 2>&1 && cd /var/data/localmh/ext/MMT/ && svn up 2>&1');
+  $git_log = shell_exec('lmh setup --update sTeX MMT 2>&1');
   oaff_log("OAFF.ADMIN", "`git pull` returned: <pre>$git_log</pre>");
   drupal_set_message('Success');
   return '';
