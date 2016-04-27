@@ -25,6 +25,7 @@ function oaff_crawler_sync_nodes() {
   $oaff_config['crawler']['new_nodes'] = 0;
   $oaff_config['crawler']['deleted_nodes'] = 0;
   variable_set('oaff_config', $oaff_config);
+  oaff_crawler_sync_config_file();
   oaff_crawler_sync_text_formats();
   oaff_crawler_sync_help_docs(); //separate treatment for documentation in meta/inf (not standard mathhub content)
   oaff_crawler_sync_content();
@@ -370,7 +371,8 @@ function oaff_crawler_sync_config_file() {
       //comment line ignoring
     } else {
       $comps = explode(" ",$line);
-      if ($section == "archives") {
+      //TODO for now generated archives treated the same by MathHub (only lmh & MMT have different behavior)
+      if ($section == "archives" || $section == "generated_archives") {
         if (count($comps) == 2) {
           $segs = explode("/", $comps[0]);
           if (count($segs) == 2) {
