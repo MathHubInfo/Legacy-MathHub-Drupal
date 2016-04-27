@@ -349,6 +349,8 @@ function oaff_admin_administrate() {
   $out .= '</tbody></table>';
   $out .= '<h5> MathHub (manage web frontend and sync with filesystem) </h5>';
   $out .= '<table class="table table-striped"><tbody>';
+  $out .= '<tr><td><button onclick="window.location = \'/mh/sync-conf\'" class="btn btn-primary btn-xs"> Synchronize Configuration </button></td>';
+  $out .= '<td>Update configuration by reloading the config file from disk </td></tr>';
   $out .= '<tr><td><button onclick="window.location = \'/mh/sync-nodes\'" class="btn btn-primary btn-xs"> Synchronize Nodes </button></td>';
   $out .= '<td>Synchronize with disk (create/delete nodes for new/removed files)</td></tr>';
   $out .= '<tr><td><button onclick="window.location = \'/mh/crawl-nodes\'" class="btn btn-primary btn-xs"> Crawl Nodes </button></td>';

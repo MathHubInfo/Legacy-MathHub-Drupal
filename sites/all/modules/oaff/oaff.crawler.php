@@ -11,6 +11,12 @@ require_once 'oaff.base.php';
 define("MAX_NODES_PER_SYNC", 500);
 
 function oaff_crawler_menu(& $items) {
+  $items['mh/sync-conf'] = array(
+    'title' => "Sync Config",
+    'page callback' => 'oaff_crawler_sync_config_file',
+    'access callback' => true, //'oaff_admin_access',
+    'menu_name' => MENU_CALLBACK
+  );
   $items['mh/sync-nodes'] = array(
     'title' => "Sync Nodes",
     'page callback' => 'oaff_crawler_sync_nodes',
@@ -25,7 +31,6 @@ function oaff_crawler_sync_nodes() {
   $oaff_config['crawler']['new_nodes'] = 0;
   $oaff_config['crawler']['deleted_nodes'] = 0;
   variable_set('oaff_config', $oaff_config);
-  oaff_crawler_sync_config_file();
   oaff_crawler_sync_text_formats();
   oaff_crawler_sync_help_docs(); //separate treatment for documentation in meta/inf (not standard mathhub content)
   oaff_crawler_sync_content();
@@ -414,4 +419,6 @@ function oaff_crawler_sync_config_file() {
   }
   $oaff_config['config'] = $config;
   variable_set('oaff_config', $oaff_config);
+  drupal_set_message("Reloaded configuration from file `" . $config_file . "`");
+  return "";
 }
