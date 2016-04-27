@@ -1,36 +1,15 @@
 <?php
 
-define("PLANETARY_REPO_MAX_FILE_SIZE", 5000000);
+define("PLANETARY_REPO_MAX_FILE_SIZE", 2000000);
 
 /**
- * This function is to replace PHP's extremely buggy realpath().
+ * This function wraps around PHP's realpath() to allow
+ * future flexibility for a different implementation
  * @param string The original path, can be relative etc.
  * @return string The resolved path, it might not exist.
  */
 function truepath($path) {
-    // whether $path is unix or not
-    $unipath = strlen($path) == 0 || $path{0} != '/';
-    // attempts to detect if path is relative in which case, add cwd
-    if (strpos($path, ':') === false && $unipath)
-        $path = getcwd().DIRECTORY_SEPARATOR.$path;
-    // resolve path parts (single dot, double dot and double delimiters)
-    $path = str_replace(array('/', '\\'), DIRECTORY_SEPARATOR, $path);
-    $parts = array_filter(explode(DIRECTORY_SEPARATOR, $path), 'strlen');
-    $absolutes = array();
-    foreach ($parts as $part) {
-        if ('.'  == $part) continue;
-        if ('..' == $part) {
-            array_pop($absolutes);
-        } else {
-            $absolutes[] = $part;
-        }
-    }
-    $path = implode(DIRECTORY_SEPARATOR, $absolutes);
-    // resolve any symlinks
-    if (file_exists($path) && linkinfo($path) > 0)$path = readlink($path);
-    // put initial separator that could have been lost
-    $path = !$unipath ? '/'.$path : $path;
-    return $path;
+  return realpath($path);
 }
 
 /**
@@ -76,7 +55,13 @@ function planetary_repo_local_save($path, $content) {
 function planetary_repo_local_load($path) {
   $full_path = planetary_repo_local_access_path($path);
   $f = fopen($full_path, "r");
-  $content = fread($f, PLANETARY_REPO_MAX_FILE_SIZE);
+  $fsize = filesize($full_path);
+  if ($fsize < PLANETARY_REPO_MAX_FILE_SIZE) {
+    $content = fread($f, $fsize);
+  } else {
+    drupal_set_message("Not loading `$path`, file too large.", 'error');
+    $content = "";
+  }
   fclose($f);
   return $content;
 }
