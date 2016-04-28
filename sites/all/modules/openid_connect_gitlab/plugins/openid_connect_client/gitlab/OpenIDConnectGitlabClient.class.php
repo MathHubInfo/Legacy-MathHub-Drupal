@@ -15,11 +15,9 @@ class OpenIDConnectGitlabClient extends OpenIDConnectClientBase {
    * @var array
    */
   protected $userInfoMapping = array(
-    'realname' => 'name',
     'sub' => 'id',
     'email' => 'email',
     'preferred_username' => 'username',
-    'website' => 'website_url',
     );
 
   /**
@@ -82,6 +80,7 @@ class OpenIDConnectGitlabClient extends OpenIDConnectClientBase {
       return array(
         // Fake the ID token.
         'id_token' => NULL,
+        'refresh_token' => $response_data['refresh_token'],
         'access_token' => $response_data['access_token'],
         );
     }
