@@ -238,7 +238,9 @@ function openid_connect_save_userinfo($account, $userinfo) {
   if (isset($userinfo['name'])) {
     $account->data['oidc_name'] = $userinfo['name'];
   }
-  $account->data['gitlab_refresh_token'] = $userinfo['refresh_token'];
+  if (isset($userinfo['refresh_token'])) {
+    $account->data['gitlab_refresh_token'] = $userinfo['refresh_token'];
+  }
 
   $account_wrapper->save();
 
@@ -814,9 +816,7 @@ function openid_connect_complete_authorization($client, $tokens, &$destination) 
       return FALSE;
     }
 
-    if(empty($tokens['refresh_token'])){
-      $userinfo['refresh_token']='';
-    } else {
+    if(!empty($tokens['refresh_token'])){
       $userinfo['refresh_token']=$tokens['refresh_token'];
     }
 

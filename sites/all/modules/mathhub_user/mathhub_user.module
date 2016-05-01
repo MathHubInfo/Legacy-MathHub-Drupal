@@ -50,12 +50,12 @@ function mathhub_user_help($path, $arg) {
       return $output;
       break;
   }
-} 
+}
 
 /**
  * Implements hook_menu().
  *
- * The function mathhub_user_menu implements the hook_menu and allows therefore 
+ * The function mathhub_user_menu implements the hook_menu and allows therefore
  * to display the configuration menu.
  */
 function mathhub_user_menu() {
@@ -68,6 +68,15 @@ function mathhub_user_menu() {
     'access arguments' => array('access administration pages'),
     'type' => MENU_NORMAL_ITEM,
   );
+  //page callback to interact with gitlab
+  $items['user/gitlab'] = array(
+    'title' => 'Mathhub User Gitlab repo update',
+    // 'description' => 'Configuration for Mathhub User module.',
+    'page callback' => 'mathhub_user_gitlab',
+    'access arguments' => array('access content'),
+    // 'type' => MENU_CALLBACK,
+  );
+
   return $items;
 }
 
@@ -90,13 +99,13 @@ function mathhub_user_form($form, &$form_state) {
 /**
  * Implements hook_user_view().
  *
- * The function mathhub_user_user_view implements the hook_user_view and 
+ * The function mathhub_user_user_view implements the hook_user_view and
  * therefore shows the added fields on the user page.
  */
 function mathhub_user_user_view($account, $viewmode) {
   $account->content['about']['email'] = array(
     '#type' => 'user_profile_item',
-    '#title' => t('Email'),
+    '#title' => t('Email:'),
     '#markup' => check_url($account->mail),
   );
   if(!empty($account->data['languages'])) {
@@ -106,13 +115,35 @@ function mathhub_user_user_view($account, $viewmode) {
       '#markup' => implode(', ', array_intersect_key(getLanguages(), array_flip($account->data['languages']))),
     );
   }
+  $account->content['about']['gitlab_refresh'] = array(
+    '#type' => 'user_profile_item',
+    '#title' => t('Gitlab Refresh Token:'),
+    '#markup' => $account->data['gitlab_refresh_token'],
+  );
+  if(!empty($account->data['gitlab_repos'])){
+    $repos=array();
+    foreach ($account->data['gitlab_repos'] as $key) {
+      array_push($repos,l($key[0],$key[1]));
+    }
+    $account->content['about']['gitlab_repos'] = array(
+      '#type' => 'user_profile_item',
+      '#title' => t('Gitlab Repositories you have access to:'),
+      '#markup' => implode(', ',$repos),
+    );
+  } else {//put button here to updated repos from
+    $account->content['about']['gitlab_repos'] = array(
+      '#type' => 'user_profile_item',
+      '#title' => t('Gitlab Repositories you have access to:'),
+      '#markup' => t('You don\'t have access to any gitlab repos!'),
+    );
+  }
 }
 
 /**
  * Implements hook_form_user_register_form_alter().
  *
- * The function mathhub_user_form_user_register_form_alter implements the 
- * hook_form_user_register_form_alter and allows therefore to add our extra 
+ * The function mathhub_user_form_user_register_form_alter implements the
+ * hook_form_user_register_form_alter and allows therefore to add our extra
  * user fields to the user registration form.
  */
 function mathhub_user_form_user_register_form_alter(&$form, &$form_state, $form_id) {
@@ -127,21 +158,21 @@ function mathhub_user_form_user_register_form_alter(&$form, &$form_state, $form_
 /**
  * Implements hook_form_user_profile_form_alter().
  *
- * The function mathhub_user_form_user_profile_form_alter implements the 
- * hook_form_user_profile_form_alter and allows therefore to add our extra 
+ * The function mathhub_user_form_user_profile_form_alter implements the
+ * hook_form_user_profile_form_alter and allows therefore to add our extra
  * user fields to the user profile edit form.
  */
 function mathhub_user_form_user_profile_form_alter(&$form, &$form_state, $form_id) {
   $form['#validate'][] = 'mathhub_user_edit_user_form_validate';
-  $form['#submit'][] = 'mathhub_user_user_edit_submit';
+  // $form['#submit'][] = 'mathhub_user_user_edit_submit';
 
   $form['account']['name']['#description'] = 'Punctuation is not allowed except for periods, hyphens, apostrophes, and underscores.';
   $form['account']['pass']['#description'] = 'Provide a password for the new account in both fields. Minimum length is 8 characters.';
 
 
   $form["account"]["languages"] = array(
-    '#type' => 'select', 
-    '#title' => t('Select your languages.'), 
+    '#type' => 'select',
+    '#title' => t('Select your languages.'),
     '#description' => t('Select your languages.'),
     '#required' => false,
     '#weight' => 6,
@@ -195,60 +226,7 @@ function mathhub_user_register_user_form_validate($form, &$form_state) {
   return;
 }
 
-/**
- * Function mathhub_user_user_register_submit
- *
- * This function process the registration to a user. Used by 
- * hook_form_user_register_form_alter. 
- */
-function mathhub_user_user_register_submit(&$form, &$form_state) {
-	//empty for now
-	if (variable_get('mathhub_user_log_messages') === 1) {
-      watchdog('mathhub_user',
-               'Created MathHub User succesfully.',
-               array(),
-               WATCHDOG_NOTICE,
-               '');
-    }
-}
 
-/**
- * Function mathhub_user_user_edit_submit
- *
- * This function process the change to a user. Used by 
- * mathhub_user_form_user_profile_form_alter. 
- */
-function mathhub_user_user_edit_submit(&$form, &$form_state) {
-    if (variable_get('mathhub_user_log_messages') === 1) {
-      watchdog('mathhub_user',
-               'Updated MathHub User succesfully.',
-               array(),
-               WATCHDOG_NOTICE,
-               '');
-    }
-    return;
-}
-
-
-/**
- * Implements hook_user_delete().
- *
- * The function mathhub_user_user_delete deletes the specified GitLab account.
- *
- * @param account
- *   The account that is being deleted from gitlab  
- */
-function mathhub_user_user_delete($account) {
-    // we performed the request without errors. 
-    if (variable_get('mathhub_user_log_messages') === 1) {
-      watchdog('mathhub_user',
-               'Deleted GitHub User succesfully.',
-               array(),
-               WATCHDOG_NOTICE,
-               '');
-    }
-    return;
-}
 
 /**
  * Implement hook_user_presave().
@@ -261,4 +239,109 @@ function mathhub_user_user_presave(&$edit, $account, $category) {
   } else {
     $edit['data']['languages'] = array('en');
   }
+}
+
+
+function mathhub_user_gitlab_access_token(){
+  global $user;
+
+  /*
+  the anwers for the first POST will be a JSON like this:
+  {
+  "access_token": "8fff4cddb48b52f3cf198222912d2911d007b0c05a0eddb117bbf6a64b9ebadc",
+  "token_type": "bearer",
+  "refresh_token": "c312772f2ae0d6b80c310f13a3de8c5040ef9d6c9f9094384f3185986a946f50",
+  "scope": "api",
+  "created_at": 1461923671
+  }
+
+  the access token will be returned
+
+  but the new refresh token from the answer MUST be SAVED in in the USER object($user->data['gitlab_refresh_token']) and OVERWRITE the old refresh token
+  because the old refresh token is disabled after ONE use
+  */
+
+  $post_data = array(
+    'refresh_token' => $user->data['gitlab_refresh_token'],
+    'grant_type' => 'refresh_token',
+    );
+  $request_options = array(
+    'method' => 'POST',
+    'data' => drupal_http_build_query($post_data),
+    );
+
+
+  $response = drupal_http_request("https://gl.mathhub.info/oauth/token", $request_options);
+
+  if (!isset($response->error) && $response->code == 200) {
+    $response_data = drupal_json_decode($response->data);
+    $existingUser = user_load($user->uid);
+    $existingUser->data['gitlab_refresh_token'] = $response_data['refresh_token'];
+    user_save((object) array('uid' => $existingUser->uid), (array) $existingUser);
+    return $response_data['access_token'];
+  }
+  else {
+    watchdog('openid_connect',print_r($response,1),array(), WATCHDOG_ERROR);
+    return FALSE;
+  }
+}
+
+
+function mathhub_user_gitlab_api_call($access_token){
+  global $user;
+
+  /*
+  this function makes the api call to gitlab using the the access_token
+  this token can be obtained in any way, most likely with mathhub_user_gitlab_access_token()
+  it returns the answer_array it gets
+  */
+
+
+  $request_options = array(
+    'method' => 'GET',
+    'timeout' => 15,
+    );
+
+
+  $u="https://gl.mathhub.info/api/v3/projects"."?access_token=".$access_token;
+  $response = drupal_http_request($u, $request_options);
+
+
+  if (!isset($response->error) && $response->code == 200) {
+    $data = drupal_json_decode($response->data);
+    return $data;
+  } else {
+    watchdog('openid_connect',print_r($response,1),array(), WATCHDOG_ERROR);
+    return FALSE;
+  }
+
+}
+
+function mathhub_user_gitlab()
+{
+  global $user;
+  print("updating Gitlab repos:</br>\n");
+
+  $access=mathhub_user_gitlab_access_token();
+  if ($access != FALSE) {
+    $repos=mathhub_user_gitlab_api_call($access);
+
+    if ($repos != FALSE){
+      $repo_names=array();
+      foreach ($repos as $key) {
+        array_push($repo_names,array($key['name'],$key['web_url']));
+      }
+      //update repos
+      $existingUser = user_load($user->uid);
+      $existingUser->data['gitlab_repos'] = $repo_names;
+      user_save((object) array('uid' => $existingUser->uid), (array) $existingUser);
+      print("Successful Update!");
+
+    } else {
+      print("Couldn't finish API call!");
+    }
+  } else {
+    print("Couldn't retrieve access_token!");
+  }
+
 }
