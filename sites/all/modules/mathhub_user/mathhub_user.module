@@ -71,10 +71,10 @@ function mathhub_user_menu() {
   //page callback to interact with gitlab
   $items['user/gitlab'] = array(
     'title' => 'Mathhub User Gitlab repo update',
-    // 'description' => 'Configuration for Mathhub User module.',
+    'description' => 'Configuration for Mathhub User module.',
     'page callback' => 'mathhub_user_gitlab',
     'access arguments' => array('access content'),
-    // 'type' => MENU_CALLBACK,
+    'type' => MENU_CALLBACK,
   );
 
   return $items;
@@ -103,11 +103,8 @@ function mathhub_user_form($form, &$form_state) {
  * therefore shows the added fields on the user page.
  */
 function mathhub_user_user_view($account, $viewmode) {
-  $account->content['about']['email'] = array(
-    '#type' => 'user_profile_item',
-    '#title' => t('Email:'),
-    '#markup' => check_url($account->mail),
-  );
+  global $user;
+
   if(!empty($account->data['languages'])) {
     $account->content['about']['languages_languages'] = array(
       '#type' => 'user_profile_item',
@@ -115,12 +112,21 @@ function mathhub_user_user_view($account, $viewmode) {
       '#markup' => implode(', ', array_intersect_key(getLanguages(), array_flip($account->data['languages']))),
     );
   }
-  $account->content['about']['gitlab_refresh'] = array(
-    '#type' => 'user_profile_item',
-    '#title' => t('Gitlab Refresh Token:'),
-    '#markup' => $account->data['gitlab_refresh_token'],
-  );
-  if(!empty($account->data['gitlab_repos'])){
+  if(isset($user->roles['3']) || $user->uid==$account->uid){
+    if(isset($account->data['gitlab_refresh_token'])){
+      $account->content['about']['gitlab_refresh'] = array(
+        '#type' => 'user_profile_item',
+        '#title' => t('Gitlab Refresh Token:'),
+        '#markup' => $account->data['gitlab_refresh_token'],
+      );
+      // $account->content['about']['gitlab_update_btn'] = array(
+      //   '#type' => 'user_profile_item',
+      //   '#title' => t('Update Gitlab Data(Repo/Admin):'),
+      //   '#markup' => '<button class="btn btn-primary btn-xs" onclick="jQuery.ajax({type: \'POST\',url: \'user/gitlab\',success: function(){jQuery().delay(500); window.location.reload();}});">Update</button>',
+      // );
+    }
+  
+}  if(!empty($account->data['gitlab_repos'])){
     $repos=array();
     foreach ($account->data['gitlab_repos'] as $key) {
       array_push($repos,l($key[0],$key[1]));
@@ -128,13 +134,13 @@ function mathhub_user_user_view($account, $viewmode) {
     $account->content['about']['gitlab_repos'] = array(
       '#type' => 'user_profile_item',
       '#title' => t('Gitlab Repositories you have access to:'),
-      '#markup' => implode(', ',$repos),
+      '#markup' => '<button class="btn btn-primary btn-xs" onclick="jQuery.ajax({type: \'POST\',url: \'user/gitlab\',success: function(){jQuery().delay(500); window.location.reload();}});">Update!</button>'.implode(', ',$repos),
     );
   } else {//put button here to updated repos from
     $account->content['about']['gitlab_repos'] = array(
       '#type' => 'user_profile_item',
       '#title' => t('Gitlab Repositories you have access to:'),
-      '#markup' => t('You don\'t have access to any gitlab repos!'),
+      '#markup' => '<button class="btn btn-primary btn-xs" onclick="jQuery.ajax({type: \'POST\',url: \'user/gitlab\',success: function(){jQuery().delay(500); window.location.reload();}});">Update!</button>'.'You don\'t have access to any gitlab repos!',
     );
   }
 }
@@ -147,8 +153,8 @@ function mathhub_user_user_view($account, $viewmode) {
  * user fields to the user registration form.
  */
 function mathhub_user_form_user_register_form_alter(&$form, &$form_state, $form_id) {
-  $form['#validate'][] = 'mathhub_user_register_user_form_validate';
-  $form['#submit'][] = 'mathhub_user_user_register_submit';
+  // $form['#validate'][] = 'mathhub_user_register_user_form_validate';
+  // $form['#submit'][] = 'mathhub_user_user_register_submit';
 
   $form['account']['name']['#description'] = 'Punctuation is not allowed except for periods, hyphens, apostrophes, and underscores.';
   $form['account']['pass']['#description'] = '<div>After registering, your credentials can also be used for accessing the git sources on <a target="_blank" href="https://gl.mathhub.info">gl.mathhub.info</a></div>';
@@ -317,10 +323,10 @@ function mathhub_user_gitlab_api_call($access_token){
 
 }
 
-function mathhub_user_gitlab()
+function mathhub_user_gitlab($verbose=true)
 {
   global $user;
-  print("updating Gitlab repos:</br>\n");
+  if($verbose){print("updating Gitlab repos:</br>\n");}
 
   $access=mathhub_user_gitlab_access_token();
   if ($access != FALSE) {
@@ -335,13 +341,13 @@ function mathhub_user_gitlab()
       $existingUser = user_load($user->uid);
       $existingUser->data['gitlab_repos'] = $repo_names;
       user_save((object) array('uid' => $existingUser->uid), (array) $existingUser);
-      print("Successful Update!");
+      if($verbose){print("Successful Update!");}
 
     } else {
-      print("Couldn't finish API call!");
+      if($verbose){print("Couldn't finish API call!");}
     }
   } else {
-    print("Couldn't retrieve access_token!");
+    if($verbose){print("Couldn't retrieve access_token!");}
   }
 
 }
