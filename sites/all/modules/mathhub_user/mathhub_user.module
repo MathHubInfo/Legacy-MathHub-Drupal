@@ -293,11 +293,11 @@ function mathhub_user_gitlab_access_token(){
 }
 
 
-function mathhub_user_gitlab_api_call($access_token){
+function mathhub_user_gitlab_api_call_repos($access_token){
   global $user;
 
   /*
-  this function makes the api call to gitlab using the the access_token
+  this function makes the api call to gitlab REPOS API using the the access_token
   this token can be obtained in any way, most likely with mathhub_user_gitlab_access_token()
   it returns the answer_array it gets
   */
@@ -312,6 +312,33 @@ function mathhub_user_gitlab_api_call($access_token){
   $u="https://gl.mathhub.info/api/v3/projects"."?access_token=".$access_token;
   $response = drupal_http_request($u, $request_options);
 
+  if (!isset($response->error) && $response->code == 200) {
+    $data = drupal_json_decode($response->data);
+    return $data;
+  } else {
+    watchdog('openid_connect',print_r($response,1),array(), WATCHDOG_ERROR);
+    return FALSE;
+  }
+}
+
+function mathhub_user_gitlab_api_call_user($access_token){
+  global $user;
+
+  /*
+  this function makes the api call to gitlab USER API using the the access_token
+  this token can be obtained in any way, most likely with mathhub_user_gitlab_access_token()
+  it returns the answer_array it gets
+  */
+
+
+  $request_options = array(
+    'method' => 'GET',
+    'timeout' => 15,
+    );
+
+
+  $u="https://gl.mathhub.info/api/v3/user"."?access_token=".$access_token;
+  $response = drupal_http_request($u, $request_options);
 
   if (!isset($response->error) && $response->code == 200) {
     $data = drupal_json_decode($response->data);
@@ -320,7 +347,6 @@ function mathhub_user_gitlab_api_call($access_token){
     watchdog('openid_connect',print_r($response,1),array(), WATCHDOG_ERROR);
     return FALSE;
   }
-
 }
 
 function mathhub_user_gitlab($verbose=true)
@@ -330,7 +356,9 @@ function mathhub_user_gitlab($verbose=true)
 
   $access=mathhub_user_gitlab_access_token();
   if ($access != FALSE) {
-    $repos=mathhub_user_gitlab_api_call($access);
+    $repos=mathhub_user_gitlab_api_call_repos($access);
+
+
 
     if ($repos != FALSE){
       $repo_names=array();
@@ -344,8 +372,23 @@ function mathhub_user_gitlab($verbose=true)
       if($verbose){print("Successful Update!");}
 
     } else {
-      if($verbose){print("Couldn't finish API call!");}
+      if($verbose){print("Couldn't finish REPO API call!");}
     }
+
+
+    if(isset(variable_get('openid_connect_client_gitlab')['gitlab_admin'])&&variable_get('openid_connect_client_gitlab')['gitlab_admin']==true){
+      $gluser=mathhub_user_gitlab_api_call_user($access);
+      if($gluser != FALSE){
+        if($gluser['is_admin']==true){
+          user_multiple_role_edit(array($user->uid), "add_role", 3);
+        }
+
+      } else {
+        if($verbose){print("Couldn't finish REPO API call!");}
+      }
+    }
+
+
   } else {
     if($verbose){print("Couldn't retrieve access_token!");}
   }

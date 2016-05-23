@@ -25,6 +25,14 @@ class OpenIDConnectGitlabClient extends OpenIDConnectClientBase {
    */
   public function settingsForm() {
     $form = parent::settingsForm();
+
+    $form['gitlab_admin'] = array(
+      '#title' => t('Admin Status'),
+      '#description' => t('If checked, a GitLab Admin will automatically become a MathHub Admin when updating through the User-Profile'),
+      '#type' => 'checkbox',
+      '#default_value' => $this->getSetting('gitlab_admin'),
+    );
+
     return $form;
   }
 
