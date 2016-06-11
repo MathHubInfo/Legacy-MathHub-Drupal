@@ -321,6 +321,62 @@ function mathhub_user_gitlab_api_call_repos($access_token){
   }
 }
 
+function mathhub_user_node_view($node, $view_mode, $langcode){
+  global $user;
+  if($node->type=='oaff_doc'){//check if node is mathhub doc
+    $t=explode(".", $node->title)[0];
+    $weight=1000;
+    // watchdog('node',print_r($node->content,1),array(), WATCHDOG_NOTICE);
+
+    foreach ($user->data['languages'] as $l) {//go through each language the user has set
+
+      // special case chinese
+      if($l=="zh-hant"){
+        $result=db_query("SELECT * FROM {node} WHERE title='".$t.".zht"."'");
+        if ($result->rowCount()<=0) {
+          // watchdog('node_missing',$t.".zht",array(), WATCHDOG_NOTICE);
+          // $frm=oaff_features_add_doc();
+          // $frm['#weight']=$weight;
+          // $weight+=10;
+          // $node->content['translate_zht']=$frm;
+          $node->content['translate_zht']=array(
+            '#title' => "Translate ".$l,
+            '#markup' => "Please translate the node for ".$t." ".l("here","mh/add-document")." to the language ["."zht"."].",
+            '#weight' => $weight,
+          );
+          $weight+=10;
+        }
+      }
+      elseif($l=="zh-hans"){
+        $result=db_query("SELECT * FROM {node} WHERE title='".$t.".zhs"."'");
+        if ($result->rowCount()<=0) {
+          // watchdog('node_missing',$t.".zh",array(), WATCHDOG_NOTICE);
+          $node->content['translate_zhs']=array(
+            '#title' => "Translate ".$l,
+            '#markup' => "Please translate the node for ".$t." ".l("here","mh/add-document")." to the language ["."zhs"."].",
+            '#weight' => $weight,
+          );
+          $weight+=10;
+        }
+      }else{//rest of the languages
+        $result=db_query("SELECT * FROM {node} WHERE title='".$t.".".$l."'");
+        if ($result->rowCount()<=0) {
+          // watchdog('node_missing',$t.".".$l,array(), WATCHDOG_NOTICE);
+          $node->content['translate_'.$l]=array(
+            '#title' => "Translate ".$l,
+            '#markup' => "Please translate the node for ".$t." ".l("here","mh/add-document")." to the language [".$l."].",
+            '#weight' => $weight,
+          );
+          $weight+=10;
+        }
+      }
+
+      // watchdog('node',print_r($node->content,1),array(), WATCHDOG_NOTICE);
+
+    }
+  }
+}
+
 function mathhub_user_gitlab_api_call_user($access_token){
   global $user;
 
@@ -384,7 +440,7 @@ function mathhub_user_gitlab($verbose=true)
         }
 
       } else {
-        if($verbose){print("Couldn't finish REPO API call!");}
+        if($verbose){print("Couldn't finish USER API call!");}
       }
     }
 
