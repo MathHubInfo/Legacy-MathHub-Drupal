@@ -321,12 +321,48 @@ function mathhub_user_gitlab_api_call_repos($access_token){
   }
 }
 
+// function mathhub_user_translation_form() {
+function mathhub_user_translation_form($form, &$form_state, $ti, $ar) {
+  $form = array();
+
+  // $form['#title'] = array('Translate '.$ti.'!');
+
+  $form['archive'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Archive',
+    '#default_value' => $ar,
+    '#required' => true,
+  );
+  $form['title'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Module Name',
+    '#default_value' => $ti,
+    '#required' => true,
+  );
+  $form['body'] = array(
+    '#type' => 'text_format',
+    '#title' => 'Document Body',
+    '#required' => true,
+  );
+
+  $form['submit'] = array(
+    '#type' => 'submit', 
+    '#value' => t('Create Document')
+  );
+  $form['#submit'] = array('oaff_features_add_doc_callback');
+  return $form;
+}
+
+
 function mathhub_user_node_view($node, $view_mode, $langcode){
   global $user;
   if($node->type=='oaff_doc'){//check if node is mathhub doc
     $t=explode(".", $node->title)[0];
     $weight=1000;
-    // watchdog('node',print_r($node->content,1),array(), WATCHDOG_NOTICE);
+    $arch=explode("/", $node->field_external['und'][0]['path'])[0].'/'.explode("/", $node->field_external['und'][0]['path'])[1];
+    // watchdog('node',print_r($node,1),array(), WATCHDOG_NOTICE);
+    // watchdog('node',print_r(variable_get('oaff_config'),1),array(), WATCHDOG_NOTICE);
+    // watchdog('node',print_r($arch,1),array(), WATCHDOG_NOTICE);
 
     foreach ($user->data['languages'] as $l) {//go through each language the user has set
 
@@ -334,39 +370,40 @@ function mathhub_user_node_view($node, $view_mode, $langcode){
       if($l=="zh-hant"){
         $result=db_query("SELECT * FROM {node} WHERE title='".$t.".zht"."'");
         if ($result->rowCount()<=0) {
-          // watchdog('node_missing',$t.".zht",array(), WATCHDOG_NOTICE);
-          // $frm=oaff_features_add_doc();
-          // $frm['#weight']=$weight;
-          // $weight+=10;
-          // $node->content['translate_zht']=$frm;
-          $node->content['translate_zht']=array(
-            '#title' => "Translate ".$l,
-            '#markup' => "Please translate the node for ".$t." ".l("here","mh/add-document")." to the language ["."zht"."].",
-            '#weight' => $weight,
-          );
+          $frm=drupal_get_form('mathhub_user_translation_form',$t.".zht",$arch);
+          $frm['#weight']=$weight;
+          $node->content['translate_zht']=$frm;
+          // $node->content['translate_zht']=array(
+          //   '#title' => "Translate ".$l,
+          //   '#markup' => "Please translate the node for ".$t." ".l("here","mh/add-document")." to the language ["."zht"."].",
+          //   '#weight' => $weight,
+          // );
           $weight+=10;
         }
-      }
-      elseif($l=="zh-hans"){
+      } elseif($l=="zh-hans"){
         $result=db_query("SELECT * FROM {node} WHERE title='".$t.".zhs"."'");
         if ($result->rowCount()<=0) {
-          // watchdog('node_missing',$t.".zh",array(), WATCHDOG_NOTICE);
-          $node->content['translate_zhs']=array(
-            '#title' => "Translate ".$l,
-            '#markup' => "Please translate the node for ".$t." ".l("here","mh/add-document")." to the language ["."zhs"."].",
-            '#weight' => $weight,
-          );
+          $frm=drupal_get_form('mathhub_user_translation_form',$t.".zhs",$arch);
+          $frm['#weight']=$weight;
+          $node->content['translate_zhs']=$frm;
+          // $node->content['translate_zhs']=array(
+          //   '#title' => "Translate ".$l,
+          //   '#markup' => "Please translate the node for ".$t." ".l("here","mh/add-document")." to the language ["."zhs"."].",
+          //   '#weight' => $weight,
+          // );
           $weight+=10;
         }
       }else{//rest of the languages
         $result=db_query("SELECT * FROM {node} WHERE title='".$t.".".$l."'");
         if ($result->rowCount()<=0) {
-          // watchdog('node_missing',$t.".".$l,array(), WATCHDOG_NOTICE);
-          $node->content['translate_'.$l]=array(
-            '#title' => "Translate ".$l,
-            '#markup' => "Please translate the node for ".$t." ".l("here","mh/add-document")." to the language [".$l."].",
-            '#weight' => $weight,
-          );
+          $frm=drupal_get_form('mathhub_user_translation_form',$t.".".$l,$arch);
+          $frm['#weight']=$weight;
+          $node->content['translate_'.$l]=$frm;
+          // $node->content['translate_'.$l]=array(
+          //   '#title' => "Translate ".$l,
+          //   '#markup' => "Please translate the node for ".$t." ".l("here","mh/add-document")." to the language [".$l."].",
+          //   '#weight' => $weight,
+          // );
           $weight+=10;
         }
       }
