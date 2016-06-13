@@ -10,7 +10,7 @@
 /**
  * @file
  * A module that synchronizes the drupal accounts with gitlab accounts.
- *       
+ *
  */
 
 //include iso.inc for _locale_get_predefined_list
@@ -30,35 +30,6 @@ function getLanguages() {
   return $languages;
 }
 
-function getOutsideLinkURL($website_url_string) {
-  if(strpos($website_url_string, "http://") === false && strpos($website_url_string, "https://") === false) {
-    return "http://".$website_url_string;
-  }
-  return $website_url_string;
-}
-
-/**
- * Implements hook_libraries_info().
- *
- * For defining external libraries.
- * @todo add 'vendor url', 'download url' etc. in case we make the libarary stand alone
- */
-function mathhub_user_libraries_info() {
-  $libraries['gitlab_api_php_wrapper'] = array(  // @nolint
-    'name' => 'GitLab API PHP Wrapper',
-    'vendor url' => '', 
-    'download url' => '', 
-    'version arguments' => array(
-      'file' => 'readme.txt',
-      'pattern' => '/Version (\d+)/', 
-      'lines' => 5,
-    ),
-    'files' => array(
-      'php' => array('Users.php'),
-      ),
-    );
-  return $libraries;
-}
 
 /**
  * Implements hook_help().
@@ -75,17 +46,16 @@ function mathhub_user_help($path, $arg) {
     case 'admin/help#mathhub_user':
       $output = '';
       $output .= '<h3>'.t('About').'</h3>';
-      $output .= '<p>'.t('A module that synchronizes the drupal accounts with
-                  gitlab accounts and adds new fields to the profiles.').'</p>';
+      $output .= '<p>'.t('A module adds new fields to the profiles.').'</p>';
       return $output;
       break;
   }
-} 
+}
 
 /**
  * Implements hook_menu().
  *
- * The function mathhub_user_menu implements the hook_menu and allows therefore 
+ * The function mathhub_user_menu implements the hook_menu and allows therefore
  * to display the configuration menu.
  */
 function mathhub_user_menu() {
@@ -98,6 +68,15 @@ function mathhub_user_menu() {
     'access arguments' => array('access administration pages'),
     'type' => MENU_NORMAL_ITEM,
   );
+  //page callback to interact with gitlab
+  $items['user/gitlab'] = array(
+    'title' => 'Mathhub User Gitlab repo update',
+    'description' => 'Configuration for Mathhub User module.',
+    'page callback' => 'mathhub_user_gitlab',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+
   return $items;
 }
 
@@ -107,36 +86,6 @@ function mathhub_user_menu() {
  * @see mathhub_user_menu()
  */
 function mathhub_user_form($form, &$form_state) {
-  $form['mathhub_user_private_token'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Private Token of GitLab Server administrator account'),
-    '#default_value' => variable_get('mathhub_user_private_token', ''),
-    '#size' => 20,
-    '#maxlength' => 128,
-    '#description' => t('The private token needed for authentication with the
-      GitLab server.'),
-    '#required' => true,
-  );
-  $form['mathhub_user_server_api_url'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Server URL of GitLab Server'),
-    '#default_value' => variable_get('mathhub_user_server_api_url', ''),
-    '#size' => 128,
-    '#maxlength' => 512,
-    '#description' => t('The Server URL of the GitLab Server. Should be in the 
-      form of "http://serverURL/api/v3". Needed to be able to connect to it.'),
-    '#required' => true,
-  );
-  $form['mathhub_user_admin_id'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Admin ID of gitlab account'),
-    '#default_value' => variable_get('mathhub_user_admin_id', 1),
-    '#size' => 4,
-    '#maxlength' => 8,
-    '#description' => t('The Admin ID of the admin account. Has to correspond
-      to the private token.'),
-    '#required' => true,
-  );
   $form['mathhub_user_log_messages'] = array(
     '#type' => 'checkbox',
     '#title' => t('Log Module Messages'),
@@ -150,73 +99,48 @@ function mathhub_user_form($form, &$form_state) {
 /**
  * Implements hook_user_view().
  *
- * The function mathhub_user_user_view implements the hook_user_view and 
+ * The function mathhub_user_user_view implements the hook_user_view and
  * therefore shows the added fields on the user page.
  */
 function mathhub_user_user_view($account, $viewmode) {
-  $account->content['about'] = array(
-    '#type' => 'user_profile_category',
-    '#title' => t('About'),
-  );
-  $account->content['about']['realname'] = array(
-    '#type' => 'user_profile_item',
-    '#title' => t('Name'),
-    '#markup' => check_plain($account->data['realname']),
-  );
-  $account->content['about']['email'] = array(
-    '#type' => 'user_profile_item',
-    '#title' => t('Email'),
-    '#markup' => check_url($account->mail),
-  );
-  if(!empty($account->data['skype'])) {
-    $account->content['about']['skype'] = array(
+  global $user;
+
+  if(!empty($account->data['languages'])) {
+    $account->content['about']['languages_languages'] = array(
       '#type' => 'user_profile_item',
-      '#title' => t('Skype'),
-      '#markup' => check_plain($account->data['skype']),
+      '#title' => t('Languages:'),
+      '#markup' => implode(', ', array_intersect_key(getLanguages(), array_flip($account->data['languages']))),
     );
   }
-  if(!empty($account->data['linkedin'])) {
-    $linkedin_url = check_url($account->data['linkedin']);
-    $account->content['about']['linkedin'] = array(
+  if(isset($user->roles['3']) || $user->uid==$account->uid){
+    if(isset($account->data['gitlab_refresh_token'])){
+      $account->content['about']['gitlab_refresh'] = array(
+        '#type' => 'user_profile_item',
+        '#title' => t('Gitlab Refresh Token:'),
+        '#markup' => $account->data['gitlab_refresh_token'],
+      );
+      // $account->content['about']['gitlab_update_btn'] = array(
+      //   '#type' => 'user_profile_item',
+      //   '#title' => t('Update Gitlab Data(Repo/Admin):'),
+      //   '#markup' => '<button class="btn btn-primary btn-xs" onclick="jQuery.ajax({type: \'POST\',url: \'user/gitlab\',success: function(){jQuery().delay(500); window.location.reload();}});">Update</button>',
+      // );
+    }
+  
+}  if(!empty($account->data['gitlab_repos'])){
+    $repos=array();
+    foreach ($account->data['gitlab_repos'] as $key) {
+      array_push($repos,l($key[0],$key[1]));
+    }
+    $account->content['about']['gitlab_repos'] = array(
       '#type' => 'user_profile_item',
-      '#title' => t('LinkedIn'),
-      '#markup' => "<a href=".getOutsideLinkURL($linkedin_url).">".$linkedin_url."</a>",
+      '#title' => t('Gitlab Repositories you have access to:'),
+      '#markup' => '<button class="btn btn-primary btn-xs" onclick="jQuery.ajax({type: \'POST\',url: \'user/gitlab\',success: function(){jQuery().delay(500); window.location.reload();}});">Update!</button>'.implode(', ',$repos),
     );
-  }
-  if(!empty($account->data['twitter'])) {
-    $account->content['about']['twitter'] = array(
+  } else {//put button here to updated repos from
+    $account->content['about']['gitlab_repos'] = array(
       '#type' => 'user_profile_item',
-      '#title' => t('Twitter'),
-      '#markup' => check_url($account->data['twitter']),
-    );
-  }
-  if(!empty($account->data['website_url'])) {
-    $website_url = check_url($account->data['website_url']);
-    $account->content['about']['website_url'] = array(
-      '#type' => 'user_profile_item',
-      '#title' => t('Website'),
-      '#markup' => "<a href=".getOutsideLinkURL($website_url).">".$website_url."</a>",
-    );
-  }
-  if(!empty($account->data['reads_languages'])) {
-    $account->content['about']['reads_languages'] = array(
-      '#type' => 'user_profile_item',
-      '#title' => t('Reads languages:'),
-      '#markup' => implode(', ', array_intersect_key(getLanguages(), array_flip($account->data['reads_languages']))),
-    );
-  }
-  if(!empty($account->data['writes_languages'])) {
-    $account->content['about']['writes_languages'] = array(
-      '#type' => 'user_profile_item',
-      '#title' => t('Writes languages:'),
-      '#markup' => implode(', ', array_intersect_key(getLanguages(), array_flip($account->data['writes_languages']))),
-    );
-  }
-  if(!empty($account->data['bio'])) {
-    $account->content['about']['bio'] = array(
-      '#type' => 'user_profile_item',
-      '#title' => t('Biography'),
-      '#markup' => check_plain($account->data['bio']),
+      '#title' => t('Gitlab Repositories you have access to:'),
+      '#markup' => '<button class="btn btn-primary btn-xs" onclick="jQuery.ajax({type: \'POST\',url: \'user/gitlab\',success: function(){jQuery().delay(500); window.location.reload();}});">Update!</button>'.'You don\'t have access to any gitlab repos!',
     );
   }
 }
@@ -224,181 +148,45 @@ function mathhub_user_user_view($account, $viewmode) {
 /**
  * Implements hook_form_user_register_form_alter().
  *
- * The function mathhub_user_form_user_register_form_alter implements the 
- * hook_form_user_register_form_alter and allows therefore to add our extra 
- * user fields to the user registration form and then synchronize them with 
- * GitLab by recreating the same user on GitLab.
+ * The function mathhub_user_form_user_register_form_alter implements the
+ * hook_form_user_register_form_alter and allows therefore to add our extra
+ * user fields to the user registration form.
  */
 function mathhub_user_form_user_register_form_alter(&$form, &$form_state, $form_id) {
-  $form['#validate'][] = 'mathhub_user_register_user_form_validate';
-  $form['#submit'][] = 'mathhub_user_user_register_submit';
+  // $form['#validate'][] = 'mathhub_user_register_user_form_validate';
+  // $form['#submit'][] = 'mathhub_user_user_register_submit';
 
   $form['account']['name']['#description'] = 'Punctuation is not allowed except for periods, hyphens, apostrophes, and underscores.';
   $form['account']['pass']['#description'] = '<div>After registering, your credentials can also be used for accessing the git sources on <a target="_blank" href="https://gl.mathhub.info">gl.mathhub.info</a></div>';
   $form['account']['pass']['#title'] = 'Password (above) needs to be at least 8 characters long!';
-  $form['account']['realname'] = array(
-    '#type' => 'textfield',
-    '#title' => 'Name',
-    '#description' => 'Please give us your name, so people you know can recognize you.',
-    '#required' => true,
-    '#weight' => 5);
-  // Disabling this to simplify account creation
-  /*
-  $form["account"]["reads_languages"] = array(
-    '#type' => 'select', 
-    '#title' => t('Select the languages you can read'), 
-    '#description' => t('Select the languages you can read.'),
-    '#required' => false,
-    '#weight' => 6,
-    '#attributes' => array('data-placeholder' => 'Choose the languages you can read'),
-    '#multiple' => true,
-    '#options' => getLanguages());
-  $form["account"]["writes_languages"] = array(
-    '#type' => 'select', 
-    '#title' => t('Select the languages you can write'), 
-    '#description' => t('Select the languages you can write.'),
-    '#required' => false,
-    '#weight' => 7,
-    '#attributes' => array('data-placeholder' => 'Choose the languages you can write'),
-    '#multiple' => true,
-    '#options' => getLanguages());
-  $form['account']['skype'] = array(
-    '#type' => 'textfield',
-    '#title' => 'Skype ID',
-    '#description' => 'Your Skype ID, so people you know can stay in touch with you.',
-    '#required' => false,
-    '#weight' => 8);
-  $form['account']['linkedin'] = array(
-    '#type' => 'textfield',
-    '#title' => 'Linkedin',
-    '#description' => 'Your Linkedin ID, so people you know can stay in touch with you.',
-    '#required' => false,
-    '#weight' => 9);
-  $form['account']['twitter'] = array(
-    '#type' => 'textfield',
-    '#title' => 'Twitter account',
-    '#description' => 'Your Twitter account name, so people you know can stay in touch with you.',
-    '#required' => false,
-    '#weight' => 10);
-  $form['account']['website_url'] = array(
-    '#type' => 'textfield',
-    '#title' => 'Website',
-    '#description' => 'So people you know can see your other work.',
-    '#required' => false,
-    '#weight' => 11);
-  $form['account']['bio'] = array(
-    '#type' => 'textarea',
-    '#title' => 'Biography',
-    '#description' => 'Tell something about yourself, but use no more than 250 characters.',
-    '#required' => false,
-    '#weight' => 12);
-    */
 }
 
 /**
  * Implements hook_form_user_profile_form_alter().
  *
- * The function mathhub_user_form_user_profile_form_alter implements the 
- * hook_form_user_profile_form_alter and allows therefore to add our extra 
- * user fields to the user profile edit form and then synchronize them with 
- * GitLab by doing the same changes to it the same user on GitLab.
+ * The function mathhub_user_form_user_profile_form_alter implements the
+ * hook_form_user_profile_form_alter and allows therefore to add our extra
+ * user fields to the user profile edit form.
  */
 function mathhub_user_form_user_profile_form_alter(&$form, &$form_state, $form_id) {
   $form['#validate'][] = 'mathhub_user_edit_user_form_validate';
-  $form['#submit'][] = 'mathhub_user_user_edit_submit';
-  // save old email address for submit handler in order to pass it to gitlab API
-  $form['old_email_address'] = array(
-    '#type' => 'value',
-    '#value' => $form_state['user']->mail
-  );
+  // $form['#submit'][] = 'mathhub_user_user_edit_submit';
 
   $form['account']['name']['#description'] = 'Punctuation is not allowed except for periods, hyphens, apostrophes, and underscores.';
   $form['account']['pass']['#description'] = 'Provide a password for the new account in both fields. Minimum length is 8 characters.';
 
-  $form['account']['realname'] = array(
-    '#type' => 'textfield',
-    '#title' => 'Name',
-    '#description' => 'Please give us your name, so people you know can recognize you.',
-    '#required' => true,
-    '#weight' => 5);
-  if(isset($form_state['user']->data['realname'])) {
-    $form['account']['realname']['#default_value'] = $form_state['user']->data['realname'];
-  }
 
-  $form["account"]["reads_languages"] = array(
-    '#type' => 'select', 
-    '#title' => t('Select the languages you can read'), 
-    '#description' => t('Select the languages you can read.'),
+  $form["account"]["languages"] = array(
+    '#type' => 'select',
+    '#title' => t('Select your languages.'),
+    '#description' => t('Select your languages.'),
     '#required' => false,
     '#weight' => 6,
-    '#attributes' => array('data-placeholder' => 'Choose the languages you can read'),
+    '#attributes' => array('data-placeholder' => 'Choose your languages.'),
     '#multiple' => true,
     '#options' => getLanguages());
-  if(!empty($form_state['user']->data['reads_languages'])) {
-    $form['account']['reads_languages']['#default_value'] = $form_state['user']->data['reads_languages'];
-  }
-
-  $form["account"]["writes_languages"] = array(
-    '#type' => 'select', 
-    '#title' => t('Select the languages you can write'), 
-    '#description' => t('Select the languages you can write.'),
-    '#required' => false,
-    '#weight' => 7,
-    '#attributes' => array('data-placeholder' => 'Choose the languages you can write'),
-    '#multiple' => true,
-    '#options' => getLanguages());
-  if(!empty($form_state['user']->data['writes_languages'])) {
-    $form['account']['writes_languages']['#default_value'] = $form_state['user']->data['writes_languages'];
-  }
-
-  $form['account']['skype'] = array(
-    '#type' => 'textfield',
-    '#title' => 'Skype ID',
-    '#description' => 'Your Skype ID, so people you know can stay in touch with you.',
-    '#required' => false,
-    '#weight' => 8);
-  if(isset($form_state['user']->data['skype'])) {
-    $form['account']['skype']['#default_value'] = $form_state['user']->data['skype'];
-  }
-
-  $form['account']['linkedin'] = array(
-    '#type' => 'textfield',
-    '#title' => 'Linkedin',
-    '#description' => 'Your Linkedin ID, so people you know can stay in touch with you.',
-    '#required' => false,
-    '#weight' => 9);
-  if(isset($form_state['user']->data['linkedin'])) {
-    $form['account']['linkedin']['#default_value'] = $form_state['user']->data['linkedin'];
-  }
-
-  $form['account']['twitter'] = array(
-    '#type' => 'textfield',
-    '#title' => 'Twitter account',
-    '#description' => 'Your Twitter account name, so people you know can stay in touch with you.',
-    '#required' => false,
-    '#weight' => 10);
-  if(isset($form_state['user']->data['twitter'])) {
-    $form['account']['twitter']['#default_value'] = $form_state['user']->data['twitter'];
-  }
-
-  $form['account']['website_url'] = array(
-    '#type' => 'textfield',
-    '#title' => 'Website',
-    '#description' => 'So people you know can see your other work.',
-    '#required' => false,
-    '#weight' => 11);
-  if(isset($form_state['user']->data['website_url'])) {
-    $form['account']['website_url']['#default_value'] = $form_state['user']->data['website_url'];
-  }
-
-  $form['account']['bio'] = array(
-    '#type' => 'textarea',
-    '#title' => 'Biography',
-    '#description' => 'Tell something about yourself, but use no more than 250 characters.',
-    '#required' => false,
-    '#weight' => 12);
-  if(isset($form_state['user']->data['bio'])) {
-    $form['account']['bio']['#default_value'] = $form_state['user']->data['bio'];
+  if(!empty($form_state['user']->data['languages'])) {
+    $form['account']['languages']['#default_value'] = $form_state['user']->data['languages'];
   }
 }
 
@@ -413,16 +201,12 @@ function mathhub_user_edit_user_form_validate($form, &$form_state) {
     (empty($form_state['input']['name']) ||
      !preg_match("/\A[a-zA-Z0-9_.][a-zA-Z0-9_\-\.]*(?<!\.git)\z/", $form_state['input']['name']))) {
     form_set_error('name', t("You must adhere to the username rules. 
-                              The username can contain only letters, digits, '-', '.' and '_'. 
-                              Moreover due to GitLab synchronisation it also cannot start with '-' or end in '.git'"));
+                              The username can contain only letters, digits, '-', '.' and '_'."));
   }
   if(!empty($form_state['input']['pass']['pass1']) && 
       (strlen($form_state['input']['pass']['pass1']) < 8 ||
       $form_state['input']['pass']['pass1'] !== $form_state['input']['pass']['pass2'])) {
-    form_set_error('pass', t("The password needs to be atleast 8 characters long."));    
-  }
-  if(!isset($form_state['input']['realname'])) {
-    form_set_error('realname', t("You need to provide us with your name."));  
+    form_set_error('pass', t("The password needs to be atleast 8 characters long."));
   }
   return;
 }
@@ -438,282 +222,17 @@ function mathhub_user_register_user_form_validate($form, &$form_state) {
     (empty($form_state['input']['name']) ||
      !preg_match("/\A[a-zA-Z0-9_.][a-zA-Z0-9_\-\.]*(?<!\.git)\z/", $form_state['input']['name']))) {
     form_set_error('name', t("You must adhere to the username rules. 
-                              The username can contain only letters, digits, '-', '.' and '_'. 
-                              Moreover due to GitLab synchronisation it also cannot start with '-' or end in '.git'"));
+                              The username can contain only letters, digits, '-', '.' and '_'."));
   }
   if(!isset($form_state['input']['pass']) || 
       strlen($form_state['input']['pass']['pass1']) < 8 ||
       $form_state['input']['pass']['pass1'] !== $form_state['input']['pass']['pass2']) {
     form_set_error('pass', t("The password needs to be at least 8 characters long."));
   }
-  if(!isset($form_state['input']['realname'])) {
-    form_set_error('realname', t("You need to provide us with your name."));  
-  }
   return;
 }
 
-/**
- * Function mathhub_user_user_register_submit
- *
- * This function process the registration to a user. Used by 
- * hook_form_user_register_form_alter. 
- */
-function mathhub_user_user_register_submit(&$form, &$form_state) {
-  // load GitLab API PHP Wrapper
-  if (($library = libraries_load('gitlab_api_php_wrapper')) // @nolint
-       && !empty($library['loaded'])) {
-    // create new request
-    try {
-      $request = new GitLabAPI\Users(variable_get('mathhub_user_private_token'),
-                                 variable_get('mathhub_user_admin_id'),
-                                 variable_get('mathhub_user_server_api_url'));
-    } 
-    catch (RuntimeException $e) {
-      if (variable_get('mathhub_user_log_messages') === 1) {
-        watchdog('mathhub_user', 
-                 'Error in Mathhub User: %info.', 
-                 array('%info' => $e->getMessage()),
-                 WATCHDOG_ERROR, 
-                 '');
-      }
-      return;
-    }
-    // create user in GitLab
-    try {
-      $additional_params = array();
-      if (isset($form_state['values']['skype'])) {
-        $additional_params['skype'] = $form_state['values']['skype'];
-      }
-      if (isset($form_state['values']['linkedin'])) {
-        $additional_params['linkedin'] = $form_state['values']['linkedin'];
-      }
-      if (isset($form_state['values']['twitter'])) {
-        $additional_params['twitter'] = $form_state['values']['twitter'];
-      }
-      if (isset($form_state['values']['website_url'])) {
-        $additional_params['website_url'] = $form_state['values']['website_url'];
-      }
-      if (isset($form_state['values']['bio'])) {
-        $additional_params['bio'] = $form_state['values']['bio'];
-      }
-      $request->createUser($form_state['values']['name'],
-                           $form_state['values']['realname'],
-                           $form_state['values']['pass'], 
-                           $form_state['values']['mail'],
-                           $additional_params); 
-    } 
-    catch (RuntimeException $e) {
-      if (variable_get('mathhub_user_log_messages') === 1) {
-        watchdog('mathhub_user', 
-                 'Error in Mathhub User: %info.', 
-                 array('%info' => $e->getMessage()),
-                 WATCHDOG_ERROR, 
-                 '');
-      }
-      return;
-    }
-    // we performed the request without errors. 
-    if (variable_get('mathhub_user_log_messages') === 1) {
-      watchdog('mathhub_user',
-               'Created GitLab User succesfully.',
-               array(),
-               WATCHDOG_NOTICE,
-               '');
-    }
-    return;
-  } else {
-    if (variable_get('mathhub_user_log_messages') === 1) {
-      watchdog('mathhub_user', 
-               'Error in Mathhub User: Could not load library "gitlab_api_php_wrapper".', 
-               array(),
-               WATCHDOG_ERROR, 
-               '');
-    }
-  }
 
-
-}
-
-/**
- * Function mathhub_user_user_edit_submit
- *
- * This function process the change to a user. Used by 
- * mathhub_user_form_user_profile_form_alter. 
- */
-function mathhub_user_user_edit_submit(&$form, &$form_state) {
-  // load GitLab API PHP Wrapper
-  if (($library = libraries_load('gitlab_api_php_wrapper')) // @nolint
-       && !empty($library['loaded'])) {
-    // create new request
-    try {
-      $request = new GitLabAPI\Users(variable_get('mathhub_user_private_token'),
-                                 variable_get('mathhub_user_admin_id'),
-                                 variable_get('mathhub_user_server_api_url'));
-    } 
-    catch (RuntimeException $e) {
-      if (variable_get('mathhub_user_log_messages') === 1) {
-        watchdog('mathhub_user', 
-                 'Error in Mathhub User: %info.', 
-                 array('%info' => $e->getMessage()),
-                 WATCHDOG_ERROR, 
-                 '');
-      }
-      return;
-    }
-    // get GitLab ID
-    try {
-      $user_id = $request->getUserID($form_state['values']['old_email_address']);
-    } 
-    catch (RuntimeException $e) {
-      if (variable_get('mathhub_user_log_messages') === 1) {
-        watchdog('mathhub_user', 
-                 'Error in Mathhub User: %info.', 
-                 array('%info' => $e->getMessage()),
-                 WATCHDOG_ERROR, 
-                 '');
-      }
-      return;
-    }
-    // data which is send with the api call
-    $data = array();
-    // check if data exists
-    if (isset($form_state['values']['name'])) {
-      $data['username'] = $form_state['values']['name'];
-    }
-    if (isset($form_state['values']['realname'])) {
-      $data['name'] = $form_state['values']['realname'];
-    }
-    if (isset($form_state['values']['mail'])) {
-      $data['email'] = $form_state['values']['mail'];
-    }
-    if (isset($form_state['values']['pass'])) {
-      $data['password'] = $form_state['values']['pass'];
-    }
-    if (isset($form_state['values']['skype'])) {
-      $data['skype'] = $form_state['values']['skype'];
-    }
-    if (isset($form_state['values']['linkedin'])) {
-      $data['linkedin'] = $form_state['values']['linkedin'];
-    }
-    if (isset($form_state['values']['twitter'])) {
-      $data['twitter'] = $form_state['values']['twitter'];
-    }
-    if (isset($form_state['values']['website_url'])) {
-      $data['website_url'] = $form_state['values']['website_url'];
-    }
-    if (isset($form_state['values']['bio'])) {
-      $data['bio'] = $form_state['values']['bio'];
-    }
-    // edit user in GitLab
-    try {
-      $request->editUser($user_id, $data);
-    } 
-    catch (RuntimeException $e) {
-      if (variable_get('mathhub_user_log_messages') === 1) {
-        watchdog('mathhub_user', 
-                 'Error in Mathhub User: %info.', 
-                 array('%info' => $e->getMessage()),
-                 WATCHDOG_ERROR, 
-                 '');
-      }
-      return;
-    }
-    // we performed the request without errors. 
-    if (variable_get('mathhub_user_log_messages') === 1) {
-      watchdog('mathhub_user',
-               'Updated MathHub User succesfully.',
-               array(),
-               WATCHDOG_NOTICE,
-               '');
-    }
-    return;
-  } else {
-    if (variable_get('mathhub_user_log_messages') === 1) {
-      watchdog('mathhub_user', 
-               'Error in Mathhub User: Could not load library "gitlab_api_php_wrapper".', 
-               array(),
-               WATCHDOG_ERROR, 
-               '');
-    }
-  }
-}
-
-
-/**
- * Implements hook_user_delete().
- *
- * The function mathhub_user_user_delete deletes the specified GitLab account.
- *
- * @param account
- *   The account that is being deleted from gitlab  
- */
-function mathhub_user_user_delete($account) {
-  // load GitLab API PHP Wrapper
-  if (($library = libraries_load('gitlab_api_php_wrapper')) // @nolint 
-       && !empty($library['loaded'])) {
-    // create new request
-    try {
-      $request = new GitLabAPI\Users(variable_get('mathhub_user_private_token'),
-                                 variable_get('mathhub_user_admin_id'),
-                                 variable_get('mathhub_user_server_api_url'));
-    } 
-    catch (RuntimeException $e) {
-      if (variable_get('mathhub_user_log_messages') === 1) {
-        watchdog('mathhub_user', 
-                 'Error in Mathhub User: %info.', 
-                 array('%info' => $e->getMessage()),
-                 WATCHDOG_ERROR, 
-                 '');
-      }
-      return;
-    }
-    // get GitLab ID
-    try {
-      $user_id = $request->getUserID($account->mail);
-    } 
-    catch (RuntimeException $e) {
-      if (variable_get('mathhub_user_log_messages') === 1) {
-        watchdog('mathhub_user', 
-                 'Error in Mathhub User: %info.', 
-                 array('%info' => $e->getMessage()),
-                 WATCHDOG_ERROR, 
-                 '');
-      }
-      return;
-    }
-    // delete user from GitLab
-    try {
-      $request->deleteUser($user_id);
-    } 
-    catch (RuntimeException $e) {
-      if (variable_get('mathhub_user_log_messages') === 1) {
-        watchdog('mathhub_user', 
-                 'Error in Mathhub User: %info.', 
-                 array('%info' => $e->getMessage()),
-                 WATCHDOG_ERROR, 
-                 '');
-      }
-      return;
-    }
-    // we performed the request without errors. 
-    if (variable_get('mathhub_user_log_messages') === 1) {
-      watchdog('mathhub_user',
-               'Deleted GitLab User succesfully.',
-               array(),
-               WATCHDOG_NOTICE,
-               '');
-    }
-    return;
-  } else {
-    if (variable_get('mathhub_user_log_messages') === 1) {
-      watchdog('mathhub_user', 
-               'Error in Mathhub User: Could not load library "gitlab_api_php_wrapper".', 
-               array(),
-               WATCHDOG_ERROR, 
-               '');
-    }
-  }
-}
 
 /**
  * Implement hook_user_presave().
@@ -721,32 +240,250 @@ function mathhub_user_user_delete($account) {
  * Used to save additional data with the user. 
  */
 function mathhub_user_user_presave(&$edit, $account, $category) {
-  if (isset($edit['realname'])) {
-    $edit['data']['realname'] = $edit['realname'];
-  }
-  if (isset($edit['skype'])) {
-    $edit['data']['skype'] = $edit['skype'];
-  }
-  if (isset($edit['linkedin'])) {
-    $edit['data']['linkedin'] = $edit['linkedin'];
-  }
-  if (isset($edit['twitter'])) {
-    $edit['data']['twitter'] = $edit['twitter'];
-  }  
-  if (isset($edit['website_url'])) {
-    $edit['data']['website_url'] = $edit['website_url'];
-  }
-  if (isset($edit['bio'])) {
-    $edit['data']['bio'] = $edit['bio'];
-  }
-  if (!empty($edit['reads_languages'])) {
-    $edit['data']['reads_languages'] = array_values($edit['reads_languages']);
+  if (!empty($edit['languages'])) {
+    $edit['data']['languages'] = array_values($edit['languages']);
   } else {
-    $edit['data']['reads_languages'] = array('en');
+    $edit['data']['languages'] = array('en');
   }
-  if (!empty($edit['writes_languages'])) {
-    $edit['data']['writes_languages'] = array_values($edit['writes_languages']);
+}
+
+
+function mathhub_user_gitlab_access_token(){
+  global $user;
+
+  /*
+  the anwers for the first POST will be a JSON like this:
+  {
+  "access_token": "8fff4cddb48b52f3cf198222912d2911d007b0c05a0eddb117bbf6a64b9ebadc",
+  "token_type": "bearer",
+  "refresh_token": "c312772f2ae0d6b80c310f13a3de8c5040ef9d6c9f9094384f3185986a946f50",
+  "scope": "api",
+  "created_at": 1461923671
+  }
+
+  the access token will be returned
+
+  but the new refresh token from the answer MUST be SAVED in in the USER object($user->data['gitlab_refresh_token']) and OVERWRITE the old refresh token
+  because the old refresh token is disabled after ONE use
+  */
+
+  $post_data = array(
+    'refresh_token' => $user->data['gitlab_refresh_token'],
+    'grant_type' => 'refresh_token',
+    );
+  $request_options = array(
+    'method' => 'POST',
+    'data' => drupal_http_build_query($post_data),
+    );
+
+
+  $response = drupal_http_request("https://gl.mathhub.info/oauth/token", $request_options);
+
+  if (!isset($response->error) && $response->code == 200) {
+    $response_data = drupal_json_decode($response->data);
+    $existingUser = user_load($user->uid);
+    $existingUser->data['gitlab_refresh_token'] = $response_data['refresh_token'];
+    user_save((object) array('uid' => $existingUser->uid), (array) $existingUser);
+    return $response_data['access_token'];
+  }
+  else {
+    watchdog('openid_connect',print_r($response,1),array(), WATCHDOG_ERROR);
+    return FALSE;
+  }
+}
+
+
+function mathhub_user_gitlab_api_call_repos($access_token){
+  global $user;
+
+  /*
+  this function makes the api call to gitlab REPOS API using the the access_token
+  this token can be obtained in any way, most likely with mathhub_user_gitlab_access_token()
+  it returns the answer_array it gets
+  */
+
+
+  $request_options = array(
+    'method' => 'GET',
+    'timeout' => 15,
+    );
+
+
+  $u="https://gl.mathhub.info/api/v3/projects"."?access_token=".$access_token;
+  $response = drupal_http_request($u, $request_options);
+
+  if (!isset($response->error) && $response->code == 200) {
+    $data = drupal_json_decode($response->data);
+    return $data;
   } else {
-    $edit['data']['writes_languages'] = array('en');
+    watchdog('openid_connect',print_r($response,1),array(), WATCHDOG_ERROR);
+    return FALSE;
   }
+}
+
+// function mathhub_user_translation_form() {
+function mathhub_user_translation_form($form, &$form_state, $ti, $ar) {
+  $form = array();
+
+  // $form['#title'] = array('Translate '.$ti.'!');
+
+  $form['archive'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Archive',
+    '#default_value' => $ar,
+    '#required' => true,
+  );
+  $form['title'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Module Name',
+    '#default_value' => $ti,
+    '#required' => true,
+  );
+  $form['body'] = array(
+    '#type' => 'text_format',
+    '#title' => 'Document Body',
+    '#required' => true,
+  );
+
+  $form['submit'] = array(
+    '#type' => 'submit', 
+    '#value' => t('Create Document')
+  );
+  $form['#submit'] = array('oaff_features_add_doc_callback');
+  return $form;
+}
+
+
+function mathhub_user_node_view($node, $view_mode, $langcode){
+  global $user;
+  if($node->type=='oaff_doc'){//check if node is mathhub doc
+    $t=explode(".", $node->title)[0];
+    $weight=1000;
+    $arch=explode("/", $node->field_external['und'][0]['path'])[0].'/'.explode("/", $node->field_external['und'][0]['path'])[1];
+    // watchdog('node',print_r($node,1),array(), WATCHDOG_NOTICE);
+    // watchdog('node',print_r(variable_get('oaff_config'),1),array(), WATCHDOG_NOTICE);
+    // watchdog('node',print_r($arch,1),array(), WATCHDOG_NOTICE);
+
+    foreach ($user->data['languages'] as $l) {//go through each language the user has set
+
+      // special case chinese
+      if($l=="zh-hant"){
+        $result=db_query("SELECT * FROM {node} WHERE title='".$t.".zht"."'");
+        if ($result->rowCount()<=0) {
+          $frm=drupal_get_form('mathhub_user_translation_form',$t.".zht",$arch);
+          $frm['#weight']=$weight;
+          $node->content['translate_zht']=$frm;
+          // $node->content['translate_zht']=array(
+          //   '#title' => "Translate ".$l,
+          //   '#markup' => "Please translate the node for ".$t." ".l("here","mh/add-document")." to the language ["."zht"."].",
+          //   '#weight' => $weight,
+          // );
+          $weight+=10;
+        }
+      } elseif($l=="zh-hans"){
+        $result=db_query("SELECT * FROM {node} WHERE title='".$t.".zhs"."'");
+        if ($result->rowCount()<=0) {
+          $frm=drupal_get_form('mathhub_user_translation_form',$t.".zhs",$arch);
+          $frm['#weight']=$weight;
+          $node->content['translate_zhs']=$frm;
+          // $node->content['translate_zhs']=array(
+          //   '#title' => "Translate ".$l,
+          //   '#markup' => "Please translate the node for ".$t." ".l("here","mh/add-document")." to the language ["."zhs"."].",
+          //   '#weight' => $weight,
+          // );
+          $weight+=10;
+        }
+      }else{//rest of the languages
+        $result=db_query("SELECT * FROM {node} WHERE title='".$t.".".$l."'");
+        if ($result->rowCount()<=0) {
+          $frm=drupal_get_form('mathhub_user_translation_form',$t.".".$l,$arch);
+          $frm['#weight']=$weight;
+          $node->content['translate_'.$l]=$frm;
+          // $node->content['translate_'.$l]=array(
+          //   '#title' => "Translate ".$l,
+          //   '#markup' => "Please translate the node for ".$t." ".l("here","mh/add-document")." to the language [".$l."].",
+          //   '#weight' => $weight,
+          // );
+          $weight+=10;
+        }
+      }
+
+      // watchdog('node',print_r($node->content,1),array(), WATCHDOG_NOTICE);
+
+    }
+  }
+}
+
+function mathhub_user_gitlab_api_call_user($access_token){
+  global $user;
+
+  /*
+  this function makes the api call to gitlab USER API using the the access_token
+  this token can be obtained in any way, most likely with mathhub_user_gitlab_access_token()
+  it returns the answer_array it gets
+  */
+
+
+  $request_options = array(
+    'method' => 'GET',
+    'timeout' => 15,
+    );
+
+
+  $u="https://gl.mathhub.info/api/v3/user"."?access_token=".$access_token;
+  $response = drupal_http_request($u, $request_options);
+
+  if (!isset($response->error) && $response->code == 200) {
+    $data = drupal_json_decode($response->data);
+    return $data;
+  } else {
+    watchdog('openid_connect',print_r($response,1),array(), WATCHDOG_ERROR);
+    return FALSE;
+  }
+}
+
+function mathhub_user_gitlab($verbose=true)
+{
+  global $user;
+  if($verbose){print("updating Gitlab repos:</br>\n");}
+
+  $access=mathhub_user_gitlab_access_token();
+  if ($access != FALSE) {
+    $repos=mathhub_user_gitlab_api_call_repos($access);
+
+
+
+    if ($repos != FALSE){
+      $repo_names=array();
+      foreach ($repos as $key) {
+        array_push($repo_names,array($key['name'],$key['web_url']));
+      }
+      //update repos
+      $existingUser = user_load($user->uid);
+      $existingUser->data['gitlab_repos'] = $repo_names;
+      user_save((object) array('uid' => $existingUser->uid), (array) $existingUser);
+      if($verbose){print("Successful Update!");}
+
+    } else {
+      if($verbose){print("Couldn't finish REPO API call!");}
+    }
+
+
+    if(isset(variable_get('openid_connect_client_gitlab')['gitlab_admin'])&&variable_get('openid_connect_client_gitlab')['gitlab_admin']==true){
+      $gluser=mathhub_user_gitlab_api_call_user($access);
+      if($gluser != FALSE){
+        if($gluser['is_admin']==true){
+          user_multiple_role_edit(array($user->uid), "add_role", 3);
+        }
+
+      } else {
+        if($verbose){print("Couldn't finish USER API call!");}
+      }
+    }
+
+
+  } else {
+    if($verbose){print("Couldn't retrieve access_token!");}
+  }
+
 }

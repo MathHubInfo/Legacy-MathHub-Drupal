@@ -1,0 +1,4 @@
+name = OpenID Connect Gitlab
+description = OpenID Connect Gitlab module for the mathhub.info portal
+core = 7.x
+dependencies[] = openid_connect

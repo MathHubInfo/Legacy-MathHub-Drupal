@@ -238,6 +238,9 @@ function openid_connect_save_userinfo($account, $userinfo) {
   if (isset($userinfo['name'])) {
     $account->data['oidc_name'] = $userinfo['name'];
   }
+  if (isset($userinfo['refresh_token'])) {
+    $account->data['gitlab_refresh_token'] = $userinfo['refresh_token'];
+  }
 
   $account_wrapper->save();
 
@@ -811,6 +814,10 @@ function openid_connect_complete_authorization($client, $tokens, &$destination) 
       drupal_set_message(t('The e-mail address is already taken: @email', array('@email' => $userinfo['email'])), 'error');
 
       return FALSE;
+    }
+
+    if(!empty($tokens['refresh_token'])){
+      $userinfo['refresh_token']=$tokens['refresh_token'];
     }
 
     // Create a new account.
