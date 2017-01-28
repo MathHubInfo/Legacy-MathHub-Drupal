@@ -3,6 +3,10 @@ This project is the Drupal implementation of the MathHub system
 available at [MathHub.info](http://mathhub.info). 
 It is based on the [planetary system](https://github.com/KWARC/planetary).
 
+This README contains the developer-level documentation (installation, configuration,
+contributing). For the user-level documentation see
+[the MathHub help system](http://mathhub.info/help/documentation.html).
+
 ## Dependencies
 Other than the usual Drupal/Planetary dependencies a MathHub installation requires: 
 * A running [MMT](https://svn.kwarc.info/repos/MMT/doc/html/index.html) instance
