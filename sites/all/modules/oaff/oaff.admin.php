@@ -331,7 +331,7 @@ function oaff_admin_crawl_nodes() {
  */
 function oaff_admin_administrate() {
   $mmt_url = variable_get("mmt_config")['mmturl'];
-  $out  = '<p>This page collects functionalities related to MathHub administration and maintenance</p>';
+  $out  = '<p>This page collects functionalities related to MathHub administration and maintenance (<a href="/help/build-system.html">what is this?</a>)</p>';
   $out .= '<h4>Complex Workflows</h4>';
   $out .= '<table class="table table-striped"><tbody>';
   $out .= '<tr><td><button onclick="window.location = \'/mh/smart-update\'" class="btn btn-primary btn-xs"> Update and rebuild </button></td>';
@@ -456,7 +456,7 @@ function oaff_admin_mbt_rebuild() {
   }
   $compilers = array_unique($compilers);
   $form .= '<div class="form-group">';
-  $form .= '<h4>Build targets <span class="small" style="color:gray">Select which (if any) compilers changed </span></h4>';
+  $form .= '<h4>Build targets <span class="small" style="color:gray">Select which (if any) compilers changed </span> (<a href="/help/build-targets.html">what are they?</a>)</h4>';
   $form .= '<div id="mh_comp_row" class="row">';
   foreach ($compilers as $comp) {
     $form .= '<div class="col-md-2">';
