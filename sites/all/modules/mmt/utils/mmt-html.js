@@ -385,7 +385,7 @@ var qmt = {
    presentDecl : qmtAux.extensionFunction('presentDecl', function(){return "html";}),
 
    /* executes a QMT query (as constructed by helper functions) via ajax and runs a continuation on the result */
-   exec : function (q, cont) {
+    exec : function (q, cont, async = true) {
       var qUrl = mmt.makeURL('/:query');
       jQuery.ajax({
          url:qUrl,
@@ -394,7 +394,8 @@ var qmt = {
           dataType : 'xml',
          processData:false,
          contentType:'text/plain',
-         success:cont,
+          success:cont,
+	  async:async,
       });
    }
 };

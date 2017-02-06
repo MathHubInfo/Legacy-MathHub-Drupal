@@ -43,10 +43,12 @@ var ontologyNavigation = {
     	var related_uris = [];
     	var me = this;
     	qmt.exec(query, 
-    			 function(data) { 
-    				$(data).find("uri").each(function (i, val) {
+    		 function(data) {
+    		     $(data).find("uri").each(function (i, val) {
+			 		
     					var path = $(val).attr('path');
-    					related_uris.push([planetary.URIToURL(path).split("/").slice(1), function() {planetary.navigate(path);}]);
+			 console.log(path);
+			 related_uris.push([planetary.URIToURL(path).split("/").slice(1), function() {planetary.navigate(path);}]);
     				});
     			 },
     			 false);
