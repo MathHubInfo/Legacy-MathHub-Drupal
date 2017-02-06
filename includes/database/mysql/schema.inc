@@ -39,8 +39,8 @@ class DatabaseSchema_mysql extends DatabaseSchema {
       $info['table'] = substr($table, ++$pos);
     }
     else {
-      $db_info = Database::getConnectionInfo();
-      $info['database'] = $db_info[$this->connection->getTarget()]['database'];
+      $db_info = $this->connection->getConnectionOptions();
+      $info['database'] = $db_info['database'];
       $info['table'] = $table;
     }
     return $info;
@@ -81,7 +81,8 @@ class DatabaseSchema_mysql extends DatabaseSchema {
     // Provide defaults if needed.
     $table += array(
       'mysql_engine' => 'InnoDB',
-      'mysql_character_set' => 'utf8mb4',
+      // Allow the default charset to be overridden in settings.php.
+      'mysql_character_set' => $this->connection->utf8mb4IsActive() ? 'utf8mb4' : 'utf8',
     );
 
     $sql = "CREATE TABLE {" . $name . "} (\n";
@@ -108,8 +109,13 @@ class DatabaseSchema_mysql extends DatabaseSchema {
     if (!empty($info['collation'])) {
       $sql .= ' COLLATE ' . $info['collation'];
     }
-    //ADD row format, needed for utf8mb4 in drupal -- large index keys
-    $sql .= ' ROW_FORMAT=DYNAMIC';
+
+    // The row format needs to be either DYNAMIC or COMPRESSED in order to allow
+    // for the innodb_large_prefix setting to take effect, see
+    // https://dev.mysql.com/doc/refman/5.6/en/create-table.html
+    if ($this->connection->utf8mb4IsActive()) {
+      $sql .= ' ROW_FORMAT=DYNAMIC';
+    }
 
     // Add table comment.
     if (!empty($table['description'])) {

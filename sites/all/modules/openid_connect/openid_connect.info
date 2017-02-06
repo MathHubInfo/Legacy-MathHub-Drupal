@@ -9,9 +9,9 @@ dependencies[] = ctools
 files[] = includes/OpenIDConnectClientInterface.class.php
 files[] = includes/OpenIDConnectClientBase.class.php
 
-; Information added by Drupal.org packaging script on 2015-06-06
-version = "7.x-1.0-beta6"
+; Information added by Drupal.org packaging script on 2016-11-02
+version = "7.x-1.0-beta8"
 core = "7.x"
 project = "openid_connect"
-datestamp = "1433610483"
+datestamp = "1478078977"
 

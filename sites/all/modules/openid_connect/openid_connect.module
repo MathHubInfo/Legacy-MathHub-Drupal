@@ -175,7 +175,7 @@ function openid_connect_block_view($delta = '') {
  *   A state token that later can be validated to prevent request forgery.
  */
 function openid_connect_create_state_token() {
-  $state = md5(rand());
+  $state = drupal_random_key();
   $_SESSION['openid_connect_state'] = $state;
 
   return $state;
@@ -229,7 +229,13 @@ function openid_connect_save_userinfo($account, $userinfo) {
     }
     $claim = variable_get('openid_connect_userinfo_mapping_property_' . $property_name, NULL);
     if ($claim && isset($userinfo[$claim])) {
-      $account_wrapper->{$property_name} = $userinfo[$claim];
+      // Set the user property, while ignoring exceptions from invalid values.
+      try {
+        $account_wrapper->{$property_name} = $userinfo[$claim];
+      }
+      catch (EntityMetadataWrapperException $e) {
+        watchdog_exception('openid_connect', $e);
+      }
     }
   }
 
@@ -237,9 +243,6 @@ function openid_connect_save_userinfo($account, $userinfo) {
   // openid_connect_username_alter().
   if (isset($userinfo['name'])) {
     $account->data['oidc_name'] = $userinfo['name'];
-  }
-  if (isset($userinfo['refresh_token'])) {
-    $account->data['gitlab_refresh_token'] = $userinfo['refresh_token'];
   }
 
   $account_wrapper->save();
@@ -788,7 +791,7 @@ function openid_connect_complete_authorization($client, $tokens, &$destination) 
   $user_data = $client->decodeIdToken($tokens['id_token']);
   $userinfo = $client->retrieveUserInfo($tokens['access_token']);
 
-  if ($userinfo && empty($userinfo['email'])) {
+  if (empty($userinfo['email'])) {
     watchdog('openid_connect', 'No e-mail address provided by @provider', array('@provider' => $client->getLabel()), WATCHDOG_ERROR);
 
     return FALSE;
@@ -807,27 +810,33 @@ function openid_connect_complete_authorization($client, $tokens, &$destination) 
     if (variable_get('openid_connect_always_save_userinfo', TRUE)) {
       openid_connect_save_userinfo($account, $userinfo);
     }
+    $account_is_new = FALSE;
   }
   else {
+    // Check whether the e-mail address is valid.
+    if (!filter_var($userinfo['email'], FILTER_VALIDATE_EMAIL)) {
+      drupal_set_message(t('The e-mail address %mail is not valid.', array('%mail' => $userinfo['email'])), 'error');
+
+      return FALSE;
+    }
     // Check whether there is an e-mail address conflict.
     if (user_load_by_mail($userinfo['email'])) {
-      drupal_set_message(t('The e-mail address is already taken: @email', array('@email' => $userinfo['email'])), 'error');
+      drupal_set_message(t('The e-mail address %email is already taken.', array('%email' => $userinfo['email'])), 'error');
 
       return FALSE;
     }
 
-    if(!empty($tokens['refresh_token'])){
-      $userinfo['refresh_token']=$tokens['refresh_token'];
-    }
-
     // Create a new account.
     $account = openid_connect_create_user($sub, $userinfo, $client->getName());
+    // Reload $account in case it has been altered in a user hook elsewhere.
+    $account = user_load($account->uid);
     openid_connect_save_userinfo($account, $userinfo);
+    $account_is_new = TRUE;
   }
 
   openid_connect_login_user($account, $destination);
 
-  module_invoke_all('openid_connect_post_authorize', $tokens, $account, $userinfo, $client->getName());
+  module_invoke_all('openid_connect_post_authorize', $tokens, $account, $userinfo, $client->getName(), $account_is_new);
 
   return TRUE;
 }
@@ -854,7 +863,7 @@ function openid_connect_connect_current_user($client, $tokens) {
 
   $provider_param = array('@provider' => $client->getLabel());
 
-  if ($userinfo && empty($userinfo['email'])) {
+  if (empty($userinfo['email'])) {
     watchdog('openid_connect', 'No e-mail address provided by @provider', $provider_param, WATCHDOG_ERROR);
 
     return FALSE;
@@ -883,7 +892,7 @@ function openid_connect_connect_current_user($client, $tokens) {
     openid_connect_save_userinfo($account, $userinfo);
   }
 
-  module_invoke_all('openid_connect_post_authorize', $tokens, $account, $userinfo, $client->getName());
+  module_invoke_all('openid_connect_post_authorize', $tokens, $account, $userinfo, $client->getName(), FALSE);
 
   return TRUE;
 }
