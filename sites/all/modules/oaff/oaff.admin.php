@@ -405,7 +405,7 @@ function oaff_admin_mbt_act($req) {
   if (isset($req['profile'])) {
     $profile = $req['profile'];
   }
-  $comp_arr = array();
+  $compilers = array();
   foreach($req as $arg => $val) {
     if (substr($arg, 0, 5) == "comp_" && $val == "on") {
       $compilers[] = substr($arg, 5);
