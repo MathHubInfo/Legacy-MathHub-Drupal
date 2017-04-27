@@ -24,7 +24,7 @@ function mathhub_footer_block_view($delta = '') {
       $block['content'] = '
 <div style="width: 100%;">
     <!-- left div -->
-    <div style="float:left;width:100px;">
+    <div style="float:left;width:100px;text-align:left;">
         Developed by:<br />
         <a href="https://kwarc.info/">
             <img width="50px" height="50px" src="/sites/all/modules/mathhub_footer/images/kwarc_logo.png"/>
@@ -32,22 +32,26 @@ function mathhub_footer_block_view($delta = '') {
     </div>
     
     <!-- right div -->
-    <div style="float:right;width:500px;">
+    <div style="float:right;width:500px;text-align: right;">
         <a href="/help/funding.html">Funding</a>:<br />
         
         <img width="35px" height="50px" src="/sites/all/modules/mathhub_footer/images/odk_logo.png"/>
+        &nbsp;
         <img width="75px" height="50px" src="/sites/all/modules/mathhub_footer/images/eu_logo.png"/>
+        &nbsp;
         <img width="142px" height="50px" src="/sites/all/modules/mathhub_footer/images/dfg_logo.png"/>
+        &nbsp;
         <img width="60px" height="50px" src="/sites/all/modules/mathhub_footer/images/leibniz_logo.png"/>
     </div>
     
     
     <!-- center div -->
-    <div style="margin:0 auto;width:200px;">
+    <div style="margin:0 auto;width:200px; text-align: center;">
         Institutions:<br />
         <a href="https://www.fau.eu/">
             <img width="50px" height="50px" src="/sites/all/modules/mathhub_footer/images/fau_logo.png"/>
         </a>
+        &nbsp;
         <a href="http://www.jacobs-university.de/">
             <img width="50px" height="50px" src="/sites/all/modules/mathhub_footer/images/jacobs_logo.png"/>
         </a>
