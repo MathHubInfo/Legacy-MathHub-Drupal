@@ -50,7 +50,9 @@ function mathhub_footer_block_view($delta = '') {
             <img width="50px" height="50px" src="/sites/all/modules/mathhub_footer/images/fau_logo.png"/>
         </a>
         &nbsp;
-        <img width="35px" height="50px" src="/sites/all/modules/mathhub_footer/images/odk_logo.png"/>
+        <a href="http://opendreamkit.org/">
+            <img width="35px" height="50px" src="/sites/all/modules/mathhub_footer/images/odk_logo.png"/>
+        </a>
         &nbsp;
         <a href="http://www.jacobs-university.de/">
             <img width="50px" height="50px" src="/sites/all/modules/mathhub_footer/images/jacobs_logo.png"/>
