@@ -21,15 +21,40 @@ function mathhub_footer_block_info() {
 function mathhub_footer_block_view($delta = '') {
   $block = array();
   if ($delta == "mh_footer") {
-      $block['content'] = "
-	<div style=\"text-align:center\"> 
-		<a href=\"https://kwarc.info/\">
-			<img width=\"75px\" height=\"75px\" src=\"/sites/all/modules/mathhub_footer/images/kwarc_logo.png\"/>
-		</a>
-		<a href=\"http://www.jacobs-university.de/\">
-			<img width=\"75px\" height=\"75px\" src=\"/sites/all/modules/mathhub_footer/images/jacobs_logo.png\"/>
-		</a>
-	</div>";
+      $block['content'] = <<<EOT
+<div style="width: 100%;">
+    <!-- left div -->
+    <div style="float:left;width:100px;">
+        Developed by:<br />
+        <a href="https://kwarc.info/">
+            <img width="50px" height="50px" src="/sites/all/modules/mathhub_footer/images/kwarc_logo.png"/>
+        </a>
+    </div>
+    
+    <!-- right div -->
+    <div style="float:right;width:500px;">
+        <a href="/help/funding.html">Funding</a>:<br />
+        
+        <img width="35px" height="50px" src="/sites/all/modules/mathhub_footer/images/odk_logo.png"/>
+        <img width="75px" height="50px" src="/sites/all/modules/mathhub_footer/images/eu_logo.png"/>
+        <img width="142px" height="50px" src="/sites/all/modules/mathhub_footer/images/dfg_logo.png"/>
+        <img width="60px" height="50px" src="/sites/all/modules/mathhub_footer/images/leibniz_logo.png"/>
+    </div>
+    
+    
+    <!-- center div -->
+    <div style="margin:0 auto;width:200px;">
+        Institutions:<br />
+        <a href="https://www.fau.eu/">
+            <img width="50px" height="50px" src="/sites/all/modules/mathhub_footer/images/fau_logo.png"/>
+        </a>
+        <a href="http://www.jacobs-university.de/">
+            <img width="50px" height="50px" src="/sites/all/modules/mathhub_footer/images/jacobs_logo.png"/>
+        </a>
+    </div>
+    
+</div>
+    EOT;
   }
 
   return $block;
