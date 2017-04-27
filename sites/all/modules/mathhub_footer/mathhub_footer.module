@@ -21,7 +21,7 @@ function mathhub_footer_block_info() {
 function mathhub_footer_block_view($delta = '') {
   $block = array();
   if ($delta == "mh_footer") {
-      $block['content'] = <<<EOT
+      $block['content'] = '
 <div style="width: 100%;">
     <!-- left div -->
     <div style="float:left;width:100px;">
@@ -53,8 +53,7 @@ function mathhub_footer_block_view($delta = '') {
         </a>
     </div>
     
-</div>
-    EOT;
+</div>';
   }
 
   return $block;
