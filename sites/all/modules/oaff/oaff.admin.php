@@ -503,7 +503,7 @@ function oaff_admin_restart_mmt() {
   //TODO exit command in mmt server sometimes fails, killing process instead
   //$kill_old_command = $mmt_path . " :send " . $mmt_url . " exit";
   //@shell_exec($kill_old_command);
-  $base_command = $mmt_path . " --keepalive --mbt " . $mbt_path;
+  $base_command = "java -jar " . $mmt_path . " --keepalive --mbt " . $mbt_path;
   $start_new_command = $base_command . " > /dev/null 2>&1 &";
   @shell_exec('pkill -f "' . $base_command . '"');
   @shell_exec($start_new_command);
